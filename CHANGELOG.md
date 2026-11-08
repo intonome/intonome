@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.8] - 2026-11-08
+Two small layout touches.
+
+Metronome
+- The hint under the BPM number is gone; the first-run guide already shows the gesture. On a phone the number sits in the vertical middle of the card body, and the whole height beside the − + ▶ buttons and the volume slider drags it (the drag area was the number and the hint)
+
+Settings
+- The version under the logo is just the numbers, with the dots set tight so they read as one group centred under the logo
+
 ## [2.9.7] - 2026-11-08
 The project moved to the intonome organisation on GitHub; a few settings and words tidied.
 

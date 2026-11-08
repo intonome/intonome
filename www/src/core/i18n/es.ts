@@ -189,7 +189,7 @@ export const ES: Record<TKey, string> = {
   'set.aPitchDesc': 'Violín y viola A4, violonchelo A3, contrabajo A2',
   'set.wakeUnsupported': 'Este navegador no puede mantener la pantalla encendida',
   'set.haptics': 'Vibración',
-  'set.hapticsDesc': 'Una vibración breve en cada paso al girar la rueda o deslizar los BPM o el La de referencia',
+  'set.hapticsDesc': 'Una vibración breve en cada paso al girar la rueda o deslizar el tempo o el La de referencia',
   'set.fs': 'Pantalla completa',
   'set.fsDesc': 'Oculta la barra de direcciones del navegador y usa toda la pantalla',
   'set.fsUnsupported': 'En este dispositivo, añade la app a la pantalla de inicio para usarla a pantalla completa',

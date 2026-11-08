@@ -15,6 +15,7 @@ import { viewRange as viewOf, frac as fracIn, timeAt, zoomWindow, clampA, clampB
 import { q, on, reflow, setOn, setGlyph } from './dom.ts'
 import { displayName, downloadRec, handOff, stopListPlayers } from './recList.ts'
 import { DECODE_MAX_SEC } from '../core/recPolicy.ts'
+import { uniqueName } from '../core/recName.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
 import { isNative } from '../platform/index.ts'
@@ -306,9 +307,8 @@ function endTitleEdit(save: boolean): void {
   inp.hidden = true; q('editor-title-display').hidden = false; q('ed-title-edit').hidden = false
   const name = inp.value.trim().slice(0, NAME_MAX)
   if (!save || !ed.item || !name || name === ed.item.name || name === displayName(ed.item)) return // 고치지 않았으면 자동 이름 그대로
-  const taken = new Set(recListStore.get().items.filter(i => i !== ed.item).map(i => i.name))
-  let unique = name; for (let n = 2; taken.has(unique); n++) { const suf = ` (${n})`; unique = name.slice(0, NAME_MAX - suf.length) + suf } // (2) 를 붙여도 40자 안
-  const next = patchRec(ed.item, { name: unique }); if (next) ed.item = next
+  const taken = new Set(recListStore.get().items.filter(i => i !== ed.item).flatMap(i => [i.name, displayName(i)])) // 자동 이름은 목록에 보이는 이름(11/8 01:07)으로도 겹친다
+  const next = patchRec(ed.item, { name: uniqueName(name, taken, NAME_MAX) }); if (next) ed.item = next
   q('editor-title-display').textContent = displayName(ed.item)
 }
 

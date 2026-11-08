@@ -1,6 +1,6 @@
 # Intonome Privacy Policy
 
-Last updated: 2026-11-07 · [한국어](#intonome-개인정보처리방침) · [日本語](#intonome-プライバシーポリシー) · [简体中文](#intonome-隐私政策) · [繁體中文](#intonome-隱私權政策) · [Español](#política-de-privacidad-de-intonome)
+Last updated: 2026-11-08 · [한국어](#intonome-개인정보처리방침) · [日本語](#intonome-プライバシーポリシー) · [简体中文](#intonome-隐私政策) · [繁體中文](#intonome-隱私權政策) · [Español](#política-de-privacidad-de-intonome)
 
 ## Summary
 
@@ -12,7 +12,7 @@ The app needs microphone permission to analyze pitch and measure practice time.
 
 - Mic input is **analyzed in real time and discarded immediately**. Nothing is stored unless you tap record.
 - All analysis happens on the device. No speech recognition service or external API is used.
-- The app releases the mic when it goes to the background (in the web app, a recording in progress keeps the mic so it can continue), and closes it after 15 minutes without sound.
+- The app turns the mic off when it goes to the background (in the web app, a recording in progress keeps it on so the recording can continue), and also turns it off after 15 minutes without sound.
 
 ## Recordings
 
@@ -20,7 +20,7 @@ Files you create with the record button are kept only in the browser storage (In
 
 - They are never uploaded. We cannot see them.
 - By default they are deleted after 30 days; choose "Forever" under Settings › Keep recordings to keep them. Individual recordings can be excluded with "Keep".
-- A file leaves the app only when you choose "Download" (web) or "Save / Share" (Android app), and you choose where it goes. Sharing from the Android app keeps one temporary copy in the app's own cache until the next share.
+- A file leaves the app only when you choose "Download" (web) or "Save / Share" (Android app), and you choose where it goes. Sharing from the Android app leaves one temporary copy in the app's cache, which is replaced the next time you share.
 
 ## Settings
 
@@ -120,7 +120,7 @@ GitHub 이슈로도 문의할 수 있습니다.
 
 # Intonome プライバシーポリシー
 
-最終更新日: 2026-11-07
+最終更新日: 2026-11-08
 
 ## 概要
 
@@ -132,15 +132,15 @@ GitHub 이슈로도 문의할 수 있습니다.
 
 - マイク入力は**リアルタイムで解析された後ただちに破棄**されます。録音ボタンを押さない限り、どこにも保存されません。
 - 解析はすべて端末内で行われます。音声認識サービスや外部 API は使いません。
-- アプリが非表示になるとマイクを解放します (ウェブアプリで録音中のときは、録音を続けるためにマイクを保持します)。15分間音がなければマイクを閉じます。
+- アプリが非表示になるとマイクをオフにします (ウェブアプリで録音中のときは、録音を続けるためにオンのままにします)。15分間音がないときもマイクをオフにします。
 
 ## 録音
 
 録音ボタンで作成したファイルは、端末のブラウザストレージ (IndexedDB) またはアプリの保存領域にのみ保管されます。
 
-- サーバーにアップロードされることはありません。私たちがその内容を見ることはできません。
+- サーバーにアップロードされることはありません。開発者もその内容を見ることはできません。
 - 既定では30日後に自動削除されます。設定の「録音の保存期間」で「無期限」を選ぶと自動削除されません。個々の録音は「ずっと残す」で自動削除の対象から外せます。
-- ファイルがアプリの外へ出るのは、ユーザーが「保存」(ウェブ) または「保存 / 共有」(Android アプリ) を実行したときだけです。送り先はユーザー自身が選びます。Android アプリで共有すると、次に共有するまでアプリ自身のキャッシュに一時的なコピーが1つ残ります。
+- ファイルがアプリの外へ出るのは、ユーザーが「保存」(ウェブ) または「保存 / 共有」(Android アプリ) を実行したときだけです。送り先はユーザー自身が選びます。Android アプリで共有すると、アプリのキャッシュに一時的なコピーが1つ残り、次に共有するときに新しいコピーに置き換わります。
 
 ## 設定
 
@@ -152,7 +152,7 @@ GitHub 이슈로도 문의할 수 있습니다.
 
 ## ネットワーク
 
-ウェブアプリはアプリ自身のファイル (HTML、スクリプト、フォント、アイコン) だけをダウンロードします。フォントを含むすべてのリソースを同じドメインから配信するため、他のホストへのリクエストはありません。このことは自動検証で確認しています。Android アプリはインストールされたファイルで動作するため、ネットワークがなくてもすべての機能が使えます。
+ウェブアプリはアプリを構成するファイル (HTML、スクリプト、フォント、アイコン) だけをダウンロードします。フォントを含むすべてのリソースを同じドメインから配信するため、他のホストへのリクエストはありません。このことは自動検証で確認しています。Android アプリはインストールされたファイルで動作するため、ネットワークがなくてもすべての機能が使えます。
 
 ## 子ども
 
@@ -160,7 +160,7 @@ GitHub 이슈로도 문의할 수 있습니다.
 
 ## データの削除
 
-録音はアプリ内で1件ずつ削除できます。すべて消すには、ウェブではブラウザのサイトデータを削除し、Android ではアプリをアンインストールするか、設定 › アプリ › Intonome › ストレージ › データを消去を使ってください。私たちの側にコピーは残りません。
+録音はアプリ内で1件ずつ削除できます。すべて消すには、ウェブではブラウザのサイトデータを削除し、Android ではアプリをアンインストールするか、設定 › アプリ › Intonome › ストレージ › データを消去を使ってください。開発者の側にコピーは残りません。
 
 ## 変更
 
@@ -180,7 +180,7 @@ GitHub の Issues でも受け付けています。
 
 # Intonome 隐私政策
 
-最后更新：2026-11-07
+最后更新：2026-11-08
 
 ## 摘要
 
@@ -192,7 +192,7 @@ GitHub の Issues でも受け付けています。
 
 - 麦克风输入**实时分析后立即丢弃**。除非你点按录音，否则不会保存在任何地方。
 - 所有分析都在设备上完成。不使用语音识别服务或外部 API。
-- 应用切到后台时会释放麦克风（网页版在录音时会保留麦克风，让录音继续）；15 分钟没有声音时会关闭麦克风。
+- 应用切到后台时会关闭麦克风（网页版在录音时会保持开启，让录音继续）；15 分钟没有声音时也会关闭麦克风。
 
 ## 录音
 
@@ -200,7 +200,7 @@ GitHub の Issues でも受け付けています。
 
 - 不会上传。我们无法看到这些文件。
 - 默认 30 天后自动删除，可以在设置的“录音保存期限”中改为“永久”。单条录音可以用“保留”排除在自动删除之外。
-- 只有当你选择“下载”（网页版）或“保存 / 分享”（Android 应用）时，文件才会离开应用，并且由你决定发送到哪里。在 Android 应用中分享后，应用自己的缓存里会暂时留下一份副本，直到下一次分享。
+- 只有当你选择“下载”（网页版）或“保存 / 分享”（Android 应用）时，文件才会离开应用，并且由你决定发送到哪里。在 Android 应用中分享后，应用的缓存里会暂时留下一份副本，下次分享时会换成新的副本。
 
 ## 设置
 
@@ -212,7 +212,7 @@ GitHub の Issues でも受け付けています。
 
 ## 网络
 
-网页版应用只下载它自己的文件（HTML、脚本、字体、图标）。包括字体在内的所有资源都来自同一个域名，因此不会向其他主机发出请求；这一点由自动检查确认。Android 应用从已安装的文件运行，没有网络也能使用全部功能。
+网页版应用只下载应用本身的文件（HTML、脚本、字体、图标）。包括字体在内的所有资源都来自同一个域名，因此不会向其他主机发出请求；这一点由自动检查确认。Android 应用从已安装的文件运行，没有网络也能使用全部功能。
 
 ## 儿童
 
@@ -240,7 +240,7 @@ GitHub の Issues でも受け付けています。
 
 # Intonome 隱私權政策
 
-最後更新：2026-11-07
+最後更新：2026-11-08
 
 ## 摘要
 
@@ -252,7 +252,7 @@ GitHub の Issues でも受け付けています。
 
 - 麥克風輸入**即時分析後立即丟棄**。除非你點一下錄音按鈕（REC），否則不會儲存在任何地方。
 - 所有分析都在裝置上完成。不使用語音辨識服務或外部 API。
-- App 切到背景時會停止使用麥克風（網頁版在錄音時會保留麥克風，讓錄音繼續）；15 分鐘沒有聲音時會關閉麥克風。
+- App 切到背景時會關閉麥克風（網頁版在錄音時會保持開啟，讓錄音繼續）；15 分鐘沒有聲音時也會關閉麥克風。
 
 ## 錄音
 
@@ -260,7 +260,7 @@ GitHub の Issues でも受け付けています。
 
 - 不會上傳。我們無法看到這些檔案。
 - 預設 30 天後自動刪除，可以在設定的「錄音保留」中改為「永久」。單段錄音可以用「保留」排除在自動刪除之外。
-- 只有當你選擇「下載」（網頁版）或「儲存 / 分享」（Android App）時，檔案才會離開 App，並且由你決定傳送到哪裡。在 Android App 中分享後，App 自己的快取裡會暫時留下一份副本，直到下一次分享。
+- 只有當你選擇「下載」（網頁版）或「儲存 / 分享」（Android App）時，檔案才會離開 App，並且由你決定傳送到哪裡。在 Android App 中分享後，App 的快取裡會暫時留下一份副本，下次分享時會換成新的副本。
 
 ## 設定
 
@@ -272,7 +272,7 @@ GitHub の Issues でも受け付けています。
 
 ## 網路
 
-網頁版 App 只下載它自己的檔案（HTML、指令碼、字型、圖示）。包括字型在內的所有資源都來自同一個網域，因此不會向其他主機發出請求；這一點由自動檢查確認。Android App 從已安裝的檔案執行，沒有網路也能使用全部功能。
+網頁版 App 只下載 App 本身的檔案（HTML、指令碼、字型、圖示）。包括字型在內的所有資源都來自同一個網域，因此不會向其他主機發出請求；這一點由自動檢查確認。Android App 從已安裝的檔案執行，沒有網路也能使用全部功能。
 
 ## 兒童
 
@@ -300,7 +300,7 @@ GitHub の Issues でも受け付けています。
 
 # Política de privacidad de Intonome
 
-Última actualización: 2026-11-07
+Última actualización: 2026-11-08
 
 ## Resumen
 
@@ -312,7 +312,7 @@ La app necesita permiso del micrófono para analizar la altura del sonido y medi
 
 - La entrada del micrófono se **analiza en tiempo real y se descarta de inmediato**. No se guarda nada a menos que pulses REC.
 - Todo el análisis ocurre en el dispositivo. No se usa ningún servicio de reconocimiento de voz ni API externa.
-- La app libera el micrófono cuando pasa a segundo plano (en la app web, una grabación en curso lo mantiene para seguir grabando) y lo cierra tras 15 minutos sin sonido.
+- La app apaga el micrófono cuando pasa a segundo plano (en la app web, si hay una grabación en curso, lo deja encendido para seguir grabando) y también lo apaga tras 15 minutos sin sonido.
 
 ## Grabaciones
 
@@ -320,7 +320,7 @@ Los archivos que creas con el botón de grabar se guardan solo en el almacenamie
 
 - Nunca se suben. No podemos verlos.
 - De forma predeterminada se eliminan a los 30 días; elige «Siempre» en Ajustes › Conservar grabaciones para guardarlas. Puedes excluir grabaciones concretas con «Conservar».
-- Un archivo sale de la app solo cuando eliges «Descargar» (web) o «Guardar / Compartir» (app de Android), y tú decides a dónde va. Al compartir desde la app de Android, queda una copia temporal en la caché de la propia app hasta la próxima vez que compartas.
+- Un archivo sale de la app solo cuando eliges «Descargar» (web) o «Guardar / Compartir» (app de Android), y tú decides a dónde va. Al compartir desde la app de Android, queda una copia temporal en la caché de la app, que se reemplaza la próxima vez que compartas.
 
 ## Ajustes
 

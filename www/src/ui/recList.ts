@@ -106,19 +106,20 @@ export function handOff(blob: Blob, name: string): void {
 /** 다운로드 (편집기·목록 공용). webm 녹음은 WAV 로 변환해 건넨다 — 아이폰은 webm 을 못 열고, 받는 쪽이 아이폰이면 못 열며, Chromium 의 MediaRecorder webm 은 길이가 안 적혀 있어
  * 다른 플레이어에서 길이·탐색이 엉뚱하다(안드로이드 크롬 자신도 47 초를 75 시간으로 본다). 10 분이 넘으면(디코드 메모리) 아이폰은 안내만, 그 밖은 webm 그대로 */
 let converting = false // 변환은 10 분에 Float32 ≈ 115 MB — 연타로 두 번 돌리지 않는다
+let slowToast: ReturnType<typeof setTimeout> | null = null
 export async function downloadRec(item: RecItem): Promise<void> {
   if (recExt(item) === 'webm' && (isIOS() || item.dur <= DECODE_MAX_SEC)) {
     if (item.dur > DECODE_MAX_SEC) { toast(tr('rec.tooLongConvert')); return }
-    if (converting) return
+    if (converting) { if (slowToast) clearTimeout(slowToast); slowToast = null; toast(tr('rec.converting')); return } // 다시 누르면 지금 변환 중이라고 바로 알린다(첫 1 초엔 아무 반응이 없었다)
     converting = true
     // 변환은 보통 1 초 안에 끝난다 — 그때는 안내 없이 바로 저장(웹앱은 브라우저 다운로드 알림과 겹쳐 두 개가 떴다). 오래 걸릴 때만 알린다
-    const slow = setTimeout(() => toast(tr('rec.converting')), 1000)
+    slowToast = setTimeout(() => { slowToast = null; toast(tr('rec.converting')) }, 1000)
     try {
       const arrayBuf = await (await fetch(item.url)).arrayBuffer()
       const decoded = await new OfflineAudioContext(1, 1, 48000).decodeAudioData(arrayBuf)
       handOff(new Blob([bufToWav(decoded)], { type: 'audio/wav' }), 'intonome_' + item.name + '.wav')
     } catch (e) { toast(tr('rec.convertFailed', { e: e instanceof Error ? e.message : String(e) })) }
-    finally { clearTimeout(slow); converting = false }
+    finally { if (slowToast) clearTimeout(slowToast); slowToast = null; converting = false }
     return
   }
   const r = await saveFile(item.blob, recFileName(item)); if (!r.ok) toast(tr('common.saveFailed', { e: r.error }))

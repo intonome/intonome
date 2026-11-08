@@ -451,7 +451,7 @@ await scenario('metro: on a phone the expanded header has a "metronome only" but
   assert.equal(await st(), 'e'); assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), 'metro-full-btn', '돌아오면 포커스가 크게 버튼으로')
   await sizeTap(p); assert.deepEqual([await st(), await vis('metro-hdr-label'), await vis('metro-full-btn')], ['c', true, false], '접힘: 헤더 ♩96 이 돌아온다')
 })
-// 펼침 본문의 ♩BPM 묶음: '⇕ 드래그' 위 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px)
+// 펼침 본문의 ♩BPM 묶음: '⇕ 밀기' 위 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px)
 for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred over "drag", clear of the − button`, 'silence_lowfloor.wav', async p => {
   await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
@@ -882,7 +882,7 @@ await scenario('first launch: English and dark, even with the phone in light mod
   await bare.close()
   await p.goto(URL_); await sleep(p, 600)
   assert.deepEqual(await p.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), themeOn: document.querySelector('#theme-steps .step-btn.on').dataset.v, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, haptics: document.querySelector('[data-t="set.haptics"]').textContent, drag: document.getElementById('metro-bpm-hint').textContent })),
-    { theme: null, lang: 'en', hidden: false, themeOn: '0', langOn: '1', haptics: 'Haptic feedback', drag: 'drag' })
+    { theme: null, lang: 'en', hidden: false, themeOn: '0', langOn: '1', haptics: 'Haptic feedback', drag: 'slide' })
   // 한국어로 바꾸면 음이름은 도레미가 기본
   await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#lang-steps .step-btn[data-v="0"]'); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.querySelector('#notenames-steps .step-btn.on').dataset.v), '0')
@@ -1190,7 +1190,11 @@ await scenario('rec: start/stop → list item, persists reload, rename persists,
   await p.click('#toast'); await sleep(p, 500) // 실행 취소
   assert.equal((await names()).length, 1, 'undo restores'); assert.equal((await names())[0], '연습곡A')
   await p.reload(); await sleep(p, 1200); assert.equal((await names()).length, 1, 'restored item persisted')
-  await p.click('#menu-btn'); await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 5600); assert.equal((await names()).length, 0)
+  // 변환 중에 다시 누르면 바로 「변환 중」 — 2.9.6 은 첫 1 초 안의 두 번째 누름에 아무 반응이 없었다
+  await p.click('#menu-btn'); await sleep(p, 400)
+  await p.evaluate(() => { const a = document.querySelector('[data-action="download"][data-idx="0"]'); a.click(); a.click() })
+  await waitToast(p, '어디서나 열 수 있게 WAV로 변환 중…', 500)
+  await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 5600); assert.equal((await names()).length, 0)
 })
 await scenario('rec: two deletes in a row → each undo toast stays alive', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')

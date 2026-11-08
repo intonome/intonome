@@ -75,7 +75,6 @@ export const JA: Record<TKey, string> = {
   'metro.withTuner': 'チューナーと一緒に表示',
   'metro.collapse': 'メトロノームをたたむ',
   'metro.dial': 'BPM ダイヤル',
-  'metro.drag': 'スライド',
   'metro.bpmDown': 'BPM を下げる',
   'metro.bpmUp': 'BPM を上げる',
   'metro.bpmDown5': 'BPM を 5 下げる',

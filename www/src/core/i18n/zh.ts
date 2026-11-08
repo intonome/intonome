@@ -75,7 +75,6 @@ export const ZH: Record<TKey, string> = {
   'metro.withTuner': '与调音器一起显示',
   'metro.collapse': '收起节拍器',
   'metro.dial': 'BPM 转盘',
-  'metro.drag': '滑动',
   'metro.bpmDown': 'BPM 减 1',
   'metro.bpmUp': 'BPM 加 1',
   'metro.bpmDown5': 'BPM 减 5',

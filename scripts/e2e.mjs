@@ -451,17 +451,22 @@ await scenario('metro: on a phone the expanded header has a "metronome only" but
   assert.equal(await st(), 'e'); assert.equal(await p.evaluate(() => document.activeElement && document.activeElement.id), 'metro-full-btn', '돌아오면 포커스가 크게 버튼으로')
   await sizeTap(p); assert.deepEqual([await st(), await vis('metro-hdr-label'), await vis('metro-full-btn')], ['c', true, false], '접힘: 헤더 ♩96 이 돌아온다')
 })
-// 펼침 본문의 ♩BPM 묶음: '⇕ 밀기' 위 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px)
-for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred over "slide", clear of the − button`, 'silence_lowfloor.wav', async p => {
+// 펼침 본문의 ♩BPM 묶음: 칸 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px).
+// 아래 안내 줄이 없으므로 끌기 영역은 오른쪽 묶음(− + ▶ · 음량) 높이 전체, 숫자는 카드 본문(헤더 선 ~ 박자 버튼) 세로 가운데 근처
+for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred in their column with no hint below, clear of the − button`, 'silence_lowfloor.wav', async p => {
   await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   const r = await p.evaluate(() => {
     const g = Array.from(document.querySelectorAll('#metro-bpm-unit .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect()
-    const n = document.getElementById('metro-bpm').getBoundingClientRect(), h = document.getElementById('metro-bpm-hint').getBoundingClientRect(), m = document.querySelector('.m-adj').getBoundingClientRect()
-    return { off: Math.abs((g.left + n.right) / 2 - (h.left + h.right) / 2), gapMinus: m.left - n.right, gapNote: n.left - g.right }
+    const box = id => document.getElementById(id).getBoundingClientRect()
+    const n = box('metro-bpm'), w = box('metro-bpm-wrap'), col = box('metro-adj-col'), l = box('metro-bpm-line'), hd = box('metro-hdr'), gr = box('metro-grids-wrap'), m = document.querySelector('.m-adj').getBoundingClientRect()
+    return { off: Math.abs((g.left + n.right) / 2 - (w.left + w.right) / 2), gapMinus: m.left - n.right, gapNote: n.left - g.right, hint: !!document.getElementById('metro-bpm-hint'), dragH: w.height - col.height, vOff: (l.top + l.bottom) / 2 - (hd.bottom + gr.top) / 2 }
   })
-  assert.ok(r.off <= 1, '음표+숫자 묶음이 드래그 안내 위 가운데 ' + JSON.stringify(r))
+  assert.ok(r.off <= 1, '음표+숫자 묶음이 칸 가운데 ' + JSON.stringify(r))
   assert.ok(r.gapMinus >= 16, '− 버튼과 띄움 ' + JSON.stringify(r)); assert.ok(r.gapNote >= 4, '음표와 숫자 사이 틈 ' + JSON.stringify(r))
+  assert.equal(r.hint, false, '아래 안내 줄 없음')
+  assert.ok(r.dragH >= -0.5, '끌기 영역이 오른쪽 묶음 높이 전체 ' + JSON.stringify(r))
+  assert.ok(Math.abs(r.vOff) <= 3, '숫자 줄이 본문 세로 가운데 근처 ' + JSON.stringify(r))
 }, { viewport: { width: 375, height: 812 } })
 // 좁은 폰(320 px) · 영어 'Volume' · 세 자리 BPM: 펼침의 ▶ 가 카드 안에 남는다(슬라이더가 줄어든다), LED 줄은 제 간격
 await scenario('layout: expanded at 320px in English with BPM 200 — ▶ stays inside the card and the header LEDs keep their spacing', 'silence_lowfloor.wav', async p => {
@@ -525,14 +530,13 @@ for (const w of [360, 384]) await scenario(`layout: collapsed, stopped and playi
   await p.keyboard.press('Space')
 }, { viewport: { width: w, height: 800 } })
 
-// 펼침: 헤더 LED 줄이 카드 가운데(좁으면 줄이 줄어든다), 양옆과 겹치지 않는다. BPM 아래 끌기 표시는 글자 ↕ 가 아니라 그림
+// 펼침: 헤더 LED 줄이 카드 가운데(좁으면 줄이 줄어든다), 양옆과 겹치지 않는다
 for (const w of [412, 375, 360, 320]) await scenario(`layout: expanded at ${w}px · BPM 200 — the header LEDs sit in the middle of the card`, 'silence_lowfloor.wav', async p => {
   await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: 200 })))
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   // 펼침의 헤더 왼쪽 칸은 '메트로놈만 크게' 버튼(♩80 은 본문 큰 숫자가 같은 값이라 접힘에서만)
-  const r = await p.evaluate(() => { const c = document.getElementById('metro-card').getBoundingClientRect(), v = document.getElementById('beat-vis').getBoundingClientRect(), f = document.getElementById('metro-full-btn').getBoundingClientRect(), s = document.getElementById('metro-size-btn').getBoundingClientRect(); return { off: Math.abs((v.left + v.right) - (c.left + c.right)) / 2, gapL: v.left - f.right, gapR: s.left - v.right, arrow: document.getElementById('metro-bpm-hint').textContent.includes('↕'), glyph: !!document.querySelector('#metro-bpm-hint .drag-glyph') } })
+  const r = await p.evaluate(() => { const c = document.getElementById('metro-card').getBoundingClientRect(), v = document.getElementById('beat-vis').getBoundingClientRect(), f = document.getElementById('metro-full-btn').getBoundingClientRect(), s = document.getElementById('metro-size-btn').getBoundingClientRect(); return { off: Math.abs((v.left + v.right) - (c.left + c.right)) / 2, gapL: v.left - f.right, gapR: s.left - v.right } })
   assert.ok(r.off <= 0.6, 'LED 줄 가운데 ' + JSON.stringify(r)); assert.ok(r.gapL >= 6 && r.gapR >= 6, '양옆과 안 겹침 ' + JSON.stringify(r))
-  assert.equal(r.arrow, false); assert.equal(r.glyph, true)
 }, { viewport: { width: w, height: 800 } })
 
 for (const w of [360, 384, 412]) await scenario(`layout: collapsed at ${w}px — the header LEDs stay put when BPM goes from two to three digits`, 'silence_lowfloor.wav', async p => {
@@ -883,8 +887,8 @@ await scenario('first launch: English and dark, even with the phone in light mod
   assert.deepEqual(await bare.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), meta: document.querySelector('meta[name="theme-color"]').content })), { theme: null, lang: 'en', hidden: true, meta: '#181b21' }, '첫 그리기 전')
   await bare.close()
   await p.goto(URL_); await sleep(p, 600)
-  assert.deepEqual(await p.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), themeOn: document.querySelector('#theme-steps .step-btn.on').dataset.v, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, haptics: document.querySelector('[data-t="set.haptics"]').textContent, drag: document.getElementById('metro-bpm-hint').textContent })),
-    { theme: null, lang: 'en', hidden: false, themeOn: '0', langOn: '1', haptics: 'Haptic feedback', drag: 'slide' })
+  assert.deepEqual(await p.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, lang: document.documentElement.lang, hidden: document.documentElement.classList.contains('i18n-pending'), themeOn: document.querySelector('#theme-steps .step-btn.on').dataset.v, langOn: document.querySelector('#lang-steps .step-btn.on').dataset.v, haptics: document.querySelector('[data-t="set.haptics"]').textContent })),
+    { theme: null, lang: 'en', hidden: false, themeOn: '0', langOn: '1', haptics: 'Haptic feedback' })
   // 한국어로 바꾸면 음이름은 도레미가 기본
   await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#lang-steps .step-btn[data-v="0"]'); await sleep(p, 200)
   assert.equal(await p.evaluate(() => document.querySelector('#notenames-steps .step-btn.on').dataset.v), '0')

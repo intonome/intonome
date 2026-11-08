@@ -77,7 +77,6 @@ export const KO = {
   'metro.withTuner': '튜너와 함께 보기',
   'metro.collapse': '메트로놈 접기',
   'metro.dial': 'BPM 다이얼',
-  'metro.drag': '밀기',
   'metro.bpmDown': 'BPM 내리기',
   'metro.bpmUp': 'BPM 올리기',
   'metro.bpmDown5': 'BPM 5 내리기',

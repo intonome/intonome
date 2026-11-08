@@ -76,7 +76,6 @@ export const EN: Record<TKey, string> = {
   'metro.withTuner': 'Show tuner too',
   'metro.collapse': 'Collapse metronome',
   'metro.dial': 'BPM dial',
-  'metro.drag': 'slide',
   'metro.bpmDown': 'BPM down',
   'metro.bpmUp': 'BPM up',
   'metro.bpmDown5': 'BPM down 5',

@@ -322,18 +322,17 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #metro-bpm-unit{display:none;}
 @media (max-width:699.98px){
   /* 크기·높이는 헤더 ♩80 과 같은 비율(픽셀로 잼): 음표 잉크가 숫자보다 위로 0.068em · 아래로 0.045em(머리가 숫자 바닥에 앉는다).
-     음표 칸은 음표 폭 그대로 — 음표+숫자 묶음이 칸 가운데('⇕ 밀기' 위)에 온다(♩. 폭으로 고정하면 ♩ 일 때 묶음이 오른쪽으로 쏠렸다).
+     음표 칸은 음표 폭 그대로 — 음표+숫자 묶음이 칸 가운데에 온다(♩. 폭으로 고정하면 ♩ 일 때 묶음이 오른쪽으로 쏠렸다).
      음표–숫자 틈 약 0.2em. 줄의 최소 폭은 ♩. + 세 자리 — 두 자리·세 자리를 오가도 버튼 폭이 안 바뀐다.
      숫자 칸과 −·+·▶ 사이 18 px: 세 자리일 때 숫자 양옆 여백(카드 테 · − 버튼)이 같아진다(10 px 이면 버튼에 붙어 보였다) */
   #metro-bpm-row{gap:clamp(12px,4.6vw,18px);} /* 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
   #metro-bpm{min-width:0;}
   #metro-bpm-line{min-width:2.5em;}
+  #metro-bpm-wrap{align-self:stretch;justify-content:center;padding-bottom:5px;} /* 오른쪽 묶음 높이 전체가 끌기 영역. 음표+숫자의 잉크 가운데가 카드 본문(헤더 선 ~ 박자 버튼) 가운데에 오게 2.5 px 위로 — 상자 가운데 그대로면 잉크가 2~3 px 아래(오른쪽 묶음이 본문 가운데보다 4 px 아래에 있어서) */
   #metro-bpm-unit{display:flex;flex:none;height:.9em;margin:0 .13em .076em 0;color:var(--text);}
   #metro-bpm-unit .note-glyph{width:.366em;height:.9em;vertical-align:0;} #metro-bpm-unit .note-glyph.g-dq{width:.531em;display:none;}
   #metro-card.compound #metro-bpm-unit .g-q{display:none;} #metro-card.compound #metro-bpm-unit .g-dq{display:block;}
 }
-#metro-bpm-hint{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-xs);color:var(--text-3);margin-top:3px;} /* 안내 글자 — 장식 색(2.7:1)이 아니라 읽히는 색 */
-.drag-glyph{width:.72em;height:1em;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;} /* 글자 ↕ 는 아이폰에서 이모지처럼 그려져 그림으로 */
 #metro-adj-col{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;} /* min-width 0 + 슬라이더 min-width 0: 좁은 폰(320 px, 영어 'Volume')에서 ▶ 가 카드 밖으로 밀리지 않게 — 슬라이더가 줄어든다 */
 #metro-vol{min-width:0;}
 #metro-btn-row{display:flex;gap:8px;}
@@ -538,7 +537,6 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
   #metro-bpm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   #metro-bpm-wrap{flex:1;}
   #metro-bpm{font-size:84px;text-align:left;line-height:1;}
-  #metro-bpm-hint{text-align:left;}
   #metro-adj-col{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;}
   #metro-btn-row{display:flex;gap:0;}
   .m-adj,.m-adj5{display:none!important;}

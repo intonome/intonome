@@ -75,7 +75,6 @@ export const ES: Record<TKey, string> = {
   'metro.withTuner': 'Ver también el afinador',
   'metro.collapse': 'Contraer el metrónomo',
   'metro.dial': 'Rueda de BPM',
-  'metro.drag': 'desliza',
   'metro.bpmDown': 'Bajar BPM',
   'metro.bpmUp': 'Subir BPM',
   'metro.bpmDown5': 'Bajar 5 BPM',

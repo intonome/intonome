@@ -292,7 +292,7 @@ export const editorDiag = () => ({ ptA: ed.ptA, ptB: ed.ptB, loop: ed.loop, audi
 
 /** 녹음 이름의 최대 길이 — 파일명·목록 카드가 감당할 수 있는 길이 */
 const NAME_MAX = 40
-/** 이름 바꾸기 — 브라우저 입력창(prompt, 'danggeun.github.io 내용:') 대신 이름 자리가 그대로 입력칸이 된다.
+/** 이름 바꾸기 — 브라우저 입력창(prompt, '<사이트 주소> 내용:') 대신 이름 자리가 그대로 입력칸이 된다.
  *  완료(엔터)·바깥 누르기·뒤로 = 저장, Esc = 취소. 빈 이름은 저장하지 않고, 다른 녹음과 같으면 (2)·(3) 을 붙인다 */
 function editTitle(): void {
   if (!ed.item) return

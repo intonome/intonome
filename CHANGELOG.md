@@ -18,7 +18,7 @@ Editor
 - Tapping near a handle moves there (it was ignored as the end of a drag)
 - After clearing A, or on another recording, B shows "B —" and its ‹ › are hidden (the old B time stayed)
 - Zoomed in, the window follows A and B when they change; bookmarks outside it are no longer drawn at the edges
-- Rename edits the name in place (the browser's own "danggeun.github.io says" box is gone): Enter, tapping elsewhere or going back saves, Esc cancels; the same name as another recording gets (2); an IME's Enter that confirms a conversion does not save
+- Rename edits the name in place (the browser's own prompt box is gone): Enter, tapping elsewhere or going back saves, Esc cancels; the same name as another recording gets (2); an IME's Enter that confirms a conversion does not save
 - Saving A–B ignores a second tap while it works and says so if it takes long
 - Tapping the speed value switches between 1.0× and your practice speed (0.75× the first time, then the last speed other than 1.0× you used); it used to cycle 1.0 → 0.5 → 0.7 → 0.85
 - A touch cut off by the system no longer leaves a handle being dragged; handles and bookmarks are redrawn once the exact length is known

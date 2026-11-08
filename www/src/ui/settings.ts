@@ -46,24 +46,32 @@ export function mountSettings(): void {
   settingsStore.select(s => s.aOctave, v => markSteps('apitch-steps', v), { immediate: true })
   settingsStore.select(s => s.haptics, v => markSteps('haptics-steps', v ? 1 : 0), { immediate: true })
   if (!canVibrate()) q('haptics-row').style.display = 'none' // 진동을 낼 수 없는 곳(오래된 아이폰 사파리 등)
-  q('settings-version').textContent = `v${__APP_VERSION__}`
+  // 점은 좁힌 칸에(.ver-dot) — 고정폭 글꼴은 점에도 숫자 한 칸을 줘서 「2 . 9 . 7」 로 흩어져 보였다
+  q('settings-version').replaceChildren(...__APP_VERSION__.split(/(\.)/).filter(Boolean).map(s => s === '.' ? Object.assign(document.createElement('span'), { className: 'ver-dot', textContent: '.' }) : s))
   void document.fonts?.ready.then(() => inkCenter(q('settings-version')))
 }
 
 /** 글자 덩어리의 '눈 가운데' 를 축에 — 상자 가운데가 아니라 잉크 무게중심으로. 「v2.9.0」 은 왼쪽 v 가 가볍고 오른쪽 빗금 0 이 무거워 1.7 px 오른쪽으로 보였고,
  *  2.9.1 의 고정 보정(−.125em)은 끝 숫자가 2 로 바뀌자 1.2 px 왼쪽으로 넘쳤다 — 숫자마다 무게가 달라 고정값으로는 못 맞춘다. 같은 글꼴로 캔버스에 그려 재고 그만큼 옮긴다 */
 function inkCenter(el: HTMLElement): void {
-  const text = el.textContent ?? '', cs = getComputedStyle(el)
+  const cs = getComputedStyle(el), px = parseFloat(cs.fontSize)
   const S = 4, c = document.createElement('canvas'), g = c.getContext('2d', { willReadFrequently: true })
-  if (!g || !text) return
-  const font = `${cs.fontWeight} ${parseFloat(cs.fontSize) * S}px ${cs.fontFamily}`
-  g.font = font; const w = Math.ceil(g.measureText(text).width), h = Math.ceil(parseFloat(cs.fontSize) * S * 1.6)
+  if (!g || !el.textContent) return
+  el.style.transform = ''
+  // 글자마다 실제로 놓인 자리에 그린다 — 점 칸을 좁힌 것처럼 글자 간격이 글꼴 그대로가 아니어도 맞게
+  const r = document.createRange(); r.selectNodeContents(el)
+  const box = r.getBoundingClientRect(), w = Math.ceil(box.width * S), h = Math.ceil(px * S * 1.6)
   if (!(w > 0)) return
-  c.width = w + 8; c.height = h; g.font = font; g.textBaseline = 'middle'; g.fillText(text, 4, h / 2)
+  c.width = w + 8; c.height = h; g.font = `${cs.fontWeight} ${px * S}px ${cs.fontFamily}`; g.textBaseline = 'middle'
+  const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const t = n.textContent ?? ''
+    for (let i = 0; i < t.length; i++) { r.setStart(n, i); r.setEnd(n, i + 1); g.fillText(t[i]!, 4 + (r.getBoundingClientRect().left - box.left) * S, h / 2) }
+  }
   const d = g.getImageData(0, 0, c.width, c.height).data
   let sx = 0, sw = 0
   for (let i = 3; i < d.length; i += 4) if (d[i]) { sx += ((i >> 2) % c.width) * d[i]!; sw += d[i]! }
   if (!sw) return
-  const off = (sx / sw + 0.5 - 4 - w / 2) / S // 잉크 무게중심 − 글자 상자 가운데 (CSS px)
+  const off = (sx / sw + 0.5 - 4) / S - box.width / 2 // 잉크 무게중심 − 글자 상자 가운데 (CSS px)
   if (Math.abs(off) < 3) el.style.transform = `translateX(${(-off).toFixed(2)}px)` // 3 px 넘게 나오면 잰 것이 이상한 것 — 그대로 둔다
 }

@@ -666,9 +666,11 @@ await scenario('settings: the bottom links — contact opens the mail app, priva
   // 점(·)은 두 글자 사이 한가운데(2.9.0: 바깥쪽만 gap 4 px 라 「문의」 쪽으로 쏠림) · 버전은 무게중심 보정으로 축보다 약 1.4 px 왼쪽(글자 상자 기준)
   const dots = await p.evaluate(() => { const tx = e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect() }; const [a, c, b] = ['privacy-btn', 'contact-link', 'licenses-btn'].map(id => tx(document.getElementById(id))); const [d1, d2] = [...document.querySelectorAll('#settings-links .sl-dot')].map(e => tx(e)); return [d1.left - a.right, c.left - d1.right, d2.left - c.right, b.left - d2.right] })
   assert.ok(Math.abs(dots[0] - dots[1]) < 1 && Math.abs(dots[2] - dots[3]) < 1, 'dots midway between words: ' + dots.map(v => v.toFixed(1)))
-  // 버전은 잉크 무게중심으로 맞춘다(ui/settings inkCenter) — 끝 숫자에 따라 옮기는 양이 다르므로 값이 아니라 '옮겼다' 와 범위를 본다
-  const ver = await p.evaluate(() => { const m = getComputedStyle(document.getElementById('settings-version')).transform; return m === 'none' ? null : new DOMMatrix(m).m41 })
-  assert.ok(ver !== null && Math.abs(ver) > 0.1 && Math.abs(ver) < 3, 'version shifted to its ink centre: ' + ver)
+  // 버전은 v 없이 숫자만, 점이 차지하는 칸은 숫자 폭의 60 % 아래(좁히기 전엔 숫자 폭 그대로) · 잉크 무게중심으로 맞춘다(ui/settings inkCenter) — 끝 숫자에 따라 옮기는 양이 다르므로 값이 아니라 '쟀다' 와 범위를 본다
+  const ver = await p.evaluate(() => { const el = document.getElementById('settings-version'), m = getComputedStyle(el).transform, r = document.createRange(), rc = (n, i) => { r.setStart(n, i); r.setEnd(n, i + 1); return r.getBoundingClientRect() }, a = rc(el.firstChild, 0), b = rc(el.childNodes[2], 0); return { text: el.textContent, dot: b.left - a.right, digit: a.width, x: el.style.transform ? (m === 'none' ? 0 : new DOMMatrix(m).m41) : null } })
+  assert.ok(/^\d+\.\d+\.\d+$/.test(ver.text), 'version without v: ' + ver.text)
+  assert.ok(ver.dot < ver.digit * 0.6, 'dots take less than a digit: ' + JSON.stringify(ver))
+  assert.ok(ver.x !== null && Math.abs(ver.x) < 3, 'version moved to its ink centre: ' + JSON.stringify(ver))
   // 언어 카드는 맨 아래 「사용 안내」 바로 위(2.9.1) — 거기서 언어를 바꿔도 손가락 아래 카드가 안 뛴다: 푸터 높이 고정(min-height) + 바꾸기 전후 위치 맞춤(ui/settings keepInPlace). 2.9.0 배치였다면 ja → ko 에서 약 80 px
   assert.equal(await p.evaluate(() => document.getElementById('lang-steps').closest('.setting-row').nextElementSibling.contains(document.getElementById('tour-replay-btn'))), true, 'language card sits right above the guide card')
   for (const [to, back] of [['3', '0'], ['1', '0']]) {

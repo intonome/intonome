@@ -403,6 +403,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 /* 설정 페이지 */
 #settings-wordmark{display:block;width:108px;height:auto;margin:var(--s6) auto 0;fill:var(--text);transform:translateX(1.2px);} /* 상자는 축 위지만 잉크 무게중심이 1.24 px 왼쪽(실측, 폭 108 px 고정이라 늘 같다) — 아래 버전·링크와 같은 눈 가운데로 */ /* 한 줄 워드마크(resources/wordmark.svg 와 같은 윤곽) */ /* 글자 윤곽을 패스로 넣은 워드마크(Bricolage Grotesque): 폰트 파일을 싣지 않는다 */
 #settings-version{font-family:'DM Mono',monospace;font-size:var(--fs-xs);color:var(--text-3);text-align:center;padding-top:var(--s2);} /* 눈 가운데는 ui/settings inkCenter 가 잉크 무게중심을 재서 맞춘다(숫자마다 무게가 달라 고정 보정으로는 못 맞춘다) */
+#settings-version .ver-dot{margin:0 -.17em;} /* 고정폭 글꼴의 점 칸(숫자 폭)을 좁혀 숫자가 한 덩어리로 */
 #settings-links{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:var(--s3);font-size:var(--fs-sm);color:var(--text-3);} /* 가운데 항목이 축, 양옆은 가운데 쪽으로 — 글자 길이가 달라도 점 간격은 좌우 같다 */
 #settings-links .sl-side{display:flex;align-items:center;min-width:0;}
 #settings-links .sl-side:first-child{justify-content:flex-end;}

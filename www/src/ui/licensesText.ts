@@ -4,7 +4,7 @@
  */
 export const APP_LICENSE = `Intonome
 MIT License
-Copyright (c) 2026 Yeonho (danggeun)
+Copyright (c) 2026 Yeonho Kim
 https://github.com/intonome/intonome`
 
 /** 각 항목: 이름 · 쓰임 · 저작권 고지 · 라이선스 종류 */

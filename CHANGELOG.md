@@ -2,6 +2,26 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.7] - 2026-11-08
+The project moved to the intonome organisation on GitHub; a few settings and words tidied.
+
+Settings
+- "Keep screen on" is gone: the screen always stays on while the tuner, metronome, drone or a recording plays (turning it off only let the screen sleep and stop the sound in the middle of practice). A saved "off" from before is ignored
+- Setting descriptions, the first-run guide and the privacy and licences pages wrap like ordinary text again, filling each line from the left (since 2.9.3 they were rebalanced, which left uneven gaps on the right). In Korean, the short words that were left alone at the end of a line in the guide and the privacy policy now move down with the next word
+- The haptic feedback description and the hint under the BPM number use the guide's word for the gesture (slide)
+
+Recordings
+- Renaming a recording to another one's shown name (such as "11/8 01:07") adds (2) as well
+- Tapping download again while a recording is being converted says it is converting (there was no response in the first second)
+
+Privacy policy
+- Korean reworded in plainer language. In every language the microphone line says the app turns the mic off, and the copy kept after sharing on Android is replaced the next time you share
+- GitHub Issues link points to the new address
+
+Project
+- New addresses: https://intonome.github.io/intonome/ and https://github.com/intonome/intonome. The web app keeps settings and recordings per address, so what was saved at the old address stays there — download recordings you want to keep before switching
+- Copyright holder: Yeonho Kim
+
 ## [2.9.6] - 2026-11-08
 Recording and the editor checked feature by feature on a phone-sized touch screen, and what did not hold up fixed; a few last words and touches.
 

@@ -452,7 +452,7 @@ await scenario('metro: on a phone the expanded header has a "metronome only" but
   await sizeTap(p); assert.deepEqual([await st(), await vis('metro-hdr-label'), await vis('metro-full-btn')], ['c', true, false], '접힘: 헤더 ♩96 이 돌아온다')
 })
 // 펼침 본문의 ♩BPM 묶음: '⇕ 밀기' 위 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px)
-for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred over "drag", clear of the − button`, 'silence_lowfloor.wav', async p => {
+for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred over "slide", clear of the − button`, 'silence_lowfloor.wav', async p => {
   await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   const r = await p.evaluate(() => {

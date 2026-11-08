@@ -187,8 +187,6 @@ export const ZH: Record<TKey, string> = {
   'set.solfege': 'Do Re Mi',
   'set.aPitch': 'A 音的八度',
   'set.aPitchDesc': '小提琴、中提琴 A4，大提琴 A3，低音提琴 A2',
-  'set.wake': '屏幕常亮',
-  'set.wakeDesc': '使用应用时屏幕不会熄灭',
   'set.wakeUnsupported': '此浏览器不支持保持屏幕常亮',
   'set.haptics': '振动反馈',
   'set.hapticsDesc': '拖动转盘、BPM、标准音时，每格轻振一下',

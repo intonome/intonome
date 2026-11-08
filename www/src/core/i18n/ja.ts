@@ -187,8 +187,6 @@ export const JA: Record<TKey, string> = {
   'set.solfege': 'ドレミ',
   'set.aPitch': '鳴らす A のオクターブ',
   'set.aPitchDesc': 'バイオリン・ビオラ A4、チェロ A3、コントラバス A2',
-  'set.wake': '画面を消さない',
-  'set.wakeDesc': 'アプリを使っている間、画面が消えません',
   'set.wakeUnsupported': 'このブラウザは画面の常時オンに対応していません',
   'set.haptics': '振動フィードバック',
   'set.hapticsDesc': 'ダイヤル、BPM、基準音をドラッグで変えるとき、1目盛りごとに軽く振動します',

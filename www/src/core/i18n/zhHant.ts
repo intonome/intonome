@@ -187,8 +187,6 @@ export const ZH_HANT: Record<TKey, string> = {
   'set.solfege': 'Do Re Mi',
   'set.aPitch': 'A 音的八度',
   'set.aPitchDesc': '小提琴、中提琴 A4，大提琴 A3，低音提琴 A2',
-  'set.wake': '螢幕常亮',
-  'set.wakeDesc': '使用 App 時螢幕不會關閉',
   'set.wakeUnsupported': '此瀏覽器不支援保持螢幕常亮',
   'set.haptics': '震動回饋',
   'set.hapticsDesc': '拖曳轉盤、BPM、標準音時，每動一格就輕震一下',

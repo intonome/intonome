@@ -95,7 +95,7 @@ onNotice((msg, ms) => { if (msg === t('rec.done')) toast(t('rec.doneTap'), 5000,
 setIdleCheck(() => !metroStore.get().playing && !refToneStore.get().active && !droneOn() && !playbackActive())
 startAnalysis()
 // wake lock 은 메트로놈이나 드론만 켜도 쥔다 — 화면이 꺼지면 WebView 가 얼어 소리가 멈춘다. 녹음 재생(편집기의 A-B 반복)도 같다
-const wantWake = () => settingsStore.get().wakeLock && (tunerStore.get().running || metroStore.get().playing || droneOn() || playbackActive())
+const wantWake = () => (tunerStore.get().running || metroStore.get().playing || droneOn() || playbackActive())
 const syncWake = () => { if (wantWake()) acquireWakeLock(); else releaseWakeLock() }
 onPlaybackChange(syncWake)
 onMic('afterOpen', syncWake)
@@ -114,7 +114,6 @@ function checkInactivity(): void {
   if (Date.now() - tunerStore.get().lastActivityMs > CFG.inactiveMs) { toast(t('mic.idleOff')); closeMic(); showTapHint(tryOpenMic, 'mic.idleOffSub') }
 }
 onMic('afterOpen', () => { tunerStore.set({ lastActivityMs: Date.now() }); stopInactivityWatch(); inactInt = setInterval(checkInactivity, 30 * 1000) })
-settingsStore.select(s => s.wakeLock, syncWake)
 /** 잠시 놓기(규칙은 core/micLease) — 놓았으면 true. 다시 여는 동안 "켜라" 고 하지 않게 micReopening 을 세운다 */
 function letGo(r: Release): boolean {
   if (r === 'keep') return false
@@ -216,14 +215,14 @@ function showResumeHint(): void {
 // 시작 시퀀스: denied 가 확실할 때만 팝업, 그 외는 바로 시도 → 실패하면 탭 안내
 // iOS 웹: WebKit 의 wake lock 은 DOM 터치(transient activation)가 필요하고 OS 권한 시트의 탭은 해당 안 됨 → 첫 탭 안에서 먼저 쥔다
 const startInGesture = async (): Promise<boolean> => {
-  if (settingsStore.get().wakeLock) void acquireWakeLock() // await 전에 — 요청은 동기라 이 탭의 활성화 창 안에서 나간다
+  void acquireWakeLock() // await 전에 — 요청은 동기라 이 탭의 활성화 창 안에서 나간다
   // 직접 눌렀는데 권한 오류면 Permissions API 와 무관하게 안내한다 — Android 앱의 '두 번 거부' 상태는 query 가 denied 로 안 나올 수 있어 아무 반응이 없었다
   return tryOpenMic(true)
 }
 void (async () => {
   const state = await micPermission()
   if (state === 'denied') { showMicPopup(true); showMicOff(); startTourWithoutMic(); return }
-  if (isIOS() && !isNative() && settingsStore.get().wakeLock) { showTapHint(startInGesture, 'tuner.startSub'); return }
+  if (isIOS() && !isNative()) { showTapHint(startInGesture, 'tuner.startSub'); return }
   if (await tryOpenMic()) return
   showTapHint(startInGesture, 'tuner.startSub') // 왜 눌러야 하는지 한 줄 — 전엔 버튼만 있었다
   startTourWithoutMic()

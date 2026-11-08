@@ -30,7 +30,6 @@ export interface Settings {
   tolCents: number
   rmsMin: number
   smoothing: number
-  wakeLock: boolean
   bpm: number
   timeSig: TimeSig
   subDiv: SubDiv
@@ -48,7 +47,7 @@ export interface Settings {
   haptics: boolean
 }
 export const settingsStore = createStore<Settings>({
-  tolCents: 10, rmsMin: RMS_LEVELS[1], smoothing: SMOOTH_LEVELS[1], wakeLock: true,
+  tolCents: 10, rmsMin: RMS_LEVELS[1], smoothing: SMOOTH_LEVELS[1],
   // metroVol 기본 1.0 — 슬라이더는 줄이는 용도. 이미 저장된 값이 있으면 그 값 유지
   bpm: 80, timeSig: 4, subDiv: 1, refHz: CFG.ref.default, metroVol: 1.0, noteNames: 'ko', autoDelete: true, theme: 'dark', lang: 'en',
   aOctave: 4, haptics: true,

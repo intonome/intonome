@@ -187,8 +187,6 @@ export const ES: Record<TKey, string> = {
   'set.solfege': 'Do Re Mi',
   'set.aPitch': 'Octava del La',
   'set.aPitchDesc': 'Violín y viola A4, violonchelo A3, contrabajo A2',
-  'set.wake': 'Pantalla siempre encendida',
-  'set.wakeDesc': 'La pantalla no se apaga mientras usas la app',
   'set.wakeUnsupported': 'Este navegador no puede mantener la pantalla encendida',
   'set.haptics': 'Vibración',
   'set.hapticsDesc': 'Una vibración breve en cada paso al girar la rueda o deslizar los BPM o el La de referencia',

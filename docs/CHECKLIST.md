@@ -146,7 +146,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] iPhone home-screen app: no blink or trace between the splash and the app, with the status bar light or dark
 
 ## Settings / other
-- [A] Keep screen on on/off (Wake Lock)
+- [A] The screen stays on while the tuner, metronome, drone or playback runs (Wake Lock, no setting)
 - [A] Playing detection: noise doesn't count; sustained string tones count after about 0.14 s (six frames) even when the first frames read wild (a click, a harmonic); a long stretch of playing followed by silence turns off within 0.25 s (unit tests). Talk nearby mostly counts as sound — the label says sound, not playing
 - [A] Practice time with the metronome on: counts while the note sounds and stops when it stops, at 16ths 80–100, triplets 100 and 8ths 150 bpm; clicks alone never count (unit tests). Playback from the list doesn't count
 - [A] Note names 도레미 / C D E in Korean, ドレミ / C D E in Japanese and Do Re Mi / C D E in Spanish (the other system shown small; a three-letter name such as Sol♯ is drawn smaller so the ♯ and octave stay inside the card — asserted with A = 466 so the 440 Hz test tone reads Sol♯); always C D E in English and Chinese

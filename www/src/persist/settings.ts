@@ -49,7 +49,6 @@ export function parseStored(raw: string | null): Partial<Settings> {
     { const v = tol(s.tolCents); if (v !== null) out.tolCents = v }
       { const v = rmsStep(s.rmsMin, V2_TABLES); if (v !== null) out.rmsMin = v }
     { const v = smoothStep(s.smoothing, ver === 3 ? SMOOTH_LEVELS : V246_SMOOTH_LEVELS); if (v !== null) out.smoothing = v }
-    if (typeof s.wakeLock === 'boolean') out.wakeLock = s.wakeLock
     if (typeof s.bpm === 'number' && isFinite(s.bpm)) out.bpm = clampBpm(s.bpm)
     if (isTimeSig(s.timeSig)) out.timeSig = s.timeSig
     if (isSubDiv(s.subDiv)) out.subDiv = s.subDiv
@@ -69,7 +68,6 @@ export function parseStored(raw: string | null): Partial<Settings> {
   { const v = tol(s.cents); if (v !== null) out.tolCents = v }
   { const v = rmsStep(s.rms, V1_TABLES); if (v !== null) out.rmsMin = v }
   if (s.smooth) { const V1_SMOOTH = [.05, .10, .15]; const i = V1_SMOOTH.findIndex(v => Math.abs(v - s.smooth!) < .001); if (i >= 0) out.smoothing = SMOOTH_LEVELS[i]! }
-  if (s.wakelock != null) out.wakeLock = !!s.wakelock
   if (typeof s.bpm === 'number' && isFinite(s.bpm)) out.bpm = clampBpm(s.bpm)
   if (isTimeSig(s.timeSig)) out.timeSig = s.timeSig
   if (isSubDiv(s.subDiv)) out.subDiv = s.subDiv

@@ -188,8 +188,6 @@ export const EN: Record<TKey, string> = {
   'set.solfege': 'Do Re Mi',
   'set.aPitch': 'Play A octave',
   'set.aPitchDesc': 'Violin and viola A4, cello A3, double bass A2',
-  'set.wake': 'Keep screen on',
-  'set.wakeDesc': 'The screen stays on while you use the app',
   'set.wakeUnsupported': 'This browser can’t keep the screen on',
   'set.haptics': 'Haptic feedback',
   'set.hapticsDesc': 'A light vibration for each step as you drag the dial, the BPM or the reference pitch',

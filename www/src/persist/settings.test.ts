@@ -7,7 +7,7 @@ describe('parseStored', () => {
   // 픽스처는 실제 v1 값이어야 한다
   test('v1 format migrates (TTL ignored)', () => {
     const v1 = { cents: 10, rms: .005, smooth: .05, wakelock: false, aimode: true, bpm: 120, timeSig: 3, subDiv: 'd', refHz: 415, vol: .5, savedAt: 0 }
-    expect(parseStored(JSON.stringify(v1))).toEqual({ tolCents: 10, rmsMin: RMS_LEVELS[2], smoothing: SMOOTH_LEVELS[0], wakeLock: false, bpm: 120, timeSig: 3, subDiv: 'd', refHz: 415, metroVol: .5 })
+    expect(parseStored(JSON.stringify(v1))).toEqual({ tolCents: 10, rmsMin: RMS_LEVELS[2], smoothing: SMOOTH_LEVELS[0], bpm: 120, timeSig: 3, subDiv: 'd', refHz: 415, metroVol: .5 })
   })
   // 감도는 숫자가 아니라 단계 인덱스로 옮긴다
   test('v1 (.015/.010/.005) sensitivity maps to the same step', () => {
@@ -40,12 +40,12 @@ describe('parseStored', () => {
   })
   test('v3 round trip', () => {
     const v3 = { v: 3, tolCents: 5, rmsMin: RMS_LEVELS[1], smoothing: SMOOTH_LEVELS[2], wakeLock: true, bpm: 60, timeSig: 6, subDiv: 1, refHz: 442, metroVol: 1 }
-    const { v, ...rest } = v3
+    const { v, wakeLock, ...rest } = v3 // 옛 저장값의 wakeLock 은 읽지 않는다(설정 없음, 늘 켬)
     expect(parseStored(JSON.stringify(v3))).toEqual(rest)
   })
   test('a v2 record still loads everything else unchanged (seeds, old installs)', () => {
     const v2 = { v: 2, tolCents: 5, rmsMin: RMS_LEVELS[1], wakeLock: true, bpm: 60, timeSig: 6, subDiv: 1, refHz: 442, metroVol: 1 }
-    const { v, ...rest } = v2
+    const { v, wakeLock, ...rest } = v2
     expect(parseStored(JSON.stringify(v2))).toEqual(rest)
   })
   test('tolerance: 5/10/15 pass; 20 and 25 from older versions are ignored (the default ±10 applies)', () => {

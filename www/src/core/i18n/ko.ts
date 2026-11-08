@@ -193,8 +193,6 @@ export const KO = {
   'set.solfege': '도레미',
   'set.aPitch': 'A 듣기 높이',
   'set.aPitchDesc': '바이올린·비올라 A4, 첼로 A3, 콘트라베이스 A2',
-  'set.wake': '화면 항상 켜짐',
-  'set.wakeDesc': '앱을 쓰는 동안 화면이 꺼지지 않아요',
   'set.wakeUnsupported': '이 브라우저는 화면 켜짐 유지를 지원하지 않아요',
   'set.haptics': '진동 피드백',
   'set.hapticsDesc': '다이얼·BPM·기준음을 끌어서 바꿀 때 짧게 진동해요',

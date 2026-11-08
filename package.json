@@ -5,10 +5,10 @@
   "private": true,
   "license": "MIT",
   "author": "Yeonho (danggeun)",
-  "homepage": "https://danggeun.github.io/intonome/",
+  "homepage": "https://intonome.github.io/intonome/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/danggeun/intonome.git"
+    "url": "https://github.com/intonome/intonome.git"
   },
   "engines": {
     "node": ">=22"

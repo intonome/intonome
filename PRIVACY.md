@@ -54,7 +54,7 @@ Your email address and message are used only to reply.
 
 You can also ask on GitHub Issues.
 
-<https://github.com/danggeun/intonome/issues>
+<https://github.com/intonome/intonome/issues>
 
 ---
 
@@ -114,7 +114,7 @@ You can also ask on GitHub Issues.
 
 GitHub 이슈로도 문의할 수 있습니다.
 
-<https://github.com/danggeun/intonome/issues>
+<https://github.com/intonome/intonome/issues>
 
 ---
 
@@ -174,7 +174,7 @@ GitHub 이슈로도 문의할 수 있습니다.
 
 GitHub の Issues でも受け付けています。
 
-<https://github.com/danggeun/intonome/issues>
+<https://github.com/intonome/intonome/issues>
 
 ---
 
@@ -234,7 +234,7 @@ GitHub の Issues でも受け付けています。
 
 也可以在 GitHub Issues 中提问。
 
-<https://github.com/danggeun/intonome/issues>
+<https://github.com/intonome/intonome/issues>
 
 ---
 
@@ -294,7 +294,7 @@ GitHub の Issues でも受け付けています。
 
 也可以在 GitHub Issues 提問。
 
-<https://github.com/danggeun/intonome/issues>
+<https://github.com/intonome/intonome/issues>
 
 ---
 
@@ -354,4 +354,4 @@ Tu dirección y tu mensaje solo se usan para responderte.
 
 También puedes escribirnos en GitHub Issues.
 
-<https://github.com/danggeun/intonome/issues>
+<https://github.com/intonome/intonome/issues>

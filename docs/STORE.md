@@ -14,8 +14,8 @@ There are English, Korean, Japanese, Simplified Chinese, Traditional Chinese and
 | Category | Music & Audio |
 | Tags | Tuner, Metronome, Music practice (pick from the console's list) |
 | Contact email | `intonome.app@gmail.com` (shown publicly on the listing) |
-| Website | https://danggeun.github.io/intonome/ |
-| Privacy policy | https://github.com/danggeun/intonome/blob/main/PRIVACY.md |
+| Website | https://intonome.github.io/intonome/ |
+| Privacy policy | https://github.com/intonome/intonome/blob/main/PRIVACY.md |
 
 ## App name (30 characters)
 
@@ -337,7 +337,7 @@ Recording, editor and timer are described in the text but not pictured: list scr
 ## Privacy policy URL
 
 ```
-https://github.com/danggeun/intonome/blob/main/PRIVACY.md
+https://github.com/intonome/intonome/blob/main/PRIVACY.md
 ```
 
 **Required for Play review.** The app uses the microphone permission and is rejected without it. The same text is shown inside the app (Settings › Privacy policy, built from this file at build time), which the User Data policy also requires for apps with sensitive permissions. GitHub renders the Markdown, so this URL works as is (the repository must be public). A separate page on Pages would split the source in two, so keep a single file.

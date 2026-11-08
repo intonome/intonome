@@ -6,11 +6,11 @@
 Chromatic tuner, metronome, drone and a practice recorder for string players.
 Web (PWA) and Android. Works offline; audio never leaves the device.
 
-[![CI](https://github.com/danggeun/intonome/actions/workflows/ci.yml/badge.svg)](https://github.com/danggeun/intonome/actions/workflows/ci.yml)
-[![Live](https://img.shields.io/badge/Web-Live-22c55e?style=flat-square)](https://danggeun.github.io/intonome/)
+[![CI](https://github.com/intonome/intonome/actions/workflows/ci.yml/badge.svg)](https://github.com/intonome/intonome/actions/workflows/ci.yml)
+[![Live](https://img.shields.io/badge/Web-Live-22c55e?style=flat-square)](https://intonome.github.io/intonome/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**<https://danggeun.github.io/intonome/>** · Chrome, Safari, Edge. Add it to your home screen to use it offline.
+**<https://intonome.github.io/intonome/>** · Chrome, Safari, Edge. Add it to your home screen to use it offline.
 
 ## Features
 

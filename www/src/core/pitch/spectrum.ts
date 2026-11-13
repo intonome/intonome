@@ -29,6 +29,8 @@ const VETO_DB = 12 // 정합성 거부권을 가질 피크의 최소 세기 (최
 const K_MAX = 12 // f0 위로 조사할 배수 상한. 장2도(8:9)·단6도(5:8) 중음까지 덮는다
 const REL_DB = 40 // 배음으로 인정할 프레임 최대 피크 대비 상한 (창 누설 피크 배제)
 const HOLE_DB = 15 // 배음렬 구멍 판정: 양옆 배수보다 이만큼 낮아야 빈 자리
+const SERIES_TOP_HZ = 5000 // 배음렬을 견줄 때 보는 상한 — 현악기 배음의 세기는 거의 이 아래에 있다
+const SERIES_MIN_BINS = 6 // 배음과 배음 사이의 빈 자리를 따로 잴 수 있는 배음 간격(빈). 이보다 촘촘한 저음은 견주지 않는다
 const DROP_DB = [15, 20] as const // 옥타브 내리기: f0/2 · 1.5f0 피크가 배음렬의 가장 센 피크에서 이 안에 있어야 한다
 
   /** hz 근처(±max(1빈, tolRatio))의 국소 최대 빈. 이웃 피크의 창 누설 스커트는 단조 구간이라 제외된다 */
@@ -64,6 +66,29 @@ const DROP_DB = [15, 20] as const // 옥타브 내리기: f0/2 · 1.5f0 피크�
   function fifthGap(S: number[], f0: number): boolean {
     return 8 * f0 < sr / 2 && S.includes(2) && S.includes(3) && (S.includes(6) || S.includes(8) || S.includes(9)) && hole(5, f0) && hole(7, f0)
   }
+  /** hz 근처(±half 빈) 국소 최대의 세기(선형). 없으면 0 */
+  function peakPower(hz: number, half: number): number {
+    const b = hz / binHz, lo = Math.max(1, Math.round(b - half)), hi = Math.min(H - 2, Math.round(b + half))
+    let best = 0
+    for (let i = lo; i <= hi; i++) { const v = lin[i]!; if (v > best && v >= lin[i - 1]! && v >= lin[i + 1]!) best = v }
+    return best
+  }
+  /** g 의 배음렬로 보이는 것이 사실은 p·g 의 배음렬뿐인가 — p·g 의 배음 자리는 배음 사이 빈 자리보다 세고, g 에만 있어야 할 자리(p 의 배수가 아닌 배수)의
+   * 평균 세기는 그 둘의 (dB) 가운데보다 아래다: p·g 의 배음보다 빈 자리 쪽에 가깝다. 그 자리에 있는 것은 g 의 배음이 아니라 어디에나 깔린 다른 소리다.
+   * 조용한 방의 약한 배음은 빈 자리보다 훨씬 높이 솟아 있어 해당하지 않는다 */
+  function emptySeries(g: number, p: number): boolean {
+    const gb = g / binHz, top = Math.min(sr / 2, SERIES_TOP_HZ)
+    if (gb < SERIES_MIN_BINS || 2 * p * g >= top) return false // p·g 의 배음이 둘은 보여야 견준다
+    let own = 0, nOwn = 0, shared = 0, nShared = 0, between = 0, nBetween = 0
+    for (let k = 1; k * g < top; k++) {
+      const half = Math.max(1, Math.min(k * gb * 0.03, gb * 0.25 - 0.5)) // ±3 %, 단 배음 자리와 빈 자리의 빈이 겹치지 않게 (둘 사이는 gb / 2)
+      const v = peakPower(k * g, half); if (k % p === 0) { shared += v; nShared++ } else { own += v; nOwn++ }
+      between += peakPower((k + 0.5) * g, half); nBetween++
+    }
+    const level = (sum: number, n: number): number => 10 * Math.log10(sum / n + 1e-30)
+    const lShared = level(shared, nShared), lBetween = level(between, nBetween)
+    return lShared > lBetween && level(own, nOwn) < (lShared + lBetween) / 2
+  }
   /** r 이 중음 간격(UPPER_RATIOS) 중 하나와 3 % 안에서 맞는가 */
   function isUpperRatio(r: number): boolean { return UPPER_RATIOS.some(u => Math.abs(r / u - 1) < 0.03) }
 
@@ -97,7 +122,13 @@ const DROP_DB = [15, 20] as const // 옥타브 내리기: f0/2 · 1.5f0 피크�
       // 약한 기본음을 기준으로 재면 저역 잡음이 그 문턱을 넘어 솔3 를 솔2 로 내린다
       let ref = -Infinity
       for (let k = 1; k <= 4; k++) { if (f0 * k >= sr / 2) break; const v = peakNear(f0 * k, 0.03).db; if (v > ref) ref = v }
-      if (present(f0 / 2) && present(f0 * 1.5) && peakNear(f0 / 2, 0.03).db >= ref - DROP_DB[0] && peakNear(f0 * 1.5, 0.03).db >= ref - DROP_DB[1]) return f0 / 2
+      const lower = present(f0 / 2) && present(f0 * 1.5) && peakNear(f0 / 2, 0.03).db >= ref - DROP_DB[0] && peakNear(f0 * 1.5, 0.03).db >= ref - DROP_DB[1]
+      // 사람 많은 곳: 다른 소리가 섞이면 YIN 은 내 주기의 2·3·4 배(한 옥타브·12도·두 옥타브 아래)를 내고, 그 아래 음의 배음 자리에는 배경 소리가 '피크' 로 서 있다.
+      // 피크가 있느냐가 아니라 그 자리가 배음 사이 빈 자리보다 뚜렷하게 센가로 가른다 — 아니면 그 배수(2·3·5 배, 거듭)의 배음렬로 읽는다
+      { let g = lower ? f0 / 2 : f0, raised = false
+        for (const p of [2, 3, 5]) while (emptySeries(g, p)) { g *= p; raised = true }
+        if (raised) return g }
+      if (lower) return f0 / 2
 
       // f0 위쪽 배수 자리 조사. 중음이면 YIN 은 두 음의 최대공약수(가상 기본음)를 내고, 실제 음은 그 정수배 자리에 있다
       const S: number[] = []

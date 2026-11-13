@@ -201,3 +201,49 @@ describe('the open strings in a room with low rumble — the tuning routine', ()
     }
   }, 20000)
 })
+
+describe('tuning in a room full of people playing', () => {
+  // 사람 많은 곳에서 음이름이 내 음의 한 옥타브·12도 아래로 튀었다: 다른 소리가 섞이면 YIN 은 내 주기의 2·3 배를 내고,
+  // 그 아래 음의 배음 자리마다 배경 소리가 피크로 서 있어 '실제로 울리는 음' 으로 통과했다. 내 소리는 방 전체보다 8 dB 크다
+  const SR = 48000, N = 4096, HOP = 1024
+  const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const mi = (n: string) => { const m = /^([A-G]#?)(-?\d)$/.exec(n)!; return NOTE.indexOf(m[1]!) + (+m[2]! + 1) * 12 }
+  const lcg = (seed: number) => { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32 }
+  const rms = (x: Float32Array) => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / x.length)
+  /** 내 개방현: 1/h 배음, 바이올린 몸통처럼 280 Hz 아래 배음은 20 dB 약하다 */
+  function mine(note: string, sec: number): Float32Array {
+    const f = 440 * 2 ** ((mi(note) - 69) / 12), n = Math.round(sec * SR), x = new Float32Array(n)
+    for (let i = 0; i < n; i++) { const t = i / SR; let s = 0
+      for (let h = 1; h <= 16 && f * h < SR * .45; h++) s += (f * h < 280 ? 0.1 : 1) / h * Math.sin(2 * Math.PI * f * h * t + h)
+      x[i] = s * Math.min(1, t / .06) }
+    return x
+  }
+  /** 각자 연습하는 사람들: 한 사람이 0.3~1.0 s 짜리 음을 이어 켠다 (G2~D6) */
+  function room(sec: number, players: number, seed: number): Float32Array {
+    const r = lcg(seed), n = Math.round(sec * SR), x = new Float32Array(n)
+    for (let p = 0; p < players; p++) { let t = -r() * 0.5, m = 43 + Math.floor(r() * 40), ph = 0
+      while (t < sec) { const d = 0.3 + r() * 0.7, f = 440 * 2 ** ((m - 69 + (r() - .5) * .3) / 12), a = 0.6 + r() * 0.8
+        for (let i = Math.max(0, Math.round(t * SR)); i < Math.min(n, Math.round((t + d) * SR)); i++) { const u = i / SR - t; ph += 2 * Math.PI * f / SR
+          let s = 0; for (let h = 1; h <= 12 && f * h < SR * .45; h++) s += Math.sin(ph * h) / h
+          x[i] = x[i]! + a * s * Math.min(1, u / .05, (d - u) / .05) }
+        t += d; m = Math.max(40, Math.min(86, m + Math.round((r() - .5) * 10))) } }
+    for (let i = 0; i < n; i++) x[i] = x[i]! + (r() - .5) * 0.05
+    return x
+  }
+  /** 0.5 s 뒤 프레임 중 화면 음이 note 인 비율 — 시드 셋 중 가장 낮은 값 */
+  function worst(note: string, snrDb: number): number {
+    let w = 1
+    for (const seed of [1, 2, 3]) {
+      const me = mine(note, 3), bg = room(3, 12, seed * 101 + mi(note)), g = rms(me) / rms(bg) / 10 ** (snrDb / 20) / 8
+      const x = me.map((v, i) => v / 8 + bg[i]! * g)
+      const an = createAnalyzer({ sampleRate: SR, windowSize: N, hzMin: 29, hzMax: 4200 }); an.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
+      let F = 0, ok = 0
+      for (let end = N; end <= x.length; end += HOP) { const f = an.process(x.subarray(end - N, end)); if (end / SR < .5) continue; F++; if (f.midi === mi(note)) ok++ }
+      w = Math.min(w, ok / F)
+    }
+    return w
+  }
+  test.each([['A4', 0.97], ['D4', 0.97], ['G3', 0.85], ['E5', 0.85]] as const)('%s, 8 dB above twelve other players → the note that is played (over %f of the time)', (note, min) => {
+    expect(worst(note, 8)).toBeGreaterThan(min)
+  }, 30000)
+})

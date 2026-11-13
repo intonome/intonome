@@ -24,10 +24,15 @@ export interface TrackerParams {
   clickSwitchFrames: number
   /** 유효 프레임이 끊긴 뒤 표시를 유지하는 프레임 수 — 활을 들었다 놓는 틈(≈ 0.3 s)에 음이름이 사라졌다 나오지 않게 */
   releaseFrames: number
+  /** 다른 음으로 바꾸는데 (가) 이번 프레임이 그 음을 가리키지 않거나(읽는 값이 여러 음 사이를 오간다) (나) 화면의 음이 그대로 울리는 중이고 새 음이 그보다 훨씬 약하면,
+   * 후보가 이 프레임 수만큼 이어져야 바꾼다 — 사람 많은 곳에서 남의 소리가 섞인 프레임이 내 음을 옥타브·5도 아래나 남의 음으로 잠깐씩 바꿔 놓는다(틀린 구간의 절반이 0.1 s 이하).
+   * 진짜로 바꿔 켠 음은 이전 음이 멎거나 그만큼 세서 switchFrames 로 바뀐다. 늦추는 것은 유효 프레임으로 이 값까지라 화면이 옛 음에 붙들리지 않는다.
+   * 바늘에서 switchCents 안의 후보(슬라이드)는 이 규칙과 무관하게 바늘이 따라간다 */
+  rivalFrames: number
 }
 /** cents 는 가장 가까운 음에서의 편차이므로 정의상 이 값을 넘을 수 없다 */
 const HALF_SEMITONE = 50
-export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 6, acquireCents: 40, acquireGap: 1, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20 }
+export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 6, acquireCents: 40, acquireGap: 1, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20, rivalFrames: 8 }
 
 /** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다
  * @property settling 음이름이 바뀐 프레임과 그 뒤 medianLen 프레임 — 창과 중앙값에 이전 음이 섞여 있다. 읽는 값(숫자)의 평균에 넣지 않는다 */
@@ -35,8 +40,9 @@ export interface TrackOut { hz: number; midi: number; a: number; held: number; s
 const NONE: TrackOut = { hz: -1, midi: -1, a: NaN, held: 0, settling: false }
 
 export interface Tracker {
-  /** @param hz 원시 추정 (-1 없음) @param conf 0..1 @param valid RMS 게이트 등 외부 조건 @param alpha 평활 계수 @param click 메트로놈 클릭과 겹친 프레임 */
-  push(hz: number, conf: number, valid: boolean, alpha: number, click?: boolean): TrackOut
+  /** @param hz 원시 추정 (-1 없음) @param conf 0..1 @param valid RMS 게이트 등 외부 조건 @param alpha 평활 계수 @param click 메트로놈 클릭과 겹친 프레임
+   * @param weakRival 후보 음(candA)이 화면의 음(shownA)보다 훨씬 약한가 — 둘 다 A4=440 기준 절대 cents. 이 프레임의 스펙트럼으로 호출부가 답한다 */
+  push(hz: number, conf: number, valid: boolean, alpha: number, click?: boolean, weakRival?: (candA: number, shownA: number) => boolean): TrackOut
   reset(): void
   /** 기준음(A=)이 바뀌었다: 정규화 공간의 모든 값을 deltaCents 만큼 옮기고 음이름을 바로 다시 붙인다 — 평활로 0.3~0.9 s 에 걸쳐 따라가지 않게 */
   rebase(deltaCents: number): void
@@ -73,7 +79,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       if (last.hz > 0) last = { ...last, hz: 440 * Math.pow(2, dispA / 1200), midi, a: dispA }
       if (midi !== was) settle = 0 // 음이름이 바뀌어도 창의 값은 전부 새 기준으로 옮겨져 있어 '섞인' 프레임이 없다
     },
-    push(hz, conf, valid, alpha, click = false) {
+    push(hz, conf, valid, alpha, click = false, weakRival) {
       const ok = valid && hz > 0 && conf >= p.confMin
       if (!ok) {
         if (++acqMiss > p.acquireGap) { acqA.length = 0; acqW.length = 0 }
@@ -108,7 +114,11 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       else if (Math.abs(dev) <= p.switchCents || err <= p.switchCents) dispA += diff * (alpha + (1 - alpha) * boost)
       const was = midi
       if (Math.abs(dev) <= p.switchCents) outside = 0
-      else if (++outside >= (click ? p.clickSwitchFrames : p.switchFrames)) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
+      else {
+        let need = click ? p.clickSwitchFrames : p.switchFrames
+        if (Math.abs(a - med) > HALF_SEMITONE || weakRival?.(med, dispA)) need = Math.max(need, p.rivalFrames)
+        if (++outside >= need) { midi = Math.round(med / 100) + 69; dispA = med; outside = 0 }
+      }
       // 표시 일관성: 부스트가 dispA 를 한 프레임에 새 음까지 옮겨도 라벨은 switchFrames 를 기다리므로, ±50 ¢ 를 넘으면 라벨을 즉시 맞춘다.
       // 이때 중앙값은 대개 이미 새 음 쪽에 있다 — 그 값에서 시작한다(평활값이면 새 음이 ∓49 ¢ 로 시작한다)
       if (Math.abs(dispA - (midi - 69) * 100) > HALF_SEMITONE) {

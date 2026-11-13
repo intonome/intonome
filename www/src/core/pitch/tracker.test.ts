@@ -36,6 +36,22 @@ describe('tracker', () => {
     for (let k = 0; k < 5; k++) expect(t.push(vib(k), 0.95, true, A).midi).toBe(-1)
     expect(t.push(vib(5), 0.95, true, A).midi).toBe(69)
   })
+  test('a much weaker rival while the shown note still sounds needs rivalFrames; a strong one changes in two frames', () => {
+    const seen: number[][] = []
+    const weak = acquire(createTracker()), strong = acquire(createTracker())
+    const names = (t: Tracker, rival: boolean): number[] => Array.from({ length: 10 }, () => t.push(220, 0.95, true, A, false, (c, s) => { seen.push([c, s]); return rival }).midi)
+    expect(names(strong, false)).toEqual([69, 69, 57, 57, 57, 57, 57, 57, 57, 57]) // 중앙값이 넘어간 프레임 + 확인 한 프레임
+    expect(names(weak, true)).toEqual([69, 69, 69, 69, 69, 69, 69, 69, 57, 57]) // 여덟 프레임 이어진 뒤에야 — 그보다 오래 붙들지는 않는다
+    expect(seen.every(([c, s]) => Math.abs(c! + 1200) < 1 && Math.abs(s!) < 1)).toBe(true) // 후보(라3)와 화면의 음(라4)을 절대 cents 로 넘긴다
+  })
+  test('a change is confirmed by a frame that reads the new note: readings that keep moving need rivalFrames', () => {
+    const t = acquire(createTracker()), out: number[] = []
+    for (const hz of [330, 262, 208, 165, 131, 104, 82.5, 65.4, 52, 41.2]) out.push(t.push(hz, 0.95, true, A).midi) // 프레임마다 다른 음 — 이번 프레임이 중앙값과 같은 음인 적이 없다
+    expect(out.slice(0, 8)).toEqual([69, 69, 69, 69, 69, 69, 69, 69])
+    expect(out[8]).not.toBe(69) // 여덟 프레임 뒤에는 놓는다
+    const u = acquire(createTracker()); u.push(330, 0.95, true, A); u.push(330, 0.95, true, A)
+    expect(u.push(330, 0.95, true, A).midi).toBe(64) // 같은 음이 이어지면 평소대로
+  })
   test('hysteresis: a momentary ±60¢ jump keeps the note name (the smoothed value is still within half a semitone)', () => {
     const t = acquire(createTracker())
     const up60 = 440 * Math.pow(2, 60 / 1200)

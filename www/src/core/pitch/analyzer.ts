@@ -57,6 +57,9 @@ export interface Analyzer {
 
 /** 표시용 정합성: f0 자리 피크가 잡음 바닥보다 이만큼(dB) 솟아야 트래커에 넣는다 (YIN 은 중음의 가상 기본음도 높은 신뢰도로 낸다). 감지기에는 원본 신뢰도 */
 const SPEC_MIN_DB = 6 // octaveCorrect 의 기준과 같은 값
+/** 화면의 음이 그대로 울리는 중에 다른 음의 배음이 이만큼(dB) 넘게 약하면 '약한 경쟁 음' — 이어질 때만 그 음으로 바꾼다(tracker rivalFrames).
+ * 음이 바뀌는 순간을 재면 진짜로 바꿔 켠 음은 99 % 가 −4 dB 위, 사람 많은 곳의 틀린 전환은 95 % 가 −4 dB 아래다 — 진짜 쪽에 4 dB 여유를 둔 값 */
+const RIVAL_DB = 8
 /** 읽는 값: 0.37 s(5.5 Hz 비브라토 두 주기) 평균, 1.5 ¢ 넘게 움직여야 숫자가 바뀐다, 6 프레임 연속 한쪽으로 3 ¢ 넘으면 바로 따라간다 */
 const READ_S = 0.37
 const DEFAULT_READOUT: Omit<ReadoutParams, 'windowFrames'> = { deadband: 1.5, trendFrames: 6, trendCents: 3 }
@@ -118,7 +121,7 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       const specOk = rawHz > 0 && spec.harmonicCount(rawHz, 1, SPEC_MIN_DB) > 0
       const dispConf = specOk ? y.conf : 0
       // 트래커의 음이름 격자는 A=440 기준이라 refHz 로 정규화해 넣는다 (안 하면 |오프셋| > 50 ¢ 에서 이웃 반음으로 라벨링)
-      const t = tracker.push(rawHz / refK(), clickRead ? 0 : dispConf, true, s.smoothing, muted)
+      const t = tracker.push(rawHz / refK(), clickRead ? 0 : dispConf, true, s.smoothing, muted, weakRival)
       const f: Frame = { rawHz, conf: y.conf, rms, harmonics, flatness, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, playing, held: t.held }
       // 음이 바뀐 직후 프레임은 숫자의 평균에 넣지 않는다 (이전 음이 섞였다). 처음 두 프레임의 숫자는 창의 최근 절반에서 잰 값 — 아래 settleValue
       const readAs = settleValue(t, buf, muted)
@@ -127,6 +130,10 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
     },
   }
   function refK(): number { return s.refHz / 440 }
+  function weakRival(candA: number, shownA: number): boolean {
+    const hz = (c: number): number => 440 * Math.pow(2, c / 1200) * refK()
+    return spec.rivalMargin(hz(candA), hz(shownA)) < -RIVAL_DB // 견줄 수 없으면(NaN) 약하다고 하지 않는다
+  }
   /** hzNorm 은 440 격자로 정규화된 값. 표시 주파수는 되돌리고, cents 는 정규화 공간에서 계산하면 곧 refHz 기준이다.
    * cents 는 반올림하지 않는다 — 트레이스가 1 ¢(≈ 3 px) 격자에 걸려 계단처럼 보였다. 숫자와 맞음 판정은 읽는 값(readCents)으로 */
   function fill(f: Frame, hzNorm: number, midi: number, fresh: boolean, readAs = NaN): void {

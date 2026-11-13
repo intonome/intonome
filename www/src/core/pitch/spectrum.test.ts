@@ -19,6 +19,23 @@ describe('spectrum', () => {
     sp.update(noise, sr); const fn = sp.flatness()
     expect(ft).toBeLessThan(0.1); expect(fn).toBeGreaterThan(0.3)
   })
+  test('rivalMargin: how strong another note is next to the shown one — its own partials against the shown note\'s own', () => {
+    const sum = (...xs: Float32Array[]) => Float32Array.from(xs[0]!, (_, i) => xs.reduce((v, x) => v + x[i]!, 0)), at = (x: Float32Array, g: number) => x.map(v => v * g)
+    const A4 = tone(440, 8), A3 = tone(220, 8), D4 = tone(293.66, 8)
+    // 라4 만 울린다: 없는 음은 어느 간격이든 훨씬 약하다 — 반음 옆(피크가 두 빈 안)도 라4 의 피크를 제 것으로 세지 않는다
+    sp.update(D4, sr); expect(sp.rivalMargin(277.18, 293.66)).toBeLessThan(-20); expect(sp.rivalMargin(311.13, 293.66)).toBeLessThan(-20)
+    sp.update(A4, sr); for (const f of [220, 146.83, 293.66, 329.63, 392, 466.16, 659.26]) expect(sp.rivalMargin(f, 440), `${f} Hz`).toBeLessThan(-20)
+    // 한 옥타브 아래: 라4 의 배음은 전부 라3 의 배음이라 라4 전체와 견준다. 같은 세기면 약하지 않고, 20 dB 아래면 약하다
+    sp.update(sum(A4, A3), sr); expect(sp.rivalMargin(220, 440)).toBeGreaterThan(-8)
+    sp.update(sum(A4, at(A3, 0.1)), sr); expect(sp.rivalMargin(220, 440)).toBeLessThan(-8)
+    // 5도 아래: 서로에게만 있는 배음끼리
+    sp.update(sum(A4, D4), sr); expect(Math.abs(sp.rivalMargin(293.66, 440))).toBeLessThan(6)
+    sp.update(sum(A4, at(D4, 0.1)), sr); expect(sp.rivalMargin(293.66, 440)).toBeLessThan(-8)
+    // 화면의 음이 멎었으면(그 음만의 자리가 비었다) 새 음은 약하지 않다
+    sp.update(D4, sr); expect(sp.rivalMargin(293.66, 440)).toBeGreaterThan(20)
+    // 견줄 수 없는 경우: 화면 음의 위 배수(제 것만의 배음이 없다), 배음 간격이 6 빈이 안 되는 저음
+    sp.update(sum(A4, A3), sr); expect(sp.rivalMargin(880, 440)).toBeNaN(); expect(sp.rivalMargin(41.2, 440)).toBeNaN(); expect(sp.rivalMargin(440, 41.2)).toBeNaN()
+  })
   test('octaveCorrect: keeps correct f0, fixes sub-octave error, fixes double error', () => {
     sp.update(tone(220, 8), sr)
     expect(sp.octaveCorrect(220)).toBeCloseTo(220, 5)
@@ -218,6 +235,8 @@ describe('tuning in a room full of people playing', () => {
       x[i] = s * Math.min(1, t / .06) }
     return x
   }
+  /** 끝 40 ms 를 줄여 이어 붙일 수 있게 */
+  const faded = (x: Float32Array): Float32Array => x.map((v, i) => v * Math.min(1, (x.length - i) / (.04 * SR)))
   /** 각자 연습하는 사람들: 한 사람이 0.3~1.0 s 짜리 음을 이어 켠다 (G2~D6) */
   function room(sec: number, players: number, seed: number): Float32Array {
     const r = lcg(seed), n = Math.round(sec * SR), x = new Float32Array(n)
@@ -246,4 +265,27 @@ describe('tuning in a room full of people playing', () => {
   test.each([['A4', 0.97], ['D4', 0.97], ['G3', 0.85], ['E5', 0.85]] as const)('%s, 8 dB above twelve other players → the note that is played (over %f of the time)', (note, min) => {
     expect(worst(note, 8)).toBeGreaterThan(min)
   }, 30000)
+  // 프레임마다 가르고도 남는 것: 남의 소리가 섞인 몇 프레임이 내 음의 아래 배수나 남의 음으로 읽힌다. 내 음이 그대로 울리는 중이고 그 음의 배음이 훨씬 약하면
+  // 이어질 때만 바꾼다 — 6 dB 차이에서도 라4·레4 는 흔들리지 않는다
+  test.each([['A4', 6, 0.99], ['D4', 6, 0.99], ['E5', 8, 0.95], ['E5', 6, 0.85]] as const)('%s, %i dB above twelve other players → held steadily (over %f of the time)', (note, snr, min) => {
+    expect(worst(note, snr)).toBeGreaterThan(min)
+  }, 30000)
+  /** x 를 분석해 t ≥ from 에서 note 가 처음 뜨는 시각 − from (ms). 안 뜨면 Infinity */
+  function shownAfter(x: Float32Array, note: string, from: number): number {
+    const an = createAnalyzer({ sampleRate: SR, windowSize: N, hzMin: 29, hzMax: 4200 }); an.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
+    for (let end = N; end <= x.length; end += HOP) { const f = an.process(x.subarray(end - N, end)); if (end / SR >= from && f.midi === mi(note)) return (end / SR - from) * 1000 }
+    return Infinity
+  }
+  // 그 규칙이 진짜 연주를 늦추지 않는다: 바꿔 켠 아래 음은 그 음만의 배음이 세서 평소대로 두 프레임에 바뀐다
+  test.each([['A4', 'A3'], ['D5', 'D4'], ['G4', 'G3'], ['E5', 'E4'], ['E5', 'A3'], ['D5', 'G3'], ['A5', 'A3']] as const)('a played leap %s → %s (an octave, a twelfth, two octaves down) shows within 0.12 s', (hi, lo) => {
+    const a = faded(mine(hi, 1)), b = faded(mine(lo, 1)), x = new Float32Array(a.length + b.length)
+    x.set(a.map(v => v / 8)); x.set(b.map(v => v / 8), a.length)
+    expect(shownAfter(x, lo, 1)).toBeLessThanOrEqual(120)
+  })
+  // 위 음을 켜는 중에 아래 옥타브를 더하면(옥타브 두 줄) 화면은 아래 음으로 간다 — 아래 음이 여려도 여섯 프레임(0.13 s) 더 기다린 뒤에는
+  test.each([['A4', 'A3', 0], ['D5', 'D4', 0], ['D5', 'D4', -6]] as const)('the lower octave %s → %s joined at %i dB under a held note takes over within 0.35 s', (hi, lo, db) => {
+    const a = faded(mine(hi, 2.2)), b = faded(mine(lo, 1.2)), x = Float32Array.from(a, v => v / 8), g = 10 ** (db / 20)
+    for (let i = 0; i < b.length; i++) x[SR + i] = x[SR + i]! + g * b[i]! / 8
+    expect(shownAfter(x, lo, 1)).toBeLessThanOrEqual(350)
+  })
 })

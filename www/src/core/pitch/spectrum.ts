@@ -13,6 +13,10 @@ export interface Spectrum {
   flatness(loHz?: number, hiHz?: number): number
   /** YIN 이 낸 f0 를 실제로 울리는 가장 낮은 배음렬의 기본음으로 — 한 옥타브 높게 잡았으면 f0/2, 자리가 비어 있으면(중음의 가상 기본음·약한 기본음) 그 정수배 */
   octaveCorrect(f0: number): number
+  /** 화면의 음(shown)이 아직 울리는 중에 다른 음(candidate)이 얼마나 센가 — candidate 에만 있는 배음의 평균 세기 − shown 에만 있는 배음의 평균 세기 (dB).
+   * shown 의 배음이 전부 candidate 의 배음이기도 하면(candidate 가 shown 의 한 옥타브·12도… 아래) shown 의 배음 전체와 견준다.
+   * candidate 에만 있는 배음이 없거나(shown 의 배수) 두 배음렬을 따로 잴 수 없는 저음·고음이면 NaN */
+  rivalMargin(candidateHz: number, shownHz: number): number
   /** 빈 폭 (Hz) */
   readonly binHz: number
 }
@@ -113,6 +117,19 @@ const DROP_DB = [15, 20] as const // 옥타브 내리기: f0/2 · 1.5f0 피크�
       for (let i = lo; i <= hi; i++) { const p = lin[i]! + 1e-20; logSum += Math.log(p); sum += p; n++ }
       if (!n) return 1
       return Math.exp(logSum / n) / (sum / n)
+    },
+    rivalMargin(fC, fS) {
+      const top = Math.min(sr / 2, SERIES_TOP_HZ), gC = fC / binHz, gS = fS / binHz
+      if (gC < SERIES_MIN_BINS || gS < SERIES_MIN_BINS || 2 * fC >= top || 2 * fS >= top) return NaN
+      const half = (k: number, gb: number): number => Math.max(1, Math.min(k * gb * 0.03, gb * 0.25 - 0.5))
+      /** hz 자리의 창(±h 빈)에 f 의 배음 피크가 들어오는가 — 그러면 그 자리는 두 음이 함께 쓰는 자리다(따로 잴 수 없다) */
+      const onSeries = (hz: number, h: number, f: number): boolean => { const j = Math.round(hz / f); return j >= 1 && Math.abs(hz - j * f) <= (h + 1) * binHz }
+      let ownC = 0, nC = 0, ownS = 0, nS = 0, allS = 0, nAll = 0
+      for (let k = 1; k * fC < top; k++) { const h = half(k, gC); if (!onSeries(k * fC, h, fS)) { ownC += peakPower(k * fC, h); nC++ } }
+      if (!nC) return NaN
+      for (let j = 1; j * fS < top; j++) { const h = half(j, gS), v = peakPower(j * fS, h); allS += v; nAll++; if (!onSeries(j * fS, h, fC)) { ownS += v; nS++ } }
+      const level = (sum: number, n: number): number => 10 * Math.log10(sum / n + 1e-30)
+      return level(ownC, nC) - (nS ? level(ownS, nS) : level(allS, nAll))
     },
     // 화면의 음은 늘 '지금 울리는 가장 낮은 배음렬의 기본음' 이다. 다른 악기·중음의 위 음으로 넘어가는 규칙은 두지 않는다 —
     // 그런 규칙은 다른 연주자가 있는 방에서 남의 음을 내 음보다 먼저 고른다. 프레임 사이에 기억하는 상태도 없다

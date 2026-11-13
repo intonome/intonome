@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.9] - 2026-11-14
+The tuner holds the note you play in a room full of other players.
+
+Tuner
+- In a room full of people playing or talking, the note name stays on the note you play instead of jumping an octave or a twelfth below it or flipping to someone else's note for a moment. A lower note counts only when its own partials stand clearly above what lies between the partials, and while your note still sounds a much weaker note takes the name only if it lasts about 0.17 s. Notes you really change to show as fast as before; a lower octave added softly under a held note shows up to 0.13 s later. Sensitivity and response settings are unchanged
+
+Settings
+- The dots in the version under the logo sit a little wider apart
+
 ## [2.9.8] - 2026-11-08
 Two small layout touches.
 

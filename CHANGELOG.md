@@ -2,6 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.10] - 2026-11-15
+The tuner stays quiet when it is just left on in a room where people talk.
+
+Tuner
+- At a first start (the app just opened or back from the background, or 30 s since you last held a note for about a second) a note shows once a steady pitch has lasted about 0.45 s instead of 0.17 s. Talk nearby rarely holds that long, so the screen no longer keeps popping up notes while the app is just left on, before you play or after you put the instrument down. Open strings bowed or plucked on any of the four instruments, a soft start, harmonics, a turning peg and wide vibrato still show; in a room full of players a few stray frames don't hold it back
+- While you play (a note held for about a second within the last 30 s), everything is as before: a note after a rest shows after 0.17 s, so short notes in a passage show as they did
+- At a first start the needle and number begin at the middle of the vibrato instead of at one end of it
+
 ## [2.9.9] - 2026-11-14
 The tuner holds the note you play in a room full of other players.
 

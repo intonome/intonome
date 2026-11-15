@@ -6,7 +6,7 @@
 export interface TrackerParams {
   /** 후보로 인정할 최소 신뢰도 */
   confMin: number
-  /** 무음에서 음을 새로 띄우는 데 필요한 연속 유효 프레임 수 — 말소리 모음·새소리·딸깍은 그보다 짧거나 그동안 음높이가 미끄러진다.
+  /** 연주하다 쉰 뒤 무음에서 음을 새로 띄우는 데 필요한 연속 유효 프레임 수(첫 시작은 coldAcquireFrames) — 말소리 모음·새소리·딸깍은 그보다 짧거나 그동안 음높이가 미끄러진다.
    * 6 프레임 = 첫 음이 소리 시작 뒤 약 0.17 s 에 뜬다(48 kHz 기준 창 85 ms + 5 × 21 ms). 이어 켜는 동안의 음 바뀜과는 무관.
    * 7 은 쉬었다가 스피카토로 시작하는 음계(음마다 유효 4~5 프레임, 음이 바뀌면 처음부터)를 끝까지 못 띄웠다 — 6 은 둘째 음에서 띄운다 */
   acquireFrames: number
@@ -29,10 +29,24 @@ export interface TrackerParams {
    * 진짜로 바꿔 켠 음은 이전 음이 멎거나 그만큼 세서 switchFrames 로 바뀐다. 늦추는 것은 유효 프레임으로 이 값까지라 화면이 옛 음에 붙들리지 않는다.
    * 바늘에서 switchCents 안의 후보(슬라이드)는 이 규칙과 무관하게 바늘이 따라간다 */
   rivalFrames: number
+  /** 첫 시작(켠 뒤 · 연주한 음 없이 coldAfterFrames 가 지난 뒤)에 새로 띄우는 데 필요한 연속 유효 프레임 수. acquireFrames 대신 쓴다.
+   * 18 프레임 = 소리 시작 뒤 약 0.45 s(48 kHz 기준 창 85 ms + 17 × 21 ms, 기기 화면에서는 0.55~0.6 s — T1 과 비슷하다). 실제 대화 녹음(2 분)을 켜 두기만 한 튜너에 들려주면
+   * 뜨는 횟수가 6 프레임(2.9.9) 14.5 번/분 → 14 프레임 6.1 → 16 프레임 4.2 → 18 프레임 2.3 → 22 프레임 1.9. 18 이 꺾이는 곳이다 */
+  coldAcquireFrames: number
+  /** 첫 시작에서 그 프레임들 가운데 이만큼은 acquireCents 밖이어도 된다 — 사람 많은 곳에서는 남의 소리가 섞인 프레임이 열에 하나쯤 튄다. 다 모여야 하면 첫 음이 2.5 s 까지 늦었다 */
+  coldAcquireOutliers: number
+  /** 첫 시작에서 건너뛰는 무효 프레임 수(acquireGap 대신) — 같은 이유 */
+  coldAcquireGap: number
+  /** 한 음이름으로 이만큼(유효 프레임) 이어진 음이 뜨면 '연주한 음' 이다 — 그 뒤 coldAfterFrames 동안은 acquireFrames 로 띄운다. 47 ≈ 1 s(48 kHz) — 망설임 소리('어~', 0.3~0.6 s)는 못 미치고
+   * 조율하며 긋는 음은 넘는다. 실제 대화 녹음(2 분 반)은 6 프레임으로 띄워도 한 번도 넘지 않았다. 0.36 s(14 프레임)로 하면 말소리 조각이 넘어 켜 두기만 한 곳에서 금방 '연주 중' 이 됐다 */
+  warmNoteFrames: number
+  /** 연주한 음이 마지막으로 보인 뒤 이만큼(프레임) 지나면 다음 음을 첫 시작으로 본다. 1406 ≈ 30 s(48 kHz) — 연습 중 쉼 · 악보 보기는 덮고,
+   * 조율하고 내려놓은 뒤 이어지는 말소리는 30 s 뒤부터 막는다. 화면에 무엇이 뜨든(말소리 포함) 이 시계는 연주한 음만 되돌린다 */
+  coldAfterFrames: number
 }
 /** cents 는 가장 가까운 음에서의 편차이므로 정의상 이 값을 넘을 수 없다 */
 const HALF_SEMITONE = 50
-export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 6, acquireCents: 40, acquireGap: 1, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20, rivalFrames: 8 }
+export const DEFAULT_TRACKER: TrackerParams = { confMin: 0.5, acquireFrames: 6, acquireCents: 40, acquireGap: 1, medianLen: 3, switchCents: 65, switchFrames: 2, clickSwitchFrames: 3, releaseFrames: 20, rivalFrames: 8, coldAcquireFrames: 18, coldAcquireOutliers: 2, coldAcquireGap: 2, warmNoteFrames: 47, coldAfterFrames: 1406 }
 
 /** @property held 유효 프레임이 끊겨 직전 값을 그대로 다시 내보낸 횟수 (0 = 방금 측정한 값). 트레이스가 유지 프레임을 구분하는 데 쓴다
  * @property settling 음이름이 바뀐 프레임과 그 뒤 medianLen 프레임 — 창과 중앙값에 이전 음이 섞여 있다. 읽는 값(숫자)의 평균에 넣지 않는다 */
@@ -52,9 +66,12 @@ export interface Tracker {
 
 export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
   const candA: number[] = [], candW: number[] = []
-  /** 무음에서 새로 띄우기 전, 지금 이어지는 유효 프레임들의 원시 추정(최근 acquireFrames 개) — 중앙값 창보다 길게 볼 수 있다 */
+  /** 무음에서 새로 띄우기 전, 지금 이어지는 유효 프레임들의 원시 추정(최근 need 개) — 중앙값 창보다 길게 볼 수 있다 */
   const acqA: number[] = [], acqW: number[] = []
   let acqMiss = 0, midi = -1, dispA = NaN, outside = 0, miss = 0, errSign = 0, sameSignRun = 0, settle = 0
+  /** cold: 지금 이어지는 띄우기가 첫 시작 조건인가(그 구간이 시작될 때 정한다). heldRun: 보이는 음이름이 이어진 유효 프레임 수(띄울 때는 모은 프레임 수에서 시작).
+   * sincePlayed: 연주한 음(warmNoteFrames)이 마지막으로 보인 뒤 지난 프레임 수 — 처음엔 무한(켠 뒤 첫 시작) */
+  let cold = true, heldRun = 0, sincePlayed = Infinity
   let last: TrackOut = NONE
 
   function weightedMedian(A: number[] = candA, Wt: number[] = candW): number {
@@ -63,7 +80,15 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
     for (const i of idx) { acc += Wt[i]!; if (acc >= total / 2) return A[i]! }
     return A[idx[idx.length - 1]!]!
   }
-  function reset(): void { candA.length = 0; candW.length = 0; acqA.length = 0; acqW.length = 0; acqMiss = 0; midi = -1; dispA = NaN; outside = 0; miss = 0; errSign = 0; sameSignRun = 0; settle = 0; last = NONE }
+  /** 음이 끝나 표시를 놓는다 — 연주한 음의 시계는 그대로 */
+  function release(): void { candA.length = 0; candW.length = 0; acqA.length = 0; acqW.length = 0; acqMiss = 0; midi = -1; dispA = NaN; outside = 0; miss = 0; errSign = 0; sameSignRun = 0; settle = 0; heldRun = 0; last = NONE }
+  /** 처음부터 — 다음 음은 첫 시작이다 */
+  function reset(): void { release(); sincePlayed = Infinity }
+  /** 연주한 음의 시계: 한 음이름이 warmNoteFrames 이어진 음이 보이는 동안 0, 아니면 한 프레임씩 — 말소리가 떠도 되돌리지 않는다 */
+  function done(o: TrackOut): TrackOut {
+    sincePlayed = o.hz > 0 && heldRun >= p.warmNoteFrames ? 0 : sincePlayed + 1
+    return o
+  }
   const out = (settling = false): TrackOut => { last = { hz: 440 * Math.pow(2, dispA / 1200), midi, a: dispA, held: 0, settling }; return last }
 
   return {
@@ -82,23 +107,28 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
     push(hz, conf, valid, alpha, click = false, weakRival) {
       const ok = valid && hz > 0 && conf >= p.confMin
       if (!ok) {
-        if (++acqMiss > p.acquireGap) { acqA.length = 0; acqW.length = 0 }
-        if (midi === -1) return NONE
-        if (++miss > p.releaseFrames) { reset(); return NONE }
-        return { ...last, held: miss } // 짧은 끊김은 마지막 표시 유지 (몇 번째 유지인지 알려준다)
+        if (++acqMiss > (cold ? p.coldAcquireGap : p.acquireGap)) { acqA.length = 0; acqW.length = 0 }
+        if (midi === -1) return done(NONE)
+        if (++miss > p.releaseFrames) { release(); return done(NONE) }
+        return done({ ...last, held: miss }) // 짧은 끊김은 마지막 표시 유지 (몇 번째 유지인지 알려준다)
       }
       miss = 0; acqMiss = 0
       const a = 1200 * Math.log2(hz / 440)
       candA.push(a); candW.push(conf); if (candA.length > p.medianLen) { candA.shift(); candW.shift() }
       const med = weightedMedian()
       if (midi === -1) {
-        // 새로 띄우기: 같은 음으로 acquireFrames 연속 — 한 프레임의 높은 신뢰도만으로 띄우면 주변 말소리·새소리가 틱틱 뜬다
-        acqA.push(a); acqW.push(conf); if (acqA.length > p.acquireFrames) { acqA.shift(); acqW.shift() }
+        // 새로 띄우기: 같은 음으로 need 프레임 연속 — 한 프레임의 높은 신뢰도만으로 띄우면 주변 말소리·새소리가 틱틱 뜬다.
+        // 연주한 음 없이 coldAfterFrames 가 지났으면(첫 시작) coldAcquireFrames — 켜 두기만 한 곳의 말소리가 뜨지 않게
+        if (!acqA.length) cold = sincePlayed >= p.coldAfterFrames
+        const need = cold ? p.coldAcquireFrames : p.acquireFrames
+        acqA.push(a); acqW.push(conf); if (acqA.length > need) { acqA.shift(); acqW.shift() }
         const acqMed = weightedMedian(acqA, acqW)
-        if (acqA.length < p.acquireFrames || acqA.some(x => Math.abs(x - acqMed) > p.acquireCents)) return NONE
+        if (acqA.length < need || acqA.filter(x => Math.abs(x - acqMed) > p.acquireCents).length > (cold ? p.coldAcquireOutliers : 0)) return done(NONE)
         acqA.length = 0; acqW.length = 0
-        midi = Math.round(med / 100) + 69; dispA = med; outside = 0
-        return out()
+        // 첫 시작은 0.45 s 를 모은 값(가중 중앙값)에서 시작한다 — 그때는 비브라토가 한창이라 마지막 세 프레임이면 한쪽 끝(±12 ¢)에서 시작해 숫자가 0.3 s 동안 흘렀다
+        const start = cold ? acqMed : med
+        midi = Math.round(start / 100) + 69; dispA = start; outside = 0; heldRun = need
+        return done(out())
       }
       // 표시값은 항상 중앙값을 따라가고(평활), 음이름 라벨만 히스테리시스로 바뀐다.
       // 적응 평활: 오차가 크고 한 방향으로 4프레임 이상 계속될 때만 빠르게 따라붙는다 — 비브라토는 부호가 3–4프레임마다 바뀐다
@@ -126,7 +156,8 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
         if (Math.abs(med - (midi - 69) * 100) <= HALF_SEMITONE) dispA = med
       }
       if (midi !== was) settle = p.medianLen
-      return out(settling || midi !== was)
+      heldRun = midi !== was ? 1 : heldRun + 1
+      return done(out(settling || midi !== was))
     },
   }
 }

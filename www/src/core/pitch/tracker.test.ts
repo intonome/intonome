@@ -2,39 +2,100 @@ import { describe, test, expect } from 'vitest'
 import { createTracker, DEFAULT_TRACKER, type Tracker } from './tracker.ts'
 
 const A = 0.14
-/** 무음에서 음을 띄운다(acquireFrames 프레임). 다른 동작을 보는 테스트의 준비 단계 */
-const acquire = (t: Tracker, hz = 440, a = A): Tracker => { for (let i = 0; i < DEFAULT_TRACKER.acquireFrames; i++) t.push(hz, 0.95, true, a); return t }
+const { acquireFrames: WARM, coldAcquireFrames: COLD, coldAcquireGap: COLD_GAP, releaseFrames: REL, warmNoteFrames: PLAYED, coldAfterFrames: QUIET } = DEFAULT_TRACKER
+/** 무음에서 음을 띄운다(새 트래커 = 첫 시작이라 coldAcquireFrames 프레임). 다른 동작을 보는 테스트의 준비 단계 */
+const acquire = (t: Tracker, hz = 440, a = A): Tracker => { for (let i = 0; i < COLD; i++) t.push(hz, 0.95, true, a); return t }
+const silence = (t: Tracker, n: number): Tracker => { for (let i = 0; i < n; i++) t.push(-1, 0, false, A); return t }
+const tone = (t: Tracker, n: number, hz = 440): Tracker => { for (let i = 0; i < n; i++) t.push(hz, 0.95, true, A); return t }
+/** 연주한 음(warmNoteFrames 이어진 음) 하나를 띄웠다가 놓은 트래커 — 연습하다 쉬는 중. 다음 음은 acquireFrames 로 뜬다 */
+const warm = (): Tracker => silence(tone(createTracker(), PLAYED), REL + 1)
 describe('tracker', () => {
-  test('acquires after six consistent frames (≈ 0.13 s), holds through short dropouts, releases after releaseFrames', () => {
-    const t = createTracker()
-    for (let i = 0; i < 5; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1) // 말소리 모음 하나(0.1 s 남짓)로는 안 띄운다
+  test('after playing, a new note acquires after six consistent frames (≈ 0.13 s), holds through short dropouts, releases after releaseFrames', () => {
+    const t = warm()
+    for (let i = 0; i < WARM - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1) // 말소리 모음 하나(0.1 s 남짓)로는 안 띄운다
     expect(t.push(440, 0.95, true, A).midi).toBe(69)
-    for (let i = 0; i < 20; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 20 misses (≈ 430 ms) 동안 유지 — 활을 들었다 놓는 틈
+    for (let i = 0; i < REL; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 20 misses (≈ 430 ms) 동안 유지 — 활을 들었다 놓는 틈
     expect(t.push(-1, 0, false, A).midi).toBe(-1) // 21 → release
   })
-  test('scattered pitches never acquire — a syllable, a bird, a click (two periodic frames) show nothing', () => {
+  test('first start (just turned on): a steady tone needs coldAcquireFrames (≈ 0.45 s) — one that lasts a syllable or two shows nothing', () => {
     const t = createTracker()
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(220, 0.95, true, A).midi, `frame ${i + 1}`).toBe(-1)
+    expect(t.push(220, 0.95, true, A).midi).toBe(57)
+    const u = createTracker() // 2.9.9 의 여섯 프레임이면 떴을 길이(0.3 s)의 고른 소리 — 끝나면 처음부터
+    tone(u, COLD - 1, 220); silence(u, COLD_GAP + 1)
+    for (let i = 0; i < WARM; i++) expect(u.push(220, 0.95, true, A).midi).toBe(-1)
+  })
+  test('first start: a dropout of up to coldAcquireGap frames is skipped, a longer one starts the count over', () => {
+    const t = createTracker()
+    tone(t, COLD - 1); silence(t, COLD_GAP)
+    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+    const u = createTracker()
+    tone(u, COLD - 1); silence(u, COLD_GAP + 1)
+    for (let i = 0; i < COLD - 1; i++) expect(u.push(440, 0.95, true, A).midi).toBe(-1)
+    expect(u.push(440, 0.95, true, A).midi).toBe(69)
+  })
+  test('only a note held for warmNoteFrames (≈ 1 s) makes the next start quick — a shorter sound (a syllable, an "uh") leaves it a first start', () => {
+    const t = tone(createTracker(), PLAYED - 1) // 0.45 s 를 넘겨 떴지만 1 s 에 못 미친 소리
+    expect(t.current().midi).toBe(69)
+    silence(t, REL + 1)
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(392, 0.95, true, A).midi).toBe(-1)
+    expect(t.push(392, 0.95, true, A).midi).toBe(67)
+    tone(t, PLAYED - COLD, 392); silence(t, REL + 1) // 같은 음을 1 s 까지 이어 그었다 — 이제 연주 중
+    for (let i = 0; i < WARM - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
+    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+  })
+  test('after a played note the next start stays quick for coldAfterFrames (≈ 30 s) — short sounds shown in between (talk) do not extend it; then it is a first start again', () => {
+    const t = warm()
+    silence(t, QUIET - 60) // 연습하다 쉬는 중(30 s 안)
+    tone(t, WARM, 330) // 짧은 소리(말소리 음절) — 평소대로 뜨지만 연주한 음은 아니다
+    expect(t.current().midi).toBe(64)
+    silence(t, REL + 1); silence(t, 40) // 마지막 연주한 음에서 30 s 가 지났다
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
+    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+    const u = warm()
+    silence(u, QUIET - 100); tone(u, PLAYED, 392) // 30 s 안에 다시 켠 긴 음 — 6 프레임에 뜨고, 1 s 이어지면 시계가 처음부터
+    silence(u, REL + 1); silence(u, QUIET - 100)
+    for (let i = 0; i < WARM - 1; i++) expect(u.push(440, 0.95, true, A).midi).toBe(-1)
+    expect(u.push(440, 0.95, true, A).midi).toBe(69)
+  })
+  test('reset() starts over: the next start is cold', () => {
+    const t = warm(); t.reset()
+    for (let i = 0; i < WARM; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
+  })
+  test('scattered pitches never acquire — a syllable, a bird, a click (two periodic frames) show nothing', () => {
+    const t = warm()
     for (const hz of [440, 523, 392, 659, 440, 466]) expect(t.push(hz, 0.95, true, A).midi).toBe(-1) // 프레임마다 다른 음
     for (const hz of [440, 440]) expect(t.push(hz, 0.95, true, A).midi).toBe(-1) // 두 프레임만 같은 음
     expect(t.push(-1, 0, false, A).midi).toBe(-1)
     // 미끄러져 올라오는 피치(프레임당 30 ¢)는 멈출 때까지 안 띄운다 — 여섯 프레임이 모두 ±40 ¢ 안에 모여야 한다
-    const t2 = createTracker(); const up = (c: number) => 440 * Math.pow(2, c / 1200)
+    const t2 = warm(); const up = (c: number) => 440 * Math.pow(2, c / 1200)
     for (const c of [-150, -120, -90, -60, -30]) expect(t2.push(up(c), 0.95, true, A).midi).toBe(-1)
     for (let k = 1; k <= 4; k++) expect(t2.push(up(0), 0.95, true, A).midi, `0 ¢ frame ${k}: −60 or lower is still in the window`).toBe(-1)
     expect(t2.push(up(0), 0.95, true, A).midi).toBe(69) // 창 = −30 과 0 ¢ 다섯
   })
   test('a vowel-length steady tone (five frames ≈ 0.1 s) shows nothing; one dropped frame is skipped, two restart the count', () => {
-    const t = createTracker()
+    const t = warm()
     for (let i = 0; i < 5; i++) expect(t.push(220, 0.95, true, A).midi).toBe(-1)
     expect(t.push(-1, 0, false, A).midi).toBe(-1); expect(t.push(220, 0.95, true, A).midi).toBe(57) // 시끄러운 곳의 한 프레임 빠짐은 건너뛴다
-    const u = createTracker()
+    const u = warm()
     for (let i = 0; i < 5; i++) u.push(220, 0.95, true, A)
     u.push(-1, 0, false, A); u.push(-1, 0, false, A); expect(u.push(220, 0.95, true, A).midi).toBe(-1) // 두 프레임 끊기면 처음부터
   })
-  test('vibrato ±25 ¢ from the very first frame still acquires on the sixth', () => {
-    const t = createTracker(), vib = (k: number) => 440 * Math.pow(2, 25 * Math.sin(2 * Math.PI * 5.5 * k * 1024 / 48000) / 1200)
+  test('vibrato ±25 ¢ from the very first frame still acquires on the sixth (first start: on the eighteenth)', () => {
+    const t = warm(), vib = (k: number) => 440 * Math.pow(2, 25 * Math.sin(2 * Math.PI * 5.5 * k * 1024 / 48000) / 1200)
     for (let k = 0; k < 5; k++) expect(t.push(vib(k), 0.95, true, A).midi).toBe(-1)
     expect(t.push(vib(5), 0.95, true, A).midi).toBe(69)
+    const c = createTracker()
+    for (let k = 0; k < COLD - 1; k++) expect(c.push(vib(k), 0.95, true, A).midi).toBe(-1)
+    expect(c.push(vib(COLD - 1), 0.95, true, A).midi).toBe(69)
+  })
+  test('a first start begins at the middle of the vibrato, not at the end of it the last frames happen to be on', () => {
+    // 첫 시작이 끝나는 프레임에서 비브라토가 위쪽 끝(+25 ¢)에 오도록 위상을 맞춘다 — 마지막 세 프레임에서 시작하면 +24 ¢ 에서 시작한다
+    const ph = Math.PI / 2 - 2 * Math.PI * 5.5 * (COLD - 1) * 1024 / 48000
+    const vib = (k: number) => 440 * Math.pow(2, 25 * Math.sin(2 * Math.PI * 5.5 * k * 1024 / 48000 + ph) / 1200)
+    const c = createTracker(); let o = c.push(vib(0), 0.95, true, A)
+    for (let k = 1; k < COLD; k++) o = c.push(vib(k), 0.95, true, A)
+    expect(o.midi).toBe(69); expect(Math.abs(o.a)).toBeLessThan(8)
   })
   test('a much weaker rival while the shown note still sounds needs rivalFrames; a strong one changes in two frames', () => {
     const seen: number[][] = []
@@ -122,7 +183,7 @@ describe('tracker', () => {
   test('after a note change the needle reads the new note at once — no smoothing carried over from the old note', () => {
     // 반음 슬러(미4 +14 → 파4 −11): 평활을 이어 가면 새 음이 −40 ¢ 대에서 0.3 s 에 걸쳐 −11 로 미끄러져 보인다(숫자·초록도 같이)
     const t = createTracker(), hz = (c: number) => 440 * Math.pow(2, c / 1200)
-    for (let i = 0; i < 10; i++) t.push(hz(-486), 0.95, true, 0.2)
+    for (let i = 0; i < COLD + 4; i++) t.push(hz(-486), 0.95, true, 0.2)
     const outs = [-461, -436, -411, -411, -411, -411, -411, -411].map(c => t.push(hz(c), 0.95, true, 0.2)) // 창이 두 음에 걸친 두 프레임, 그다음 파4 −11
     const k = outs.findIndex(o => o.midi === 65)
     expect(k).toBeGreaterThanOrEqual(0); expect(outs[k]!.settling).toBe(true)
@@ -146,7 +207,7 @@ describe('tracker', () => {
 
   test('held count: +1 per missing frame, 0 on a fresh measurement (so the trace leaves no horizontal line)', () => {
     const t = createTracker()
-    for (let i = 0; i < DEFAULT_TRACKER.acquireFrames + 1; i++) expect(t.push(440, 0.95, true, A).held).toBe(0)
+    for (let i = 0; i < COLD + 1; i++) expect(t.push(440, 0.95, true, A).held).toBe(0)
     expect(t.push(-1, 0, false, A).held).toBe(1)
     expect(t.push(-1, 0, false, A).held).toBe(2)
     expect(t.push(440, 0.95, true, A).held).toBe(0) // 다시 잡히면 0

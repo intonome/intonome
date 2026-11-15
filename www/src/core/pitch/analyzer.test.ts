@@ -1,15 +1,15 @@
 import { describe, test, expect } from 'vitest'
 import { createAnalyzer } from './analyzer.ts'
-import type { TrackerParams } from './tracker.ts'
+import { DEFAULT_TRACKER, type TrackerParams } from './tracker.ts'
 import { keepInTrace, buildSegments } from '../trace.ts'
 
 const sr = 44100, N = 4096
 const tone = (f: number, harm = 4) => Float32Array.from({ length: N }, (_, i) => { let s = 0; for (let h = 1; h <= harm; h++) s += Math.sin(2 * Math.PI * f * h * i / sr) / h; return 0.3 * s })
 
-/** 같은 창을 여러 번 넣어 트래커가 음이름을 확정하게 한 뒤 마지막 프레임 */
+/** 같은 창을 여러 번 넣어 트래커가 음이름을 확정하게 한 뒤(첫 시작이라 coldAcquireFrames) 마지막 프레임 */
 function settle(refHz: number, playedHz: number) {
   const an = createAnalyzer({ sampleRate: sr, windowSize: N }); an.setSettings({ refHz, tolCents: 15, rmsMin: .008 })
-  let f = an.process(tone(playedHz)); for (let i = 0; i < 12; i++) f = an.process(tone(playedHz)); return f
+  let f = an.process(tone(playedHz)); for (let i = 0; i < DEFAULT_TRACKER.coldAcquireFrames + 2; i++) f = an.process(tone(playedHz)); return f
 }
 
 describe('double bass below E1 — 5-string B0, C extension, a loose E string', () => {
@@ -25,9 +25,9 @@ describe('double bass below E1 — 5-string B0, C extension, a loose E string', 
     for (let end = N; end <= x.length; end += 1024) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) { if (first < 0) first = end / sr; midis.push(f.midi); cents.push(f.cents) } }
     return { first, midis, cents }
   }
-  test.each([['B0 (5-string)', 30.87, 23], ['C1 (extension)', 32.70, 24], ['E♭1 (loose E string, −100 ¢)', 38.89, 27], ['E1 −60 ¢ (reads E♭1 +40)', 41.2 * 2 ** (-60 / 1200), 27]])('%s reads its own note, steadily, within 0.3 s', (_, hz, midi) => {
+  test.each([['B0 (5-string)', 30.87, 23], ['C1 (extension)', 32.70, 24], ['E♭1 (loose E string, −100 ¢)', 38.89, 27], ['E1 −60 ¢ (reads E♭1 +40)', 41.2 * 2 ** (-60 / 1200), 27]])('%s reads its own note, steadily, within 0.5 s of a first start', (_, hz, midi) => {
     const r = read(hz)
-    expect(r.first).toBeGreaterThan(0); expect(r.first).toBeLessThan(0.3)
+    expect(r.first).toBeGreaterThan(0); expect(r.first).toBeLessThan(0.5) // 첫 시작: 고른 음이 18 프레임(≈ 0.45 s) — 낮은 음은 어택이 더 걸린다
     expect(r.midis.filter(m => m === midi).length / r.midis.length, `note ${midi} in every frame (${new Set(r.midis).size} different notes seen)`).toBeGreaterThan(0.98)
     const late = r.cents.slice(10); expect(Math.max(...late) - Math.min(...late), 'the number does not jump around').toBeLessThan(8)
   })
@@ -165,7 +165,7 @@ describe('one note, bowed again and again, reads as one unbroken line', () => {
     const cents: Array<number | null> = [], midi: Array<number | null> = []; let shown = false
     for (let end = N; end <= x.length; end += HOP) {
       const f = a.process(x.subarray(end - N, end))
-      if (!shown) { if (f.hz <= 0) { expect(end / sr, 'the first stroke shows within 0.25 s').toBeLessThan(0.4 + 0.25); continue } shown = true } // 첫 활의 음이름이 뜬 뒤부터
+      if (!shown) { if (f.hz <= 0) { expect(end / sr, 'the first stroke shows within 0.45 s (a first start)').toBeLessThan(0.4 + 0.45); continue } shown = true } // 첫 활의 음이름이 뜬 뒤부터
       expect(f.hz, `t=${(end / sr).toFixed(2)} s shows a note`).toBeGreaterThan(0)
       expect(f.midi, `t=${(end / sr).toFixed(2)} s is still the same note`).toBe(expectMidi(hz))
       const keep = keepInTrace(f.hz, f.held); cents.push(keep ? f.cents : null); midi.push(keep ? f.midi : null)
@@ -206,9 +206,18 @@ describe('short detached notes straight after a rest (spiccato, staccato) show f
     })
     return x
   }
-  function firstNote(x: Float32Array, soundS: number, gapS: number, tracker?: Partial<TrackerParams>): number {
+  /** 연습하던 긴 음(레4, 1.3 s — warmNoteFrames 를 넘는다) — 그 뒤의 쉼(spiccato 의 앞 0.6 s)은 '연주하다 쉰 것' 이다 */
+  function heldNote(sec = 1.3): Float32Array {
+    const x = new Float32Array(Math.round(sec * sr)), hz = 442 * 2 ** (-7 / 12); let ph = 0
+    for (let i = 0; i < x.length; i++) { ph += 2 * Math.PI * hz / sr; let v = 0; for (let h = 1; h <= 12; h++) v += Math.sin(ph * h + h * 0.7) / h ** 1.1; x[i] = 0.15 * v * Math.min(1, i / (0.02 * sr), (x.length - i) / (0.01 * sr)) }
+    return x
+  }
+  const cat = (...xs: Float32Array[]): Float32Array => { const y = new Float32Array(xs.reduce((n, x) => n + x.length, 0)); let o = 0; for (const x of xs) { y.set(x, o); o += x.length } return y }
+  /** 음계의 몇 번째 음에서 처음 뜨는가(안 뜨면 99). played: 그 앞에 연습하던 음이 있었다(연주 중 쉼). 아니면 켠 뒤 첫 시작 */
+  function firstNote(x: Float32Array, soundS: number, gapS: number, tracker?: Partial<TrackerParams>, played = true): number {
+    const pre = played ? heldNote() : new Float32Array(0), y = cat(pre, x), t0 = pre.length / sr + 0.6
     const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200, tracker }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
-    for (let end = N; end <= x.length; end += HOP) if (a.process(x.subarray(end - N, end)).hz > 0) return Math.floor((end / sr - 0.6) / (soundS + gapS)) + 1
+    for (let end = N; end <= y.length; end += HOP) if (a.process(y.subarray(end - N, end)).hz > 0 && end / sr > t0) return Math.floor((end / sr - t0) / (soundS + gapS)) + 1
     return 99
   }
   test.each([
@@ -218,7 +227,7 @@ describe('short detached notes straight after a rest (spiccato, staccato) show f
   ])('%s: a note is on the screen by the second note (seven frames show these late or never)', (_, sound, gap, ringDb, ringS) => {
     const x = spiccato(sound, gap, ringDb, ringS)
     expect(firstNote(x, sound, gap)).toBeLessThanOrEqual(2)
-    expect(firstNote(x, sound, gap, { acquireFrames: 3, acquireCents: 20, acquireGap: 0 })).toBe(1) // 2.5.6: 첫 음부터
+    expect(firstNote(x, sound, gap, { acquireFrames: 3, acquireCents: 20, acquireGap: 0 })).toBe(1) // 2.5.6 조건: 첫 음부터
   })
   test('the fastest stopped spiccato (16ths at 125 bpm, little ring) still shows inside the passage', () => {
     expect(firstNote(spiccato(0.08, 0.04, -18, 0.15), 0.08, 0.04)).toBeLessThanOrEqual(6) // 여섯째 음(0.7 s)까지는 뜬다 — 7 프레임이면 끝까지 안 뜬다
@@ -227,6 +236,14 @@ describe('short detached notes straight after a rest (spiccato, staccato) show f
     expect(firstNote(spiccato(0.1, 0.05, -18, 0.15), 0.1, 0.05, { acquireFrames: 7 })).toBeGreaterThan(2)
     expect(firstNote(spiccato(0.08, 0.04, -10, 0.3), 0.08, 0.04, { acquireFrames: 7 })).toBeGreaterThan(2)
     expect(firstNote(spiccato(0.08, 0.04, -18, 0.15), 0.08, 0.04, { acquireFrames: 7 })).toBeGreaterThan(8)
+  })
+  // 첫 시작(켠 뒤 · 연주한 음 없이 30 s)은 고른 음이 0.45 s 이어져야 뜬다 — 켜 두기만 한 곳의 말소리 음절이 뜨지 않게.
+  // 그 대가로 짧은 음만 이어지는 패시지로 바로 시작하면 이어지는 음이 나올 때까지 비어 있다(조율하며 긋는 음은 뜬다)
+  test('a first start with short detached notes alone stays blank until a note lasts', () => {
+    expect(firstNote(spiccato(0.1, 0.05, -18, 0.15), 0.1, 0.05, undefined, false)).toBe(99)
+    const pass = spiccato(0.1, 0.05, -18, 0.15), k = firstNote(cat(pass, heldNote()), 0.1, 0.05, undefined, false)
+    const heldFrom = Math.floor((pass.length / sr - 0.6) / 0.15) + 1 // 패시지 뒤(울림 0.3 s 포함) 이어지는 음이 시작하는 칸
+    expect(k, 'shows on the held note after the passage').toBeGreaterThanOrEqual(heldFrom); expect(k).toBeLessThan(heldFrom + 4)
   })
 })
 
@@ -258,13 +275,13 @@ describe('nothing is played — the tuner shows nothing', () => {
     for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) shown++; if (f.playing) playing++ }
     expect(shown, 'frames with a note').toBe(0); expect(playing, 'frames counted as playing').toBe(0)
   }, 20000)
-  test('a note that starts over the same ambience still shows within 250 ms', () => {
+  test('a note that starts over the same ambience still shows within 0.55 s (a first start)', () => {
     const x = ambient(1, 6), f0 = 442 * Math.pow(2, -14 / 12); let ph = 0 // G3
     for (let i = Math.round(3 * sr); i < x.length; i++) { const t = i / sr - 3; ph += 2 * Math.PI * f0 * 2 ** (5 * Math.sin(2 * Math.PI * 5.3 * t) / 1200) / sr; let s = 0; for (let h = 1; h <= 12; h++) s += Math.sin(ph * h + h) / h; x[i] = x[i]! + 0.1 * s * Math.min(1, t / 0.08) }
     const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
     let first = -1
     for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0 && first < 0) { first = end / sr - 3; expect(f.midi).toBe(55) } }
-    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.25) // 2.5.7: 무음에서 새로 띄우려면 6 프레임 — 말소리 모음이 틱틱 뜨지 않게(2.5.1 은 3 프레임, 0.15 s)
+    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.55) // 켠 뒤 첫 시작은 18 프레임(≈ 0.45 s) — 켜 두기만 한 곳의 말소리가 뜨지 않게(연주하다 쉰 뒤는 6 프레임)
   })
   /** 조용한 방에서 가까이 말한 모음 하나: 0.5 s 무음 → 모음(f0, 프레임당 glide st/s 로 미끄러짐, 포먼트 700/1200 Hz) → 무음 */
   function vowel(dur: number, f0: number, glide: number): Float32Array {
@@ -285,12 +302,21 @@ describe('nothing is played — the tuner shows nothing', () => {
   }
   test.each([[0.06, 0], [0.08, 0], [0.06, 4], [0.08, -4]])('a lone spoken vowel of %s s (gliding %s st/s) after silence shows nothing', (dur, glide) => {
     for (const f0 of [120, 210]) {
-      expect(shownFrames(vowel(dur, f0, glide), { acquireFrames: 3, acquireCents: 20, acquireGap: 0 }), `2.5.6 rule, f0 ${f0}`).toBeGreaterThan(0) // 재현: 예전 조건에선 떴다
+      expect(shownFrames(vowel(dur, f0, glide), { acquireFrames: 3, acquireCents: 20, acquireGap: 0, coldAcquireFrames: 3, coldAcquireOutliers: 0, coldAcquireGap: 0 }), `2.5.6 rule, f0 ${f0}`).toBeGreaterThan(0) // 재현: 예전 조건에선 떴다
       expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)
     }
   })
-  test('a held note (or a long sung vowel) of 0.3 s does show', () => {
-    expect(shownFrames(vowel(0.3, 210, 0))).toBeGreaterThan(0)
+  test('a held note (or a long sung vowel) of 0.3 s shows while playing; at a first start it has to last about 0.45 s', () => {
+    expect(shownFrames(vowel(0.3, 210, 0), { coldAcquireFrames: DEFAULT_TRACKER.acquireFrames })).toBeGreaterThan(0)
+    expect(shownFrames(vowel(0.3, 210, 0))).toBe(0)
+    expect(shownFrames(vowel(0.5, 210, 0))).toBeGreaterThan(0)
+  })
+  // 켜 두기만 한 곳(첫 시작): 음절 하나 길이(0.15~0.2 s)의 말소리는 안 뜬다. 연주하다 쉰 뒤의 시작 조건(6 프레임)이었다면 떴을 소리다
+  test.each([[0.15, 0], [0.2, 0], [0.2, 4], [0.2, -4]])('at a first start a spoken syllable of %s s (gliding %s st/s) shows nothing', (dur, glide) => {
+    for (const f0 of [120, 210]) {
+      expect(shownFrames(vowel(dur, f0, glide), { coldAcquireFrames: DEFAULT_TRACKER.acquireFrames }), `six-frame start, f0 ${f0}`).toBeGreaterThan(0)
+      expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)
+    }
   })
 })
 
@@ -305,19 +331,21 @@ describe('the number and the green are calm; the line stays live', () => {
     for (let end = N; end <= n; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) out.push({ t: end / sr, read: f.readCents, cents: f.cents, inTune: f.inTune }) }
     return out
   }
-  const changesPerS = (o: ReturnType<typeof frames>, k: 'read' | 'inTune') => { const s = o.filter(f => f.t > 0.8); let c = 0; for (let i = 1; i < s.length; i++) if (s[i]![k] !== s[i - 1]![k]) c++; return c / (s.length * HOP / sr) }
+  /** 음이 뜬 뒤 읽는 값(0.37 s 평균)이 찰 때까지는 보지 않는다 */
+  const settled = (o: ReturnType<typeof frames>) => o.filter(f => f.t > o[0]!.t + 0.44)
+  const changesPerS = (o: ReturnType<typeof frames>, k: 'read' | 'inTune') => { const s = settled(o); let c = 0; for (let i = 1; i < s.length; i++) if (s[i]![k] !== s[i - 1]![k]) c++; return c / (s.length * HOP / sr) }
   test.each([[5.5], [4.5], [6.5]])('vibrato ±15 ¢ at %s Hz: the number barely moves, the line still swings', hz => {
     const o = frames(t => 15 * Math.sin(2 * Math.PI * hz * t), 4)
     expect(changesPerS(o, 'read')).toBeLessThan(1)
-    const late = o.filter(f => f.t > 0.8); expect(Math.max(...late.map(f => Math.abs(f.read)))).toBeLessThanOrEqual(2)
+    const late = settled(o); expect(Math.max(...late.map(f => Math.abs(f.read)))).toBeLessThanOrEqual(2)
     expect(Math.max(...late.map(f => f.cents)) - Math.min(...late.map(f => f.cents))).toBeGreaterThan(4) // 선은 비브라토를 보여 준다
   })
   test('+14 ¢ with ±6 ¢ vibrato at a ±15 tolerance: green stays on, number and green agree', () => {
     const o = frames(t => 14 + 6 * Math.sin(2 * Math.PI * 5.5 * t), 4)
-    expect(changesPerS(o, 'inTune')).toBe(0); expect(o.filter(f => f.t > 0.8).every(f => f.inTune && Math.abs(f.read) <= 15)).toBe(true)
+    expect(changesPerS(o, 'inTune')).toBe(0); expect(settled(o).every(f => f.inTune && Math.abs(f.read) <= 15)).toBe(true)
   })
   test.each([[8], [-8], [12], [-12]])('%s ¢ with ±6 ¢ vibrato at the default ±10: green stays on inside and off outside, never flickers', c => {
-    const o = frames(t => c + 6 * Math.sin(2 * Math.PI * 5.5 * t), 4, 10), late = o.filter(f => f.t > 0.8)
+    const o = frames(t => c + 6 * Math.sin(2 * Math.PI * 5.5 * t), 4, 10), late = settled(o)
     expect(changesPerS(o, 'inTune')).toBe(0); expect(late.every(f => f.inTune === Math.abs(c) <= 10 && f.inTune === Math.abs(f.read) <= 10)).toBe(true)
   })
   test('turning a peg from −30 to 0 ¢ over 2 s: the number follows within 7 ¢ and reads 0 within 0.45 s after stopping', () => {

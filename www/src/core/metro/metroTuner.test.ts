@@ -27,6 +27,9 @@ function run(o: { bpm: number; subDiv: SubDiv; clickGain: number; ref: number; n
   return frames
 }
 const midiOf = (hz: number, ref: number) => Math.round(69 + 12 * Math.log2(hz / ref))
+/** 먼저 라 개방현을 1.4 s 그어 조율하고(첫 시작) 0.6 s 쉰 뒤 notes 를 켠다 — notes 의 시각은 TUNE_S 만큼 뒤로 민다 */
+const TUNE_S = 2
+const tuned = (ref: number, notes: Note[]): Note[] => [{ hz: ref, from: 0.3, to: 1.7 }, ...notes.map(m => ({ hz: m.hz, from: m.from + TUNE_S, to: m.to + TUNE_S }))]
 
 describe('the tuner keeps reading with the metronome on, at any tempo and subdivision', () => {
   const tempos: Array<[number, SubDiv]> = [[60, 1], [130, 2], [160, 2], [86, 3], [120, 3], [66, 4], [100, 4], [160, 4]]
@@ -47,8 +50,9 @@ describe('the tuner keeps reading with the metronome on, at any tempo and subdiv
     for (const gain of [1, 3]) { const fr = run({ bpm, subDiv, clickGain: gain, ref: 440, notes: [], sec: 4 }); expect(fr.filter(f => f.midi >= 0).length).toBe(0); expect(fr.filter(f => f.playing).length, 'clicks alone never count as playing').toBe(0) }
   }, 20000)
   test.each([[415], [442], [466]])('an A major scale under 16ths at 100 bpm, A = %i: every note shows within 0.2 s and stays', ref => {
-    const notes = [0, 2, 4, 5, 7, 9, 11, 12].map((s, k) => ({ hz: ref * Math.pow(2, s / 12), from: 0.3 + k * 0.5, to: 0.3 + (k + 1) * 0.5 }))
-    const fr = run({ bpm: 100, subDiv: 4, clickGain: 0.3, ref, notes, sec: 4.8 })
+    const [tune, ...notes] = tuned(ref, [0, 2, 4, 5, 7, 9, 11, 12].map((s, k) => ({ hz: ref * Math.pow(2, s / 12), from: 0.3 + k * 0.5, to: 0.3 + (k + 1) * 0.5 })))
+    const fr = run({ bpm: 100, subDiv: 4, clickGain: 0.3, ref, notes: [tune!, ...notes], sec: 4.8 + TUNE_S })
+    const firstTune = fr.find(f => f.t >= tune!.from && f.midi === 69); expect(firstTune!.t - tune!.from, 'the tuning note (a first start)').toBeLessThan(0.5)
     for (const m of notes) {
       const want = midiOf(m.hz, ref), inNote = fr.filter(f => f.t >= m.from && f.t < m.to)
       const first = inNote.find(f => f.midi === want); expect(first, `${want}`).toBeDefined(); expect(first!.t - m.from).toBeLessThan(0.2)
@@ -56,8 +60,8 @@ describe('the tuner keeps reading with the metronome on, at any tempo and subdiv
     }
   }, 30000)
   test.each([[-25], [25]])('the notes on either side of each click pitch, played %i cents off, still read under 16ths at 120 bpm', off => {
-    const notes = [9, 10, 15, 16, 24, 25].map((s, k) => ({ hz: 440 * Math.pow(2, (s + off / 100) / 12), from: 0.3 + k * 0.8, to: 0.3 + (k + 1) * 0.8 }))
-    const fr = run({ bpm: 120, subDiv: 4, clickGain: 0.3, ref: 440, notes, sec: 5.3 })
+    const notes = tuned(440, [9, 10, 15, 16, 24, 25].map((s, k) => ({ hz: 440 * Math.pow(2, (s + off / 100) / 12), from: 0.3 + k * 0.8, to: 0.3 + (k + 1) * 0.8 }))).slice(1)
+    const fr = run({ bpm: 120, subDiv: 4, clickGain: 0.3, ref: 440, notes: tuned(440, []).concat(notes), sec: 5.3 + TUNE_S })
     for (const m of notes) { const want = midiOf(m.hz, 440), steady = fr.filter(f => f.t >= m.from + 0.25 && f.t < m.to); expect(steady.filter(f => f.midi === want).length / steady.length, `${want}`).toBeGreaterThan(0.95) }
   }, 30000)
 })

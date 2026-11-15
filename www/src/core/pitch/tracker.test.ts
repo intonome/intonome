@@ -3,10 +3,13 @@ import { createTracker, DEFAULT_TRACKER, type Tracker } from './tracker.ts'
 
 const A = 0.14
 const { acquireFrames: WARM, coldAcquireFrames: COLD, coldAcquireGap: COLD_GAP, releaseFrames: REL, warmNoteFrames: PLAYED, coldAfterFrames: QUIET } = DEFAULT_TRACKER
-/** 무음에서 음을 띄운다(새 트래커 = 첫 시작이라 coldAcquireFrames 프레임). 다른 동작을 보는 테스트의 준비 단계 */
+/** 무음에서 음을 띄운다(새 트래커 = 첫 시작 — 고른 소리라 6 프레임에 뜨고 이어진다). 다른 동작을 보는 테스트의 준비 단계 */
 const acquire = (t: Tracker, hz = 440, a = A): Tracker => { for (let i = 0; i < COLD; i++) t.push(hz, 0.95, true, a); return t }
 const silence = (t: Tracker, n: number): Tracker => { for (let i = 0; i < n; i++) t.push(-1, 0, false, A); return t }
 const tone = (t: Tracker, n: number, hz = 440): Tracker => { for (let i = 0; i < n; i++) t.push(hz, 0.95, true, A); return t }
+/** 프레임마다 ±10 ¢ 흔들리는 소리 — ±40 ¢ 안이라 음이지만 첫 시작의 깨끗한 길(±5 ¢ 고른 소리)은 못 탄다 */
+const wob = (t: Tracker, n: number, hz = 440): Tracker => { for (let i = 0; i < n; i++) t.push(hz * Math.pow(2, (i % 2 ? 10 : -10) / 1200), 0.95, true, A); return t }
+const wobAt = (i: number, hz = 440) => hz * Math.pow(2, (i % 2 ? 10 : -10) / 1200)
 /** 연주한 음(warmNoteFrames 이어진 음) 하나를 띄웠다가 놓은 트래커 — 연습하다 쉬는 중. 다음 음은 acquireFrames 로 뜬다 */
 const warm = (): Tracker => silence(tone(createTracker(), PLAYED), REL + 1)
 describe('tracker', () => {
@@ -17,32 +20,77 @@ describe('tracker', () => {
     for (let i = 0; i < REL; i++) expect(t.push(-1, 0, false, A).midi).toBe(69) // 20 misses (≈ 430 ms) 동안 유지 — 활을 들었다 놓는 틈
     expect(t.push(-1, 0, false, A).midi).toBe(-1) // 21 → release
   })
-  test('first start (just turned on): a steady tone needs coldAcquireFrames (≈ 0.45 s) — one that lasts a syllable or two shows nothing', () => {
+  test('first start (just turned on): a wavering tone needs coldAcquireFrames (≈ 0.45 s) — one that lasts a syllable or two shows nothing', () => {
     const t = createTracker()
-    for (let i = 0; i < COLD - 1; i++) expect(t.push(220, 0.95, true, A).midi, `frame ${i + 1}`).toBe(-1)
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(wobAt(i, 220), 0.95, true, A).midi, `frame ${i + 1}`).toBe(-1)
+    expect(t.push(wobAt(COLD - 1, 220), 0.95, true, A).midi).toBe(57)
+    const u = createTracker() // 2.9.9 의 여섯 프레임이면 떴을 길이(0.3 s)의 소리 — 끝나면 처음부터
+    wob(u, COLD - 1, 220); silence(u, COLD_GAP + 1)
+    for (let i = 0; i < WARM; i++) expect(u.push(wobAt(i, 220), 0.95, true, A).midi).toBe(-1)
+  })
+  test('first start: a clean, steady tone (a plucked or bowed open string) shows after the usual six frames; a wavering or less periodic one needs coldAcquireFrames', () => {
+    const t = createTracker()
+    for (let i = 0; i < WARM - 1; i++) expect(t.push(220, 0.95, true, A).midi, `frame ${i + 1}`).toBe(-1)
     expect(t.push(220, 0.95, true, A).midi).toBe(57)
-    const u = createTracker() // 2.9.9 의 여섯 프레임이면 떴을 길이(0.3 s)의 고른 소리 — 끝나면 처음부터
-    tone(u, COLD - 1, 220); silence(u, COLD_GAP + 1)
-    for (let i = 0; i < WARM; i++) expect(u.push(220, 0.95, true, A).midi).toBe(-1)
+    const cyc = (i: number, c: number) => 440 * Math.pow(2, [-c, 0, c][i % 3]! / 1200)
+    const v = createTracker() // −8 · 0 · +8 ¢ 로 떠는 소리 — 고르지 않다
+    for (let i = 0; i < COLD - 1; i++) expect(v.push(cyc(i, 8), 0.95, true, A).midi).toBe(-1)
+    expect(v.push(cyc(COLD - 1, 8), 0.95, true, A).midi).toBe(69)
+    const w = createTracker() // −4 · 0 · +4 ¢ 는 고른 소리(활 · 잔향이 만드는 정도), 신뢰도 0.91 이면 깨끗하다
+    for (let i = 0; i < WARM - 1; i++) expect(w.push(cyc(i, 4), 0.91, true, A).midi).toBe(-1)
+    expect(w.push(cyc(WARM - 1, 4), 0.91, true, A).midi).toBe(69)
+    const u = createTracker() // 고르지만 신뢰도 0.89 — 말소리처럼 주기가 덜 깨끗한 소리는 0.45 s 를 기다린다
+    for (let i = 0; i < COLD - 1; i++) expect(u.push(440, 0.89, true, A).midi).toBe(-1)
+    expect(u.push(440, 0.89, true, A).midi).toBe(69)
+  })
+  test('first start, clean path: the same gap rule as while playing — one dropped frame is skipped, two start the six over', () => {
+    const t = createTracker()
+    tone(t, 4); silence(t, 1); expect(t.push(440, 0.95, true, A).midi).toBe(-1)
+    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+    const u = createTracker()
+    tone(u, 4); silence(u, 2); for (let i = 0; i < WARM - 1; i++) expect(u.push(440, 0.95, true, A).midi).toBe(-1)
+    expect(u.push(440, 0.95, true, A).midi).toBe(69)
+  })
+  test('first start, clean path: the six clean frames decide alone — their median, not the earlier frames, is where it starts', () => {
+    const t = createTracker() // 앞의 8 프레임은 +30 ¢ 에 신뢰도 0.85(덜 깨끗함) — 띄우는 근거도 시작 값도 아니다
+    for (let i = 0; i < 8; i++) t.push(440 * Math.pow(2, 30 / 1200), 0.85, true, A)
+    for (let i = 0; i < WARM - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
+    const o = t.push(440, 0.95, true, A)
+    expect(o.midi).toBe(69); expect(Math.abs(o.a)).toBeLessThan(0.01)
+  })
+  test('while playing a note starts from the last three frames as in 2.9.9, not from the clean-path median', () => {
+    const t = warm(), up = (c: number) => 440 * Math.pow(2, c / 1200) // 6 프레임에 0 → 7.5 ¢ 로 천천히(±5 ¢ 안)
+    for (let i = 0; i < WARM - 1; i++) t.push(up(1.5 * i), 0.95, true, A)
+    expect(t.push(up(1.5 * (WARM - 1)), 0.95, true, A).a).toBeCloseTo(6, 6)
+  })
+  test('a played note is counted from the frames that showed it — earlier frames of other sounds do not make it count sooner', () => {
+    const lead = (t: Tracker) => { for (let i = 0; i < 12; i++) t.push(wobAt(i, 330), 0.7, true, A); return t } // 앞선 다른 소리(덜 깨끗함)
+    const t = tone(lead(createTracker()), PLAYED - 1) // 6 프레임에 뜨고 1 s 에 한 프레임 모자람
+    silence(t, REL + 1)
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
+    const u = tone(lead(createTracker()), PLAYED) // 1 s — 연주한 음
+    silence(u, REL + 1)
+    for (let i = 0; i < WARM - 1; i++) expect(u.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
+    expect(u.push(wobAt(WARM - 1), 0.95, true, A).midi).toBe(69)
   })
   test('first start: a dropout of up to coldAcquireGap frames is skipped, a longer one starts the count over', () => {
     const t = createTracker()
-    tone(t, COLD - 1); silence(t, COLD_GAP)
-    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+    wob(t, COLD - 1); silence(t, COLD_GAP)
+    expect(t.push(wobAt(COLD - 1), 0.95, true, A).midi).toBe(69)
     const u = createTracker()
-    tone(u, COLD - 1); silence(u, COLD_GAP + 1)
-    for (let i = 0; i < COLD - 1; i++) expect(u.push(440, 0.95, true, A).midi).toBe(-1)
-    expect(u.push(440, 0.95, true, A).midi).toBe(69)
+    wob(u, COLD - 1); silence(u, COLD_GAP + 1)
+    for (let i = 0; i < COLD - 1; i++) expect(u.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
+    expect(u.push(wobAt(COLD - 1), 0.95, true, A).midi).toBe(69)
   })
   test('only a note held for warmNoteFrames (≈ 1 s) makes the next start quick — a shorter sound (a syllable, an "uh") leaves it a first start', () => {
-    const t = tone(createTracker(), PLAYED - 1) // 0.45 s 를 넘겨 떴지만 1 s 에 못 미친 소리
+    const t = tone(createTracker(), PLAYED - 1) // 떴지만 1 s 에 못 미친 소리
     expect(t.current().midi).toBe(69)
     silence(t, REL + 1)
-    for (let i = 0; i < COLD - 1; i++) expect(t.push(392, 0.95, true, A).midi).toBe(-1)
-    expect(t.push(392, 0.95, true, A).midi).toBe(67)
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(wobAt(i, 392), 0.95, true, A).midi).toBe(-1)
+    expect(t.push(wobAt(COLD - 1, 392), 0.95, true, A).midi).toBe(67)
     tone(t, PLAYED - COLD, 392); silence(t, REL + 1) // 같은 음을 1 s 까지 이어 그었다 — 이제 연주 중
-    for (let i = 0; i < WARM - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
-    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+    for (let i = 0; i < WARM - 1; i++) expect(t.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
+    expect(t.push(wobAt(WARM - 1), 0.95, true, A).midi).toBe(69)
   })
   test('after a played note the next start stays quick for coldAfterFrames (≈ 30 s) — short sounds shown in between (talk) do not extend it; then it is a first start again', () => {
     const t = warm()
@@ -50,17 +98,17 @@ describe('tracker', () => {
     tone(t, WARM, 330) // 짧은 소리(말소리 음절) — 평소대로 뜨지만 연주한 음은 아니다
     expect(t.current().midi).toBe(64)
     silence(t, REL + 1); silence(t, 40) // 마지막 연주한 음에서 30 s 가 지났다
-    for (let i = 0; i < COLD - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
-    expect(t.push(440, 0.95, true, A).midi).toBe(69)
+    for (let i = 0; i < COLD - 1; i++) expect(t.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
+    expect(t.push(wobAt(COLD - 1), 0.95, true, A).midi).toBe(69)
     const u = warm()
     silence(u, QUIET - 100); tone(u, PLAYED, 392) // 30 s 안에 다시 켠 긴 음 — 6 프레임에 뜨고, 1 s 이어지면 시계가 처음부터
     silence(u, REL + 1); silence(u, QUIET - 100)
-    for (let i = 0; i < WARM - 1; i++) expect(u.push(440, 0.95, true, A).midi).toBe(-1)
-    expect(u.push(440, 0.95, true, A).midi).toBe(69)
+    for (let i = 0; i < WARM - 1; i++) expect(u.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
+    expect(u.push(wobAt(WARM - 1), 0.95, true, A).midi).toBe(69)
   })
   test('reset() starts over: the next start is cold', () => {
     const t = warm(); t.reset()
-    for (let i = 0; i < WARM; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1)
+    for (let i = 0; i < WARM; i++) expect(t.push(wobAt(i), 0.95, true, A).midi).toBe(-1)
   })
   test('scattered pitches never acquire — a syllable, a bird, a click (two periodic frames) show nothing', () => {
     const t = warm()

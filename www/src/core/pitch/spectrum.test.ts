@@ -139,12 +139,20 @@ describe('the tuner shows the loudest sound, never a second voice above it', () 
       const f = an.process(w); if (end / SR < skipSec || end / SR >= untilSec) continue; F++; if (f.midi === mi(note)) U++ }
     return U / F
   }
-  /** 켠 뒤 첫 시작(coldAcquireFrames)으로 뜬 다음부터 본다 */
+  /** 비율은 켠 뒤 첫 시작이 늦게 뜨는 경우(coldAcquireFrames)까지 지난 다음부터 본다 — 그 전에 뜬 프레임은 wrongBefore 로 따로 본다 */
   const FIRST_S = (N + (DEFAULT_TRACKER.coldAcquireFrames + 1) * HOP) / SR
+  /** untilSec 전에 note 가 아닌 음을 보인 프레임 수 — 깨끗하고 고른 소리는 첫 시작에도 6 프레임에 뜨니 그 구간도 맞아야 한다 */
+  function wrongBefore(x: Float32Array, note: string, untilSec: number): number {
+    const an = createAnalyzer({ sampleRate: SR }); an.setSettings({ rmsMin: .014, smoothing: .14, refHz: 440, tolCents: 15 })
+    const w = new Float32Array(N); let k = 0
+    for (let end = HOP; end <= x.length && end / SR < untilSec; end += HOP) { w.fill(0); const s0 = Math.max(0, end - N); w.set(x.subarray(s0, end), N - (end - s0)); const f = an.process(w); if (f.hz > 0 && f.midi !== mi(note)) k++ }
+    return k
+  }
   const PAIRS: [string, string][] = [['G3', 'D4'], ['D4', 'A4'], ['A4', 'E5'], ['G3', 'B3'], ['D4', 'F#4'], ['G3', 'E4'], ['A3', 'C#4'], ['E4', 'A4']]
   // 다른 연주자: 내 음보다 10 dB 작은 음이 중음 간격(5도·3도·6도·4도) 위에서 울려도 화면은 내 음이다 — 강당에서 조율할 수 있어야 한다
   test.each(PAIRS)('%s with another player on %s at −10 dB → shows %s', (mine, other) => {
-    expect(rate(mix([{ note: mine, gain: 1 }, { note: other, gain: 0.316 }]), mine, FIRST_S)).toBeGreaterThan(0.98)
+    const x = mix([{ note: mine, gain: 1 }, { note: other, gain: 0.316 }])
+    expect(rate(x, mine, FIRST_S)).toBeGreaterThan(0.98); expect(wrongBefore(x, mine, FIRST_S)).toBe(0)
   })
   // 남의 음이 먼저 떠 있다가(첫 시작 0.45 s 뒤) 내 음이 들어오면 내 음으로 넘어간다
   test.each(PAIRS)('%s with another player on %s at −10 dB who started first and is on the screen → %s from the first frames', (mine, other) => {
@@ -154,10 +162,12 @@ describe('the tuner shows the loudest sound, never a second voice above it', () 
   })
   // 두 명이 같은 세기로 위아래에서 연주하면 어느 쪽인지 알 길이 없다 — 가장 낮은 배음렬(아래 음)을 흔들림 없이 보여 준다
   test.each(PAIRS)('%s + %s at the same level → the lower note, steadily', (lo, up) => {
-    expect(rate(mix([{ note: lo, gain: 1 }, { note: up, gain: 1 }]), lo, FIRST_S)).toBeGreaterThan(0.98)
+    const x = mix([{ note: lo, gain: 1 }, { note: up, gain: 1 }])
+    expect(rate(x, lo, FIRST_S)).toBeGreaterThan(0.98); expect(wrongBefore(x, lo, FIRST_S)).toBe(0)
   })
   test.each(PAIRS)('%s + %s with the upper 6 dB louder → still the lower note', (lo, up) => {
-    expect(rate(mix([{ note: lo, gain: 1 }, { note: up, gain: 2 }]), lo, FIRST_S)).toBeGreaterThan(0.98)
+    const x = mix([{ note: lo, gain: 1 }, { note: up, gain: 2 }])
+    expect(rate(x, lo, FIRST_S)).toBeGreaterThan(0.98); expect(wrongBefore(x, lo, FIRST_S)).toBe(0)
   })
   test('the label doesn’t wobble while two notes are held', () => {
     const an = createAnalyzer({ sampleRate: SR }); an.setSettings({ rmsMin: .014, smoothing: .14, refHz: 440, tolCents: 15 })
@@ -193,8 +203,10 @@ describe('the open strings in a room with low rumble — the tuning routine', ()
   }
   const sum = (...xs: Float32Array[]) => { const y = new Float32Array(xs[0]!.length); for (const x of xs) for (let i = 0; i < y.length; i++) y[i] = y[i]! + x[i]!; return y }
   /** t ≥ skip 의 프레임이 보여 준 음이름 분포 { midi → 비율 } */
-  /** 켠 뒤 첫 시작(coldAcquireFrames)으로 뜬 다음부터 본다 */
+  /** 비율은 켠 뒤 첫 시작이 늦게 뜨는 경우(coldAcquireFrames)까지 지난 다음부터 본다 — 그 전에 뜬 프레임은 처음부터 본 분포(shown(y, 0))로 따로 본다 */
   const FIRST_S = (N + (DEFAULT_TRACKER.coldAcquireFrames + 2) * HOP) / SR
+  /** 분포에서 note 와 무음(−1) 말고 다른 음의 비율 */
+  const others = (m: Map<number, number>, note: string) => [...m].filter(([k]) => k !== -1 && k !== mi(note)).reduce((q, [, v]) => q + v, 0)
   function shown(x: Float32Array, skip = FIRST_S): Map<number, number> {
     const an = createAnalyzer({ sampleRate: SR, windowSize: N, hzMin: 40, hzMax: 4200 }); an.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 15 })
     const m = new Map<number, number>(); let F = 0
@@ -205,13 +217,13 @@ describe('the open strings in a room with low rumble — the tuning routine', ()
   const only = (m: Map<number, number>, note: string) => (m.get(mi(note)) ?? 0)
 
   test.each([[-20, -20], [-20, -30], [-30, -20], [-12, -20]])('G3 alone, fundamental %i dB, rumble %i dB → G3 in every frame', (f0Db, nz) => {
-    for (const seed of [3, 4, 5]) expect(only(shown(sum(string('G3', f0Db, 7, 1.6), rumble(Math.round(1.6 * SR), nz, seed))), 'G3')).toBe(1)
+    for (const seed of [3, 4, 5]) { const y = sum(string('G3', f0Db, 7, 1.6), rumble(Math.round(1.6 * SR), nz, seed)); expect(only(shown(y), 'G3')).toBe(1); expect(others(shown(y, 0), 'G3')).toBe(0) }
   }, 20000)
   const FIFTHS: Array<[string, string, number]> = []
   for (const [lo, up] of [['G3', 'D4'], ['D4', 'A4'], ['A4', 'E5']] as const) for (const nz of [-20, -25]) FIFTHS.push([lo, up, nz])
   test.each(FIFTHS)('%s + %s bowed together over rumble at %i dB → the lower note in every frame', (lo, up, nz) => {
     for (const seed of [3, 5, 7])
-      expect(only(shown(sum(string(lo, lo === 'G3' ? -20 : 0, 7, 1.6), string(up, 0, 13, 1.6), rumble(Math.round(1.6 * SR), nz, seed))), lo), `${lo}+${up} rumble ${nz} seed ${seed}`).toBe(1)
+      { const y = sum(string(lo, lo === 'G3' ? -20 : 0, 7, 1.6), string(up, 0, 13, 1.6), rumble(Math.round(1.6 * SR), nz, seed)); expect(only(shown(y), lo), `${lo}+${up} rumble ${nz} seed ${seed}`).toBe(1); expect(others(shown(y, 0), lo), `${lo}+${up} from the start`).toBe(0) }
   }, 20000)
   // 5도 중음의 최대공약수 배음렬을 알아보는 규칙(5·7 배음 자리가 비었다)이 한 음을 중음으로 오해해 한 옥타브 올리면 안 된다 —
   // 배음 세기가 들쭉날쭉한(몸통 공명의 골, ±12 dB) 단음도, 기본음이 약한 단음도

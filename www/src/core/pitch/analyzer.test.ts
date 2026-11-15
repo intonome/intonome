@@ -6,7 +6,7 @@ import { keepInTrace, buildSegments } from '../trace.ts'
 const sr = 44100, N = 4096
 const tone = (f: number, harm = 4) => Float32Array.from({ length: N }, (_, i) => { let s = 0; for (let h = 1; h <= harm; h++) s += Math.sin(2 * Math.PI * f * h * i / sr) / h; return 0.3 * s })
 
-/** 같은 창을 여러 번 넣어 트래커가 음이름을 확정하게 한 뒤(첫 시작이라 coldAcquireFrames) 마지막 프레임 */
+/** 같은 창을 여러 번 넣어 트래커가 음이름을 확정하게 한 뒤(첫 시작 — 고르지 않은 소리면 coldAcquireFrames 까지) 마지막 프레임 */
 function settle(refHz: number, playedHz: number) {
   const an = createAnalyzer({ sampleRate: sr, windowSize: N }); an.setSettings({ refHz, tolCents: 15, rmsMin: .008 })
   let f = an.process(tone(playedHz)); for (let i = 0; i < DEFAULT_TRACKER.coldAcquireFrames + 2; i++) f = an.process(tone(playedHz)); return f
@@ -27,7 +27,7 @@ describe('double bass below E1 — 5-string B0, C extension, a loose E string', 
   }
   test.each([['B0 (5-string)', 30.87, 23], ['C1 (extension)', 32.70, 24], ['E♭1 (loose E string, −100 ¢)', 38.89, 27], ['E1 −60 ¢ (reads E♭1 +40)', 41.2 * 2 ** (-60 / 1200), 27]])('%s reads its own note, steadily, within 0.5 s of a first start', (_, hz, midi) => {
     const r = read(hz)
-    expect(r.first).toBeGreaterThan(0); expect(r.first).toBeLessThan(0.5) // 첫 시작: 고른 음이 18 프레임(≈ 0.45 s) — 낮은 음은 어택이 더 걸린다
+    expect(r.first).toBeGreaterThan(0); expect(r.first).toBeLessThan(0.5) // 첫 시작: 깨끗하고 고르면 6 프레임, 아니면 18 프레임(≈ 0.45 s) — 낮은 음은 어택이 더 걸린다
     expect(r.midis.filter(m => m === midi).length / r.midis.length, `note ${midi} in every frame (${new Set(r.midis).size} different notes seen)`).toBeGreaterThan(0.98)
     const late = r.cents.slice(10); expect(Math.max(...late) - Math.min(...late), 'the number does not jump around').toBeLessThan(8)
   })
@@ -237,11 +237,14 @@ describe('short detached notes straight after a rest (spiccato, staccato) show f
     expect(firstNote(spiccato(0.08, 0.04, -10, 0.3), 0.08, 0.04, { acquireFrames: 7 })).toBeGreaterThan(2)
     expect(firstNote(spiccato(0.08, 0.04, -18, 0.15), 0.08, 0.04, { acquireFrames: 7 })).toBeGreaterThan(8)
   })
-  // 첫 시작(켠 뒤 · 연주한 음 없이 30 s)은 고른 음이 0.45 s 이어져야 뜬다 — 켜 두기만 한 곳의 말소리 음절이 뜨지 않게.
-  // 그 대가로 짧은 음만 이어지는 패시지로 바로 시작하면 이어지는 음이 나올 때까지 비어 있다(조율하며 긋는 음은 뜬다)
-  test('a first start with short detached notes alone stays blank until a note lasts', () => {
-    expect(firstNote(spiccato(0.1, 0.05, -18, 0.15), 0.1, 0.05, undefined, false)).toBe(99)
-    const pass = spiccato(0.1, 0.05, -18, 0.15), k = firstNote(cat(pass, heldNote()), 0.1, 0.05, undefined, false)
+  // 첫 시작(켠 뒤 · 연주한 음 없이 30 s): 깨끗하고 고른 음은 연주 중과 같이 6 프레임, 아니면 0.45 s 이어져야 뜬다 — 켜 두기만 한 곳의 말소리 음절이 뜨지 않게.
+  // 그 대가로 깨끗하지 않은 짧은 음만 이어지는 패시지로 바로 시작하면 이어지는 음이 나올 때까지 비어 있다
+  // 깨끗하고 고른 음이면 첫 시작도 연주 중과 같다. 고르지 않거나 덜 깨끗하면(시끄러운 곳) 0.45 s 이어지는 음까지 빈다 — coldSteadyCents −1 로 흉내 낸다
+  test('a first start with clean short detached notes shows by the second note, as while playing; notes that are not clean stay blank until one lasts', () => {
+    expect(firstNote(spiccato(0.1, 0.05, -18, 0.15), 0.1, 0.05, undefined, false)).toBeLessThanOrEqual(2)
+    const NOT_CLEAN = { coldSteadyCents: -1 }
+    expect(firstNote(spiccato(0.1, 0.05, -18, 0.15), 0.1, 0.05, NOT_CLEAN, false)).toBe(99)
+    const pass = spiccato(0.1, 0.05, -18, 0.15), k = firstNote(cat(pass, heldNote()), 0.1, 0.05, NOT_CLEAN, false)
     const heldFrom = Math.floor((pass.length / sr - 0.6) / 0.15) + 1 // 패시지 뒤(울림 0.3 s 포함) 이어지는 음이 시작하는 칸
     expect(k, 'shows on the held note after the passage').toBeGreaterThanOrEqual(heldFrom); expect(k).toBeLessThan(heldFrom + 4)
   })
@@ -281,7 +284,7 @@ describe('nothing is played — the tuner shows nothing', () => {
     const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
     let first = -1
     for (let end = N; end <= x.length; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0 && first < 0) { first = end / sr - 3; expect(f.midi).toBe(55) } }
-    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.55) // 켠 뒤 첫 시작은 18 프레임(≈ 0.45 s) — 켜 두기만 한 곳의 말소리가 뜨지 않게(연주하다 쉰 뒤는 6 프레임)
+    expect(first).toBeGreaterThan(0); expect(first).toBeLessThan(0.55) // 켠 뒤 첫 시작: 비브라토가 있는 이 음은 18 프레임(≈ 0.45 s) — 깨끗하고 고르면 6 프레임
   })
   /** 조용한 방에서 가까이 말한 모음 하나: 0.5 s 무음 → 모음(f0, 프레임당 glide st/s 로 미끄러짐, 포먼트 700/1200 Hz) → 무음 */
   function vowel(dur: number, f0: number, glide: number): Float32Array {
@@ -306,13 +309,41 @@ describe('nothing is played — the tuner shows nothing', () => {
       expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)
     }
   })
-  test('a held note (or a long sung vowel) of 0.3 s shows while playing; at a first start it has to last about 0.45 s', () => {
-    expect(shownFrames(vowel(0.3, 210, 0), { coldAcquireFrames: DEFAULT_TRACKER.acquireFrames })).toBeGreaterThan(0)
-    expect(shownFrames(vowel(0.3, 210, 0))).toBe(0)
-    expect(shownFrames(vowel(0.5, 210, 0))).toBeGreaterThan(0)
+  // 첫 시작: 고르고 깨끗한 0.3 s(뜯은 현처럼)는 6 프레임에 뜨고, 1 st/s 로 미끄러지는 소리(말하듯, 6 프레임에 ±5 ¢ 를 넘는다)는 0.45 s 를 넘겨야 뜬다
+  test('a held note (or a long sung vowel) of 0.3 s shows while playing; at a first start a steady one does too, a gliding one has to last about 0.45 s', () => {
+    expect(shownFrames(vowel(0.3, 210, 1), { coldAcquireFrames: DEFAULT_TRACKER.acquireFrames })).toBeGreaterThan(0)
+    expect(shownFrames(vowel(0.3, 210, 0))).toBeGreaterThan(0)
+    expect(shownFrames(vowel(0.3, 210, 1))).toBe(0)
+    expect(shownFrames(vowel(0.5, 210, 1))).toBeGreaterThan(0)
   })
   // 켜 두기만 한 곳(첫 시작): 음절 하나 길이(0.15~0.2 s)의 말소리는 안 뜬다. 연주하다 쉰 뒤의 시작 조건(6 프레임)이었다면 떴을 소리다
-  test.each([[0.15, 0], [0.2, 0], [0.2, 4], [0.2, -4]])('at a first start a spoken syllable of %s s (gliding %s st/s) shows nothing', (dur, glide) => {
+  /** 개방현을 손가락으로 뜯은 소리: 배음마다 감쇠(높을수록 빨리, 기본음 τ), 뜯는 자리 0.18, 뜯은 직후 +8 ¢ 에서 50 ms 에 내려옴. 뜯은 직후 50 ms 의 RMS = db dBFS */
+  function pluck(hz: number, tau: number, db: number): Float32Array {
+    const n = Math.round(1.5 * sr), x = new Float32Array(n), s0 = Math.round(0.3 * sr); let ph = 0
+    for (let i = 0; i < n - s0; i++) {
+      const t = i / sr; ph += 2 * Math.PI * hz * 2 ** (8 * Math.exp(-t / 0.05) / 1200) / sr; let v = 0
+      for (let h = 1; h <= 20 && hz * h < sr * 0.45; h++) v += Math.abs(Math.sin(Math.PI * h * 0.18)) / h * Math.exp(-t * (1 + 0.5 * (h - 1)) / tau) * Math.sin(ph * h)
+      x[s0 + i] = v * Math.min(1, t / 0.002)
+    }
+    let e = 0; for (let i = s0; i < s0 + 0.05 * sr; i++) e += x[i]! ** 2
+    const g = 10 ** (db / 20) / Math.sqrt(e / (0.05 * sr)); let seed = 7
+    for (let i = 0; i < n; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; x[i] = x[i]! * g + (seed / 2 ** 32 - 0.5) * 2e-4 }
+    return x
+  }
+  // 피치카토로 조율: 여리고 짧게 뜯은 미 현은 유효 프레임이 7 개뿐이다 — 첫 시작에 0.45 s 를 요구하면(2.9.10 처음 패치) 안 뜨고, 고름 기준이 ±4 ¢ 여도 안 뜬다
+  test('at a first start a soft, short pluck of the E string shows as in 2.9.9 (tuning by pizzicato)', () => {
+    const x = pluck(659.3, 0.1, -32)
+    expect(shownFrames(x), 'now').toBeGreaterThan(0)
+    expect(shownFrames(x, { coldAcquireFrames: DEFAULT_TRACKER.acquireFrames }), 'six frames as in 2.9.9').toBeGreaterThan(0)
+    expect(shownFrames(x, { coldSteadyCents: -1 }), 'only the 0.45 s path').toBe(0)
+    expect(shownFrames(x, { coldSteadyCents: 4 }), '±4 ¢').toBe(0)
+    for (const [hz, tau] of [[440, 0.2], [293.7, 0.25], [196, 0.3]] as const) expect(shownFrames(pluck(hz, tau, -32)), `${hz} Hz`).toBeGreaterThan(0)
+  })
+  // 깨끗하고 완전히 고른 소리(뜯은 현 · 삐 소리)는 첫 시작에도 연주 중처럼 뜬다. 말소리는 그렇게 고르지 않다(실제 대화 · 낭독 16 분에서 확인)
+  test('at a first start a perfectly steady, clean tone of 0.15 s (a pluck, a beep) shows as while playing', () => {
+    expect(shownFrames(vowel(0.15, 210, 0))).toBeGreaterThan(0)
+  })
+  test.each([[0.15, 2], [0.2, 2], [0.2, 4], [0.2, -4]])('at a first start a spoken syllable of %s s (gliding %s st/s) shows nothing', (dur, glide) => {
     for (const f0 of [120, 210]) {
       expect(shownFrames(vowel(dur, f0, glide), { coldAcquireFrames: DEFAULT_TRACKER.acquireFrames }), `six-frame start, f0 ${f0}`).toBeGreaterThan(0)
       expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)

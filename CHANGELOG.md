@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.11] - 2026-11-16
+The word in the time signature row fits its button in Spanish.
+
+Metronome
+- In Spanish, "Libre" in the row of time signatures is set in the app's text font instead of the number font. It filled its button edge to edge on a 360 px wide phone in the full-size metronome; it now keeps a margin. Other languages are unchanged
+
+Store images
+- Phone screenshots are 1080 × 1920 (9:16). The phone frame shrinks to fit under the caption, so a two-line caption no longer pushes it off the bottom
+- Tuner scenes are shot only when the trace is unbroken and the readout says 0 ¢; a vibrato scene could read +1 ¢
+- The one-line description on the feature graphic shrinks until it keeps clear of the phone (Japanese was the longest)
+
 ## [2.9.10] - 2026-11-15
 The tuner stays quiet when it is just left on in a room where people talk.
 

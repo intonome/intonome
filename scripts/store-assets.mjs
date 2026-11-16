@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Play 스토어 이미지 — 폰 스크린샷 5장(1080×2160, 한국어·영어), 피처 그래픽(1024×500), 스토어 아이콘(512). 앱을 실제로 조작해서 찍는다(가짜 마이크에 합성 연주).
+// Play 스토어 이미지 — 폰 스크린샷 5장(1080×1920, 언어마다), 피처 그래픽(1024×500), 스토어 아이콘(512). 앱을 실제로 조작해서 찍는다(가짜 마이크에 합성 연주).
 // 사용: npm run store:assets  → test-assets/store/ (커밋하지 않는다 — 다시 만들 수 있다)
-// Play 규격: 폰 스크린샷은 긴 변이 짧은 변의 2배 이하, 320–3840 px, PNG(알파 없음)/JPEG. 피처 그래픽은 1024×500
+// Play 규격: 폰 스크린샷은 긴 변이 짧은 변의 2배 이하, 320–3840 px, PNG(알파 없음)/JPEG — 추천·큰 배치 대상은 9:16, 1080 px 이상, 4장 이상. 피처 그래픽은 1024×500
 //
 // 장면과 문구(docs/STORE.md 의 Graphics 절과 같아야 한다):
 //   1 튜너 — 라, 비브라토 궤적            4 드론 도 + 솔(완전5도, 맞음)
@@ -59,11 +59,13 @@ const hz = (name, ref) => ref * Math.pow(2, (NOTE[name[0]] + (parseInt(name.slic
  *  s: 바이올린 라 — 긴 음, 비브라토 없음, 정확(스케일을 들려주면 음이 바뀔 때마다 궤적에 꺾임이 남는다 — 그림은 곧은 선 하나가 낫다)
  *  d: 드론 위의 솔(완전5도) — 긴 음, 정확. 궤적은 곧은 선 하나(문구가 장면을 말하고, 그림은 깔끔하게)
  *  합성음을 사람처럼 비틀면 각지고 어색해 보인다 — 정확한 음이 더 낫다(사용자 결정) */
+const HOLD = 20
 function makeSignals(ref) {
   const a = join(SIG, `violin_A4_${ref}.wav`), s = join(SIG, `cello_Cmaj_${ref}.wav`), d = join(SIG, `cello_G2_drone_${ref}.wav`)
-  writeWav(a, concat(silence(0.3), bowed(() => hz('A4', ref), 9, { vibCents: 12, vibDelay: 0, vibRise: 0.01 }), silence(0.5)))
-  writeWav(s, concat(silence(0.3), bowed(() => hz('A4', ref), 9, { jitterCents: 0.5 }), silence(0.5)))
-  writeWav(d, concat(silence(0.3), bowed(() => hz('G2', ref), 9, { amp: 0.4, jitterCents: 0.5 }), silence(0.5)))
+  // 음은 HOLD 초 — 깨끗한 순간(rawTrace)을 기다리는 동안 WAV 가 한 바퀴 돌아 궤적에 틈이 들어오지 않게 넉넉히
+  writeWav(a, concat(silence(0.3), bowed(() => hz('A4', ref), HOLD, { vibCents: 12, vibDelay: 0, vibRise: 0.01 }), silence(0.5)))
+  writeWav(s, concat(silence(0.3), bowed(() => hz('A4', ref), HOLD, { jitterCents: 0.5 }), silence(0.5)))
+  writeWav(d, concat(silence(0.3), bowed(() => hz('G2', ref), HOLD, { amp: 0.4, jitterCents: 0.5 }), silence(0.5)))
   return { a, s, d }
 }
 
@@ -73,8 +75,8 @@ const killServer = () => { try { process.kill(-server.pid, 'SIGTERM') } catch { 
 process.on('exit', killServer); process.on('uncaughtException', e => { console.error(e); killServer(); process.exit(1) })
 await waitForServer(`http://localhost:${PORT}/`)
 
-// 360×720 CSS px × 3 = 1080×2160 (2:1)
-const VIEW = { width: 360, height: 720 }, SCALE = 3
+// 앱 화면은 360×720 CSS px(요즘 폰 비율)로 찍고, 스토어 이미지는 360×640 × 3 = 1080×1920 (9:16)
+const VIEW = { width: 360, height: 720 }, CANVAS = { width: 360, height: 640 }, SCALE = 3
 const launch = wav => chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${wav}`, '--autoplay-policy=no-user-gesture-required'] })
 const sleep = (p, ms) => p.waitForTimeout(ms)
 const noteText = p => p.evaluate(() => { const n = document.getElementById('tuner-note'); return n.classList.contains('empty') ? '' : n.textContent.trim() })
@@ -166,27 +168,49 @@ const traceContinuous = p => p.evaluate(() => {
   const recent = rows.slice(Math.floor(h * 0.35)), gaps = recent.filter(r => !r).length
   return { ok: recent[recent.length - 1] && gaps === 0, why: `h ${h} gaps(bottom 65%) ${gaps} lastLit ${recent[recent.length - 1]}` }
 })
-/** 끊김 없는 궤적이 나올 때까지 몇 번 다시 찍는다 */
-async function rawTrace(p, tries = 6) {
-  let r
-  for (let i = 0; i < tries; i++) { r = await traceContinuous(p); if (r.ok) return raw(p); if (process.env.STORE_DEBUG) console.log('   trace: ' + r.why); await sleep(p, 1500) }
-  console.warn('  (trace never continuous — shooting anyway: ' + r.why + ')'); return raw(p)
+/** 궤적이 끊김 없고 숫자가 0 ¢ 인 순간을 찍는다. 찍은 뒤에도 둘 다 그대로여야 그 장을 쓴다. 그런 순간이 없으면 null */
+const centsText = p => p.evaluate(() => document.getElementById('tuner-cents').textContent.replace(/\s/g, ''))
+const clean = async p => { const r = await traceContinuous(p); return { ok: r.ok && await centsText(p) === '0¢', why: r.why + ' cents ' + await centsText(p) } }
+async function rawTrace(p, ms = 5000) {
+  const t0 = Date.now(); let r
+  while (Date.now() - t0 < ms) {
+    r = await clean(p)
+    if (r.ok) { const shot = await raw(p); r = await clean(p); if (r.ok) return shot }
+    await sleep(p, 40)
+  }
+  if (process.env.STORE_DEBUG) console.log('   no clean frame: ' + r.why); return null
+}
+/** 튜너 장면 하나 — open() 이 브라우저를 띄워 장면을 차리고 { b, p } 를 준다. 비브라토 음은 시작 위상에 따라 숫자가 +1 ¢ 에 머무는 때가 있어, 깨끗한 장이 안 나오면 처음부터 다시 띄운다 */
+async function tunerScene(open, tries = 6) {
+  for (let i = 1; ; i++) {
+    const { b, p } = await open(); await sleep(p, 4500)
+    const shot = await rawTrace(p); if (shot) return { b, p, shot }
+    if (i === tries) { console.warn('  (no clean frame in ' + tries + ' tries, shooting anyway)'); return { b, p, shot: await raw(p) } }
+    await b.close()
+  }
 }
 
-// 스토어 이미지 = 문구 + 폰 틀 안의 앱 화면. 틀은 화면 비율(1:2) 그대로라 아래가 비지 않고, 아래 끝은 이미지 밖으로 이어진다
+// 스토어 이미지 = 문구 + 폰 틀 안의 앱 화면
+/** 폰 틀을 문구 아래 남은 높이에 통째로 들어가게 줄인다(아래 24 px 여백) — 문구가 몇 줄이든 틀이 잘리지 않는다. 브라우저 안에서 돈다 */
+const fitPhone = ([canvasH, ratio]) => {
+  const ph = document.querySelector('.ph'), room = canvasH - ph.getBoundingClientRect().top - 24, BORDER = 12
+  const w = Math.min(280, Math.floor((room - BORDER) / ratio) + BORDER), k = w / 280
+  ph.style.width = w + 'px'; ph.style.borderRadius = 32 * k + 'px'; ph.querySelector('img').style.borderRadius = 26 * k + 'px'
+}
 let composer // 합성용 브라우저 컨텍스트(가짜 마이크 없음)
 async function compose(lang, idx, shotBuf, name) {
   const [title, sub] = CAPTIONS[lang][idx]
   const p = await composer.newPage()
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>
-    html,body{margin:0;width:360px;height:720px;overflow:hidden;background:radial-gradient(120% 60% at 50% 0%,#2a3040,#14161b);font-family:${FONT[lang]};color:#fff;text-align:center}
+    html,body{margin:0;width:${CANVAS.width}px;height:${CANVAS.height}px;overflow:hidden;background:radial-gradient(120% 60% at 50% 0%,#2a3040,#14161b);font-family:${FONT[lang]};color:#fff;text-align:center}
     h1{font-size:${lang === 'en' || lang === 'es' ? 25 : 27}px;font-weight:700;margin:36px 20px 8px;letter-spacing:-.3px;line-height:1.3}
     p{margin:0 20px;font-size:14px;color:#aeb4bd;line-height:1.4}
-    /* 폰 틀은 글 아래 흐름에, 통째로 보이게(위 36 · 아래 약 30 px 여백). 틀 안은 앱 화면 비율(1:2) 그대로라 빈 데가 없다 */
+    /* 폰 틀은 글 아래 흐름에. 틀 안은 앱 화면 비율(1:2) 그대로라 빈 데가 없다. 폭은 아래 fitPhone 이 정한다 */
     .ph{margin:18px auto 0;width:280px;border-radius:32px;border:6px solid #353b48;background:#353b48;overflow:hidden;box-shadow:0 18px 44px #0008}
     .ph img{width:100%;display:block;border-radius:26px}
   </style><h1>${title}</h1><p>${sub}</p><div class="ph"><img src="data:image/png;base64,${shotBuf.toString('base64')}"></div>`)
-  await p.evaluate(() => document.fonts.ready); await sleep(p, 150)
+  await p.evaluate(() => document.fonts.ready)
+  await p.evaluate(fitPhone, [CANVAS.height, VIEW.height / VIEW.width]); await sleep(p, 150)
   writeRgb(join(OUT, name + '.png'), await p.screenshot())
   await p.close()
   console.log('  ' + name)
@@ -204,34 +228,37 @@ const freezeDownbeat = async p => {
   })
 }
 
-composer = await (await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })).newContext({ viewport: VIEW, deviceScaleFactor: SCALE })
+composer = await (await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })).newContext({ viewport: CANVAS, deviceScaleFactor: SCALE })
 const featureShot = {}
 for (const lang of LANGS) {
   console.log(lang)
   const sig = makeSignals(REF[lang]), n = k => `${TAG_OF[lang]}_${k}`
-  // 1. 조율: 바이올린 라 — 맞음(초록), 곧게 내다가 비브라토가 들어온 궤적
-  let b = await launch(sig.a); let p = await page(b, lang, 'dark')
-  await waitNote(p); await sleep(p, 4500); featureShot[lang] = await rawTrace(p); await compose(lang, 0, featureShot[lang], n('1_tuner'))
-  await b.close()
+  // 1. 조율: 바이올린 라 — 맞음(초록), 고른 비브라토 궤적
+  let { b, p, shot } = await tunerScene(async () => { const b = await launch(sig.a), p = await page(b, lang, 'dark'); await waitNote(p); return { b, p } })
+  featureShot[lang] = shot; await compose(lang, 0, shot, n('1_tuner')); await b.close()
   // 2. 튜너 + 메트로놈 펼침 — 라를 곧게, 4/4 ♫ 재생 중
-  b = await launch(sig.s); p = await page(b, lang, 'dark')
-  await p.click('#metro-size-btn'); await settled(p)
-  await p.click('.m-seg[data-sd="2"]') // 4/4, 8분음표 분할 — 가장 흔한 설정(셋잇단은 보여 주기용이지 평소 모습이 아니다)
-  await p.click('#metro-play-btn'); await waitNote(p); await sleep(p, 4500); await compose(lang, 1, await rawTrace(p), n('2_metronome'))
+  ;({ b, p, shot } = await tunerScene(async () => {
+    const b = await launch(sig.s), p = await page(b, lang, 'dark')
+    await p.click('#metro-size-btn'); await settled(p)
+    await p.click('.m-seg[data-sd="2"]') // 4/4, 8분음표 분할 — 가장 흔한 설정(셋잇단은 보여 주기용이지 평소 모습이 아니다)
+    await p.click('#metro-play-btn'); await waitNote(p); return { b, p }
+  }))
+  await compose(lang, 1, shot, n('2_metronome'))
   // 3. 메트로놈만 크게 — 다이얼 96, 마디 첫 박 치는 순간
   await p.click('#metro-full-btn'); await settled(p)
   for (let i = 0; i < 16; i++) await p.click('.m-adj[data-t-aria="metro.bpmUp"]')
   await sleep(p, 1200); await freezeDownbeat(p); await compose(lang, 2, await raw(p), n('3_metronome_full'))
   await b.close()
-  // 4. 드론 도 위에서 스케일 — 솔(완전5도)이 맞은 순간. 드론이 울려도 연주하는 음만 읽는다
-  b = await launch(sig.d); p = await page(b, lang, 'dark')
-  await p.click('#drone-btn'); await p.click('.drone-note-btn[data-pc="0"]')
-  await waitNote(p, { ko: '솔', ja: 'ソ', es: 'Sol' }[lang] ?? 'G'); await sleep(p, 4500); await compose(lang, 3, await rawTrace(p), n('4_drone'))
-  await b.close()
+  // 4. 드론 도 위에서 솔(완전5도)이 맞은 순간. 드론이 울려도 연주하는 음만 읽는다
+  ;({ b, p, shot } = await tunerScene(async () => {
+    const b = await launch(sig.d), p = await page(b, lang, 'dark')
+    await p.click('#drone-btn'); await p.click('.drone-note-btn[data-pc="0"]')
+    await waitNote(p, { ko: '솔', ja: 'ソ', es: 'Sol' }[lang] ?? 'G'); return { b, p }
+  }))
+  await compose(lang, 3, shot, n('4_drone')); await b.close()
   // 5. 라이트 테마 — 밝은 곳에서
-  b = await launch(sig.a); p = await page(b, lang, 'light')
-  await waitNote(p); await sleep(p, 4500); await compose(lang, 4, await rawTrace(p), n('5_light'))
-  await b.close()
+  ;({ b, p, shot } = await tunerScene(async () => { const b = await launch(sig.a), p = await page(b, lang, 'light'); await waitNote(p); return { b, p } }))
+  await compose(lang, 4, shot, n('5_light')); await b.close()
 }
 
 // 피처 그래픽 1024×500 — 아이콘 · 워드마크 · 한 줄 · 조율 화면 일부. 알파 없음. 폰에서는 홍보 영상이 있을 때만 보이지만 필수 항목
@@ -258,6 +285,8 @@ for (const lang of LANGS) {
     <div class="tl">in tune, in time.</div>
     <div class="sub">${TAG[lang]}</div>
     <div class="ph"><img src="data:image/png;base64,${featureShot[lang].toString('base64')}"></div>`)
+    // 한 줄 설명이 폰 그림(왼쪽 끝 666 px)에 붙지 않게: 오른쪽 여백 52 px 가 날 때까지 글자를 줄인다(일본어가 가장 길다)
+    await p.evaluate(() => { const el = document.querySelector('.sub'); for (let fs = 19; el.getBoundingClientRect().right > 614 && fs > 15; fs -= 0.5) el.style.fontSize = fs - 0.5 + 'px' })
     await sleep(p, 300)
     writeRgb(join(OUT, `${TAG_OF[lang]}_feature_1024x500.png`), await p.screenshot())
     console.log('  ' + `${TAG_OF[lang]}_feature_1024x500`)

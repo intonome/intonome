@@ -319,10 +319,10 @@ El afinador y el metrónomo comparten una sola pantalla. Practica tu afinación 
 |---|---|---|
 | App icon | `icon_512.png` | 512 × 512, 32-bit PNG with alpha, ≤ 1 MB |
 | Feature graphic | `ko_feature_1024x500.png`, `en_…`, `ja_…`, `zh_…`, `zht_…`, `es_…` | 1024 × 500 PNG or JPEG, no alpha. Required, though phones only show it when there is a promo video |
-| Phone screenshots | `ko_1_tuner` … `ko_5_light`, `en_…`, `ja_…`, `zh_…` (Simplified), `zht_…` (Traditional), `es_…` (1080 × 2160) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha |
+| Phone screenshots | `ko_1_tuner` … `ko_5_light`, `en_…`, `ja_…`, `zh_…` (Simplified), `zht_…` (Traditional), `es_…` (1080 × 1920, 9:16) | 2–8 per listing, 320–3840 px, longer side ≤ 2 × shorter, PNG/JPEG without alpha. For promotion Play asks for at least four at 1080 px or more in 9:16 |
 | 7-inch / 10-inch tablet screenshots | not provided | optional; without them the listing just isn't featured on tablets |
 
-Upload in this order; the first two and a half are what a phone shows under the Install button. Each image is a caption plus the app in a phone frame. The captions say only what the picture cannot (edit them in `scripts/store-assets.mjs`, `CAPTIONS`):
+Upload in this order; the first two and a half are what a phone shows under the Install button. Each image is a caption plus the app in a phone frame; the frame shrinks to fit under the caption, so a two-line caption never cuts the phone off. Tuner scenes are shot only when the trace is unbroken and the readout says 0 ¢. The captions say only what the picture cannot (edit them in `scripts/store-assets.mjs`, `CAPTIONS`):
 
 | # | Scene | Korean | English | Japanese | Chinese (Simplified) | Chinese (Traditional) | Spanish |
 |---|---|---|---|---|---|---|---|

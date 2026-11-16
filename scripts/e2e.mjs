@@ -475,6 +475,13 @@ await scenario('layout: expanded at 320px in English with BPM 200 — ▶ stays 
   const r = await p.evaluate(() => { const c = document.getElementById('metro-card'), cr = c.getBoundingClientRect(), inner = cr.right - parseFloat(getComputedStyle(c).borderRightWidth), pl = document.getElementById('metro-play-btn').getBoundingClientRect(), leds = Array.from(document.querySelectorAll('#beat-vis .led')).map(e => e.getBoundingClientRect()); return { pad: inner - pl.right, gap: Math.min(...leds.slice(1).map((l, i) => l.left - leds[i].right)) } })
   assert.ok(r.pad >= 8, '▶ 오른쪽에 여백 ' + JSON.stringify(r)); assert.ok(r.gap >= 4, 'LED 사이 간격 ' + JSON.stringify(r))
 }, { viewport: { width: 320, height: 700 } })
+// 박자표 줄의 낱말 칸(스페인어 'Libre' 가 가장 길다): 메트로놈 전용 화면에서 글자와 테두리 사이가 4 px 이상
+for (const w of [360, 320]) await scenario(`layout: full-size metronome at ${w}px in Spanish, the word in the time signature row keeps a margin inside its cell`, 'silence_lowfloor.wav', async p => {
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'es', theme: 'light' })))
+  await p.goto(URL_); await sleep(p, 800); await sizeTap(p); await p.click('#metro-full-btn'); await sleep(p, 900)
+  const r = await p.evaluate(() => { const b = document.querySelector('#metro-card.full .m-seg[data-ts="1"]'), br = b.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(b); const t = g.getBoundingClientRect(); return { text: b.textContent, pad: Math.min(t.left - br.left, br.right - t.right) - 1 } })
+  assert.equal(r.text, 'Libre'); assert.ok(r.pad >= 4, '글자와 테두리 사이 ' + JSON.stringify(r))
+}, { viewport: { width: w, height: 2 * w } })
 await scenario('metro: card drag — grows and shrinks with the finger, a short drag springs back, a long drag moves one step (up and down)', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 1200)
   const st = () => p.evaluate(() => { const c = document.getElementById('metro-card'); return c.classList.contains('full') ? 'f' : document.getElementById('metro-body-wrap').classList.contains('collapsed') ? 'c' : 'e' })

@@ -351,6 +351,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 #metro-grids-wrap{display:flex;flex-direction:column;gap:8px;}
 .m-seg{flex:1;min-width:0;height:var(--h-seg);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-md);color:var(--text);font-family:'DM Mono',monospace;font-size:min(var(--fs-base),4.2vw);font-weight:var(--fw-md);gap:2px;padding:0;cursor:pointer;text-align:center;transition:border-color .1s,color .1s,background .1s;display:flex;align-items:center;justify-content:center;white-space:nowrap;} /* 다섯 칸 중 하나 — 「Libre」(스페인어)·큰 글꼴에서도 칸 안에(320 px 에서 13.4 px 까지 줄어든다) */
 .m-seg.on{border-color:var(--text-2);color:var(--text);background:var(--sel);}
+html[lang="es"] .m-seg[data-ts="1"]{font-family:inherit;} /* 스페인어 'Libre' 는 화면 글꼴로 — 고정폭이면 360 px 폭의 메트로놈 전용 화면 칸(54 px)을 꽉 채운다. 다른 언어의 낱말은 고정폭 선언 그대로가 세로 자리가 맞는다 */
 
 /* 기준음 패널 */
 /* 드론 음 고르기 — 헤더 바로 아래, 튜너 카드 폭. 바깥 탭은 배경이 받아 닫기만 한다 */

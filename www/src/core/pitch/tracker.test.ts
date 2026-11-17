@@ -261,3 +261,68 @@ describe('tracker', () => {
     expect(t.push(440, 0.95, true, A).held).toBe(0) // 다시 잡히면 0
   })
 })
+
+describe('tracker: the line is held through a blip and goes in one step to where the pitch settles', () => {
+  const hz = (c: number) => 440 * Math.pow(2, c / 1200)
+  /** 라4 를 자리 잡을 만큼 켠 트래커(반응 보통 .20) */
+  const steady = (p = DEFAULT_TRACKER): Tracker => { const t = createTracker(p); for (let i = 0; i < COLD + 12; i++) t.push(440, 0.95, true, 0.2); return t }
+  const feed = (t: Tracker, cents: number[]) => cents.map(c => t.push(hz(c), 0.95, true, 0.2).a)
+  /** 지켜보지 않는 트래커 — 한 음 안에서는 2.9.11 의 평활 그대로다 */
+  const NO_HOLD = { ...DEFAULT_TRACKER, holdCents: Infinity }
+
+  test('a bow change — three frames 30 to 40 ¢ flat, then back — leaves the line where it was; without the hold it sags 13 ¢ and takes 0.3 s to return', () => {
+    const blip = [0, 0, -30, -39, -32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for (const a of feed(steady(), blip)) expect(Math.abs(a)).toBeLessThan(0.5)
+    const old = feed(steady(NO_HOLD), blip)
+    expect(Math.min(...old)).toBeLessThan(-12); expect(old[old.length - 4]!).toBeLessThan(-1) // 0.25 s 뒤에도 아직 돌아오는 중
+  })
+  test('a longer blip of five scattered frames is still not followed: the frames never agree with each other', () => {
+    for (const a of feed(steady(), [0, -12, -30, -34, -18, -8, 0, 0, 0, 0, 0, 0])) expect(Math.abs(a)).toBeLessThan(0.5)
+  })
+  test('a pitch that moves and stays (a peg nudged 25 ¢) is followed in one step when four frames agree — nothing in between is shown', () => {
+    const out = feed(steady(), [0, 25, 25, 25, 25, 25, 25, 25, 25])
+    for (const a of out.slice(0, 4)) expect(Math.abs(a)).toBeLessThan(0.5)        // 지켜보는 동안 선은 그 자리
+    for (const a of out.slice(4)) expect(Math.abs(a - 25)).toBeLessThan(0.5)      // 네 프레임이 모이면 그 자리로
+    const old = feed(steady(NO_HOLD), [0, 25, 25, 25, 25, 25, 25, 25, 25])
+    expect(old.slice(1, 7).some(a => a > 5 && a < 20)).toBe(true); expect(Math.abs(old[8]! - 25)).toBeGreaterThan(2) // 지켜보지 않으면 사이값을 지나 0.17 s 뒤에도 덜 왔다
+  })
+  test('a slow peg turn (0.4 ¢ a frame ≈ 19 ¢/s) is followed exactly as without the hold', () => {
+    const ramp = Array.from({ length: 80 }, (_, i) => -30 + 0.4 * i)
+    const t0 = createTracker(), t1 = createTracker(NO_HOLD)
+    for (let i = 0; i < COLD + 12; i++) { t0.push(hz(-30), 0.95, true, 0.2); t1.push(hz(-30), 0.95, true, 0.2) }
+    expect(feed(t0, ramp)).toEqual(feed(t1, ramp))
+  })
+  test('vibrato ±15 ¢ at 5.5 Hz on a note that was steady: after its first cycle the line swings as without the hold', () => {
+    const vib = Array.from({ length: 60 }, (_, i) => 15 * Math.sin(2 * Math.PI * 5.5 * i * 1024 / 48000))
+    const a = feed(steady(), vib), b = feed(steady(NO_HOLD), vib)
+    for (let i = 30; i < 60; i++) expect(Math.abs(a[i]! - b[i]!)).toBeLessThan(0.5)
+    expect(Math.max(...a.slice(30)) - Math.min(...a.slice(30))).toBeGreaterThan(6)
+  })
+  test('a new note that starts 25 ¢ flat for four scattered frames reads the settled pitch as soon as it settles — it does not creep there', () => {
+    const t = steady()
+    const outs = [175, 170, 178, 172, 200, 200, 200, 200, 200, 200].map(c => t.push(hz(c), 0.95, true, 0.2)) // 시4: 첫머리 네 프레임이 22~30 ¢ 낮고 흩어져 있다
+    const k = outs.findIndex(o => o.midi === 71)
+    expect(k).toBeGreaterThanOrEqual(0); expect(k).toBeLessThanOrEqual(2)
+    for (const o of outs.slice(6)) { expect(o.midi).toBe(71); expect(Math.abs(o.a - 200)).toBeLessThan(0.5) } // 자리 잡은 값이 둘 들어오면 거기
+  })
+  test('a new note that trembles from its first frame (±15 ¢ at 5.5 Hz) is drawn exactly as without the hold: until its frames gather there is nothing to hold it to, and the line stays smoothed', () => {
+    const note = Array.from({ length: 40 }, (_, i) => 200 + 15 * Math.sin(2 * Math.PI * 5.5 * i * 1024 / 48000)) // 시4 로 넘어가자마자 떤다
+    const a = feed(steady(), note), b = feed(steady(NO_HOLD), note)
+    for (let i = 0; i < 40; i++) expect(Math.abs(a[i]! - b[i]!)).toBeLessThan(0.5)
+    // 평활 없이 그 음의 최근 값을 그대로 그리면(모일 때까지) 떨림이 두 배로 그려진다 — 평활한 선은 ±15 ¢ 의 절반도 안 흔들린다
+    expect(Math.max(...a.slice(8)) - Math.min(...a.slice(8))).toBeLessThan(15)
+  })
+  test('with the spread rule off, frames that neither return nor agree are adopted after holdMaxFrames — the line does not stay behind', () => {
+    const t = steady({ ...DEFAULT_TRACKER, holdSpread: 0 })
+    const out = feed(t, Array.from({ length: DEFAULT_TRACKER.holdMaxFrames + 1 }, (_, i) => (i % 2 ? 40 : 20)))
+    for (const a of out.slice(0, DEFAULT_TRACKER.holdMaxFrames - 1)) expect(Math.abs(a)).toBeLessThan(0.5)
+    expect(out[DEFAULT_TRACKER.holdMaxFrames - 1]!).toBeGreaterThan(19)
+  })
+  test('a changed reference pitch moves the watched frames with everything else', () => {
+    const t = steady()
+    feed(t, [20, 20])            // 두 프레임 지켜보는 중
+    t.rebase(-20)                // 기준음을 올려 같은 소리가 0 ¢ 가 됐다 → 지켜보던 값도, 있던 자리(−20)도 같이 옮겨진다
+    const out = feed(t, [0, 0, 0, 0])
+    expect(Math.abs(out[1]! - 0)).toBeLessThan(0.5) // 옮겨진 값 넷이 모여 그 자리로
+  })
+})

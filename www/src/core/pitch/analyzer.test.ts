@@ -354,10 +354,10 @@ describe('nothing is played — the tuner shows nothing', () => {
 describe('the number and the green are calm; the line stays live', () => {
   // 비브라토 ±15 ¢ 에서 숫자가 초당 43 번, 허용 경계(+14 ¢)에서 초록이 초당 9 번 바뀌었다 (2.5.2). 숫자와 초록은 0.37 s 평균으로 읽고, 선은 매 프레임 그대로
   const sr = 48000, N = 4096, HOP = 1024
-  function frames(centsAt: (t: number) => number, sec: number, tol = 15) {
+  function frames(centsAt: (t: number) => number, sec: number, tol = 15, tracker: Partial<typeof DEFAULT_TRACKER> = {}) {
     const n = Math.round(sec * sr), x = new Float32Array(n); let ph = 0
     for (let i = 0; i < n; i++) { const t = i / sr; ph += 2 * Math.PI * 440 * Math.pow(2, centsAt(t) / 1200) / sr; let s = 0; for (let h = 1; h <= 10; h++) s += Math.sin(ph * h + h) / h; x[i] = 0.12 * s * Math.min(1, t / 0.08) }
-    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: tol })
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200, tracker }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: tol })
     const out: Array<{ t: number; read: number; cents: number; inTune: boolean }> = []
     for (let end = N; end <= n; end += HOP) { const f = a.process(x.subarray(end - N, end)); if (f.hz > 0) out.push({ t: end / sr, read: f.readCents, cents: f.cents, inTune: f.inTune }) }
     return out
@@ -384,6 +384,13 @@ describe('the number and the green are calm; the line stays live', () => {
     for (const f of o) if (f.t > 0.9 && f.t < 2.5) expect(Math.abs(f.read - (-30 + 15 * (f.t - 0.5)))).toBeLessThanOrEqual(7)
     const zero = o.find(f => f.t >= 2.5 && f.read === 0); expect(zero).toBeDefined(); expect(zero!.t - 2.5).toBeLessThan(0.45)
     expect(o.filter(f => f.t > 3.2).every(f => f.read === 0 && f.inTune)).toBe(true)
+  })
+  test('a bow change — the pitch 35 ¢ flat for 60 ms — moves neither the line nor the number; without the hold the line sags and creeps back', () => {
+    const blip = (t: number) => (t >= 2 && t < 2.06 ? -35 : 0)
+    const o = frames(blip, 3.2).filter(f => f.t > 1)
+    expect(Math.max(...o.map(f => Math.abs(f.cents)))).toBeLessThan(1.5); expect(o.every(f => f.read === 0)).toBe(true)
+    const old = frames(blip, 3.2, 15, { holdCents: Infinity }).filter(f => f.t > 1)
+    expect(Math.min(...old.map(f => f.cents))).toBeLessThan(-6); expect(old.filter(f => f.cents < -2).length).toBeGreaterThan(8) // 0.17 s 넘게 끌려가 있다
   })
   test('a 25 ¢ step: the number is within 3 ¢ when the line arrives (0.4 s) and exact within 0.75 s', () => {
     const o = frames(t => t < 1.5 ? 0 : 25, 3)

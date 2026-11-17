@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.12] - 2026-11-18
+The tuner's line stays put through a bow change, and a note name is not flashed in passing.
+
+Tuner
+- A bow change no longer kinks the trace. Around a bow change or the start of a note the measured pitch reads 10 to 40 ¢ off for three or four frames; the line used to follow it and take 0.2 to 0.4 s to come back. Such readings are now watched instead of followed: if the pitch comes back the line does not move, and if it stays (four readings in a row within 6 ¢ of each other, about 0.08 s) the line goes there in one step, as when you nudge a peg. Vibrato and a peg turned slowly are drawn as before
+- The cost: when vibrato begins on a note that was held steady its first half swing is not drawn, a very slow, wide vibrato (under about three swings a second) is drawn in steps, and a slide faster than about 6 ¢ a frame is held for up to 0.3 s and then followed in a step
+- A note name is not flashed in passing. A new name appears when two readings in a row agree within 6 ¢, so a slide from one note to another, or the reading at the moment of a change, does not show a note that was never played. A clean change is as quick as before; a note whose first readings are still moving, as when it is changed with vibrato, shows its name 0.02 to 0.1 s later. A pitch that never settles still changes name within about 0.17 s
+- The cents number and the in-tune colour work as before. Sensitivity and response settings are unchanged
+
 ## [2.9.11] - 2026-11-16
 The word in the time signature row fits its button in Spanish.
 

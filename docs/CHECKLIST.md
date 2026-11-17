@@ -42,7 +42,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] The tuning routine over room rumble (brown noise): G3 alone with a −20 dB fundamental reads G3 in every frame; G3 + D4, D4 + A4 and A4 + E5 bowed together read the lower string in every frame (three noise seeds); single notes with irregular spectra are never shown an octave up (unit tests with the real analyzer; benchmark signals *_rumble)
 - [A] A bow change does not kink the trace: three to five frames 10 to 40 cents off that come back leave the line where it was; a pitch that moves and stays (a peg nudged 25 cents) is followed in one step once four frames agree; a slow peg turn and vibrato are followed exactly as before, and so is a note that trembles from its first frame; a note whose first frames are off reads the settled pitch as soon as it settles (tracker unit tests; analyzer test with a 60 ms dip)
 - [A] A note name is not flashed in passing: a slide from one note to another shows only the two, the new name appearing when two frames agree within 6 cents; a clean change is as quick as before; a pitch that never settles changes name after 8 frames; the two frames may sit either side of a dropout (tracker unit tests)
-- [A] The needle never shows a value between two notes: a far candidate doesn't move it until confirmed, then it snaps; a slide is followed continuously (tracker unit tests)
+- [A] The needle never shows a value between two notes: a far candidate doesn't move it until confirmed, then it snaps; a slow slide (up to about 6 cents a frame) is followed continuously, a faster one is held and then followed in a step (tracker unit tests)
 
 ## Metronome
 - [A] Plays without the mic

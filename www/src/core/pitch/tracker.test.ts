@@ -302,7 +302,7 @@ describe('tracker: the line is held through a blip and goes in one step to where
     const t = steady()
     const outs = [175, 170, 178, 172, 200, 200, 200, 200, 200, 200].map(c => t.push(hz(c), 0.95, true, 0.2)) // 시4: 첫머리 네 프레임이 22~30 ¢ 낮고 흩어져 있다
     const k = outs.findIndex(o => o.midi === 71)
-    expect(k).toBeGreaterThanOrEqual(0); expect(k).toBeLessThanOrEqual(2)
+    expect(k).toBeGreaterThanOrEqual(0); expect(k).toBeLessThanOrEqual(3) // 흩어진 프레임 둘이 6 ¢ 안에 모이는 넷째 프레임(170 · 178 은 8 ¢ 떨어져 있다)
     for (const o of outs.slice(6)) { expect(o.midi).toBe(71); expect(Math.abs(o.a - 200)).toBeLessThan(0.5) } // 자리 잡은 값이 둘 들어오면 거기
   })
   test('a new note that trembles from its first frame (±15 ¢ at 5.5 Hz) is drawn exactly as without the hold: until its frames gather there is nothing to hold it to, and the line stays smoothed', () => {
@@ -324,5 +324,37 @@ describe('tracker: the line is held through a blip and goes in one step to where
     t.rebase(-20)                // 기준음을 올려 같은 소리가 0 ¢ 가 됐다 → 지켜보던 값도, 있던 자리(−20)도 같이 옮겨진다
     const out = feed(t, [0, 0, 0, 0])
     expect(Math.abs(out[1]! - 0)).toBeLessThan(0.5) // 옮겨진 값 넷이 모여 그 자리로
+  })
+})
+
+describe('tracker: a new note name appears when two frames agree on it', () => {
+  const hz = (c: number) => 440 * Math.pow(2, c / 1200)
+  const steady = (p = DEFAULT_TRACKER): Tracker => { const t = createTracker(p); for (let i = 0; i < COLD + 12; i++) t.push(440, 0.95, true, 0.2); return t }
+  const names = (t: Tracker, cents: number[]) => cents.map(c => t.push(hz(c), 0.95, true, 0.2).midi)
+
+  test('a slide from la to si (30 ¢ a frame) does not flash the la sharp it passes through; si appears on the second frame that stays', () => {
+    const slide = [30, 60, 90, 120, 150, 180, 200, 201, 200, 200]
+    const out = names(steady(), slide)
+    expect(new Set(out)).toEqual(new Set([69, 71]))
+    expect(out.indexOf(71)).toBe(7)
+    // 두 프레임이 모이기를 보지 않으면(2.9.11) 지나가는 라# 이 뜬다
+    expect(names(steady({ ...DEFAULT_TRACKER, holdCents: Infinity }), slide)).toContain(70)
+  })
+  test('a clean change is as quick as before', () => {
+    const clean = [0, 0, 203, 200, 200, 200]
+    const out = names(steady(), clean)
+    expect(out.indexOf(71)).toBe(4) // 중앙값 창(3)이 새 음으로 넘어가고 두 프레임
+    expect(out).toEqual(names(steady({ ...DEFAULT_TRACKER, holdCents: Infinity }), clean))
+  })
+  test('a pitch that never settles (a slide that goes on) is not held on the old name: the name follows once rivalFrames frames have left the note', () => {
+    const slide = Array.from({ length: 14 }, (_, i) => 70 + 30 * i)
+    const k = names(steady(), slide).findIndex(m => m !== 69), was = names(steady({ ...DEFAULT_TRACKER, holdCents: Infinity }), slide).findIndex(m => m !== 69)
+    expect(k - was).toBe(DEFAULT_TRACKER.rivalFrames - DEFAULT_TRACKER.switchFrames)
+  })
+  test('the two frames may sit either side of a dropout, and they still have to agree', () => {
+    const t = steady(); names(t, [200, 203]); t.push(-1, 0, false, 0.2)
+    expect(names(t, [201])).toEqual([71])
+    const u = steady(); names(u, [200, 230]); u.push(-1, 0, false, 0.2)
+    expect(names(u, [201, 200])).toEqual([69, 71])
   })
 })

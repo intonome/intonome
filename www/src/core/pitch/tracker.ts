@@ -98,6 +98,8 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
   /** accA·accW: 선이 받아들인 최근 값과 신뢰도(null = 새 음이 아직 자리 잡는 중). pendA·pendW: 지켜보는 값. recent: 이 음에서 최근 받은 값 전부(흔들림 크기) */
   let accA: number[] | null = null, accW: number[] = [], pendA: number[] = [], pendW: number[] = [], recent: number[] = []
   let last: TrackOut = NONE
+  /** 바로 앞 유효 프레임의 값 — 새 음이름을 띄울 때 이번 프레임과 모였는지 본다 */
+  let prevA = NaN
 
   function weightedMedian(A: number[] = candA, Wt: number[] = candW): number {
     const idx = A.map((_, i) => i).sort((i, j) => A[i]! - A[j]!)
@@ -147,7 +149,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
     ease(weightedMedian(accA.slice(-p.medianLen), accW.slice(-p.medianLen)), alpha)
   }
   /** 음이 끝나 표시를 놓는다 — 연주한 음의 시계는 그대로 */
-  function release(): void { accA = null; accW = []; pendA = []; pendW = []; recent = []; candA.length = 0; candW.length = 0; acqA.length = 0; acqW.length = 0; acqRun = 0; acqMiss = 0; midi = -1; dispA = NaN; outside = 0; miss = 0; errSign = 0; sameSignRun = 0; settle = 0; heldRun = 0; last = NONE }
+  function release(): void { prevA = NaN; accA = null; accW = []; pendA = []; pendW = []; recent = []; candA.length = 0; candW.length = 0; acqA.length = 0; acqW.length = 0; acqRun = 0; acqMiss = 0; midi = -1; dispA = NaN; outside = 0; miss = 0; errSign = 0; sameSignRun = 0; settle = 0; heldRun = 0; last = NONE }
   /** 처음부터 — 다음 음은 첫 시작이다 */
   function reset(): void { release(); sincePlayed = Infinity }
   /** 연주한 음의 시계: 한 음이름이 warmNoteFrames 이어진 음이 보이는 동안 0, 아니면 한 프레임씩 — 말소리가 떠도 되돌리지 않는다 */
@@ -165,7 +167,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       for (let i = 0; i < candA.length; i++) candA[i] = candA[i]! + delta
       for (let i = 0; i < acqA.length; i++) acqA[i] = acqA[i]! + delta
       if (accA) accA = accA.map(v => v + delta)
-      pendA = pendA.map(v => v + delta); recent = recent.map(v => v + delta)
+      pendA = pendA.map(v => v + delta); recent = recent.map(v => v + delta); prevA += delta
       if (midi === -1 || Number.isNaN(dispA)) return
       dispA += delta
       const was = midi; midi = Math.round(dispA / 100) + 69; outside = 0 // 라벨은 옮긴 값에서 바로 — 평활 창을 기다리지 않는다
@@ -220,7 +222,9 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       else {
         let need = click ? p.clickSwitchFrames : p.switchFrames
         if (Math.abs(a - med) > HALF_SEMITONE || weakRival?.(med, dispA)) need = Math.max(need, p.rivalFrames)
-        if (++outside >= need) {
+        // 새 음이름은 마지막 두 프레임이 서로 holdCents 안에 모였을 때 띄운다 — 음이 바뀌는 순간(창이 두 음에 걸친다)과 미끄러지는 중의 프레임은 값이 프레임마다 달라서,
+        // 낸 적 없는 사이 음이름이 0.1 s 스쳤다(실제 연습 녹음 9 분에서 0.13 s 못 되는 음이름 124 번 가운데 76 번이 이것이었다). 기다리는 것은 rivalFrames 까지 — 화면이 옛 음에 붙들리지 않는다
+        if (++outside >= need && (!(Math.abs(a - prevA) > p.holdCents) || outside >= Math.max(need, p.rivalFrames))) {
           midi = Math.round(med / 100) + 69; outside = 0
           // 새 음은 자리 잡을 때까지 그 음의 최근 값에서 — 이전 음의 평활을 이어 가면 이전 음 쪽 값이 새 음의 선·숫자를 0.2~0.4 s 끌어당긴다(반음 슬러·포지션 이동)
           const note = (midi - 69) * 100, keep = candA.map((v, i) => i).filter(i => Math.abs(candA[i]! - note) <= p.switchCents)
@@ -236,6 +240,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
       }
       if (midi !== was) settle = p.medianLen
       heldRun = midi !== was ? 1 : heldRun + 1
+      prevA = a
       return done(out(settling || midi !== was))
     },
   }

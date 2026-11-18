@@ -48,6 +48,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Plays without the mic
 - [A] Play/stop from the card button, the header button (whenever collapsed: ▶ when stopped, ■ when playing) and the space bar
 - [A] Header beat dots are one size in collapsed and expanded, playing or stopped
+- [A] Beat dots: the first beat of a bar is the only dot in colour (green); other beats light off-white (dark grey in the light theme) with a glow, subdivisions grey without one. With no time signature every beat is the same off-white
 - [A] BPM −/+, drag (follows finger speed: 6 px per BPM slowly, 2 px fast), clamped to 40–200
 - [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions, counts the tempo in dotted quarters (♩. glyph in the header, a bar = two beats of three eighths) (unit tests + e2e)
 - [A] Volume slider: square taper — half is −12 dB, a tenth −40 dB, 0 is silent (unit test)

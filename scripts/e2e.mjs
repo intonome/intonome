@@ -301,7 +301,7 @@ await scenario('metro: full mode adds −5/+5 at both ends — steps of 5, clamp
   for (let i = 0; i < 30; i++) await p.click('.m-adj5[data-step="5"]'); assert.equal(await bpm(), 200, 'clamp max')
   for (let i = 0; i < 40; i++) await p.click('.m-adj5[data-step="-5"]'); assert.equal(await bpm(), 40, 'clamp min')
 })
-await scenario('metro: full mode is the second expanded step — only the tuner hides, header and mic stay, LEDs sweep end to end and hit green at the ends', 'violin_A4.wav', async p => {
+await scenario('metro: full mode is the second expanded step — only the tuner hides, header and mic stay, LEDs sweep end to end and hit at the ends, the first beat alone in colour', 'violin_A4.wav', async p => {
   await darkTheme(p) // 아래 색 단언은 다크 토큰 값
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await toFull(p) // 접힘 → 펼침(버튼) → 전용(위로 밀기)
@@ -337,6 +337,12 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
     for (const c of ['hit-sub', 'hit-beat', 'hit-acc']) { d.classList.add(c); await new Promise(r => setTimeout(r, 120)); out[c] = getComputedStyle(d).transform; d.classList.remove(c) } return out })
   assert.match(scales['hit-acc'], /^matrix\(1\.6/, '첫 박은 박과 같은 크기, 색으로만 구분: ' + scales['hit-acc'])
   assert.match(scales['hit-beat'], /^matrix\(1\.6/, '박 1.6 배')
+  // 점의 색: 색 있는 점은 첫 박 하나(초록). 박은 회백 + 번짐, 분할은 회색에 번짐 없음. 라이트는 속성만 바꿔 잰다
+  const ledLook = await p.evaluate(async () => { const out = {}, d = document.querySelectorAll('#sweep-leds .led')[5], root = document.documentElement, was = root.getAttribute('data-theme')
+    for (const th of ['dark', 'light']) { if (th === 'light') root.setAttribute('data-theme', 'light')
+      for (const c of ['hit-sub', 'hit-beat', 'hit-acc']) { d.classList.add(c); await new Promise(r => setTimeout(r, 60)); const cs = getComputedStyle(d); out[`${th} ${c}`] = cs.backgroundColor + (cs.boxShadow === 'none' ? '' : ' glow'); d.classList.remove(c) } }
+    if (was == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', was); return out })
+  assert.deepEqual(ledLook, { 'dark hit-sub': 'rgb(139, 146, 156)', 'dark hit-beat': 'rgb(195, 200, 207) glow', 'dark hit-acc': 'rgb(34, 197, 94) glow', 'light hit-sub': 'rgb(123, 131, 143)', 'light hit-beat': 'rgb(73, 81, 91) glow', 'light hit-acc': 'rgb(22, 163, 74) glow' }, '점의 색: ' + JSON.stringify(ledLook))
   assert.ok(seen.size >= 6, `불이 여러 칸을 지나가야 한다: ${[...seen]}`)
   assert.ok(hits.has(0) || hits.has(12), `정박은 양 끝 칸에서: ${[...hits]}`)
   assert.ok([...hits].some(h => h === 's6'), `2분할은 가운데 칸(6)에서: ${[...hits]}`)

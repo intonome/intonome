@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.13] - 2026-11-18
+On the metronome's row of dots, the first beat of a bar is now the one dot in colour.
+
+Metronome
+- The first beat of a bar lights green and is the only dot in colour. Until now it lit white (black in the light theme) while the other beats lit green and subdivisions red, so the first beat was the least colourful dot on the row
+- The other beats light off-white with a soft glow (dark grey in the light theme); subdivisions light grey with no glow
+- Red is gone from the row; in the app it marks what is on (the metronome playing, a recording, the drone). A bar of 4/4 in sixteenths used to flash three green and twelve red dots and now flashes one green; in 6/8 four of the six clicks were red
+- With no time signature no beat is accented, so every beat lights off-white (they were all green)
+- Dot sizes, the light that sweeps along the row, the collapsed card's flash on the first beat and the click sounds are unchanged
+
 ## [2.9.12] - 2026-11-18
 The tuner's line stays put through a bow change, and a note name is not flashed in passing.
 

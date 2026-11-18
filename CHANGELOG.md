@@ -2,6 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.9.14] - 2026-11-19
+On the metronome the other beats light red again, and the card flashes green on the first beat of a bar, collapsed or expanded.
+
+Metronome
+- The first beat of a bar still lights green; the other beats light red again, with a glow. In 2.9.13 they lit off-white and were hard to tell from the grey subdivisions. Subdivisions stay grey
+- The card's flash on the first beat of a bar is green now, the colour of the first beat's dot, and it also shows when the card is expanded: collapsed, the card's face and edge flash; expanded, only its edge. The full-size metronome still does not flash
+- With no time signature every beat lights red, and the card does not flash
+- Dot sizes, the light that sweeps along the row and the click sounds are unchanged
+
 ## [2.9.13] - 2026-11-18
 On the metronome's row of dots, the first beat of a bar is now the one dot in colour.
 

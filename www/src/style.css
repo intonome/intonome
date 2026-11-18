@@ -19,7 +19,7 @@
   /* 상태 — 초록은 '맞는 자리': 튜너의 맞음과 메트로놈의 첫 박. --warn(주의 점)과 --mark(북마크)는 같은 색, 다른 뜻 */
   --ok:#22c55e;--ok-rgb:34,197,94;--ok-text:#22c55e;--warn:#f59e0b;--mark:#f59e0b;--mark-rgb:245,158,11;
   --tune-glow:0 0 18px rgba(34,197,94,.35); /* 맞음: 음이름에 옅은 번짐 하나 — 연습 내내 켜졌다 꺼졌다 하는 것이라 세게 빛나지 않게 */
-  --beat-led:#c3c8cf;--beat-glow:0 0 10px rgba(195,200,207,.55);--sub-led:#8b929c; /* 메트로놈 점: 색은 첫 박(--ok)에만. 박은 회백(L* 80), 분할은 회색(60) — 쓸고 가는 불(36)보다 밝다. 빨강은 '켜져 있음' 의 색이라 쓰지 않는다 */
+  --sub-led:#8b929c; /* 메트로놈 점: 첫 박 초록(--ok) · 박 빨강(--accent) · 사이 분할은 회색(L* 60, 번짐 없음) — 쓸고 가는 불(36)보다 밝고 박보다 조용하다 */
   --scrim:rgba(0,0,0,.65);--shadow-rgb:0,0,0;
   /* 튜너 카드 전용 */
   --tuner-bg:#0d0f13;--tuner-line:#1f242c;--tuner-well:#151a21;--tuner-text-0:#d0d0d0;--tuner-text-1:#b6bcc4;--tuner-text-2:#949aa2;--tuner-text-3:#868c94;--tuner-empty:#2f353d; /* text-3 = 이명 — 4.6:1 */
@@ -58,7 +58,7 @@
   --ok:#16a34a;--ok-rgb:22,163,74;--ok-text:#15803d;--warn:#d97706;--mark:#d97706;--mark-rgb:217,119,6;--mark-text:#b45309;
   --tune-glow:0 0 18px rgba(22,163,74,.35);
   --sel:rgba(var(--text-rgb),.14);
-  --beat-led:var(--text-2);--beat-glow:0 0 10px rgba(73,81,91,.45);--sub-led:#7b838f; /* 박을 먹(--ink)으로 두면 초록 첫 박보다 무겁다 */
+  --sub-led:#7b838f;
   --scrim:rgba(20,24,30,.4);--shadow-rgb:20,24,30;
   --tuner-bg:#ffffff;--tuner-line:#dde1e6;--tuner-well:#eef1f4;--tuner-text-0:#1f242b;--tuner-text-1:#3a414a;--tuner-text-2:#555d67;--tuner-text-3:#5b636d;--tuner-empty:#c7ccd3;
   --tuner-ink:#111418;--tuner-ink-rgb:17,20,24;--tuner-ctl:#cfd4da;
@@ -75,7 +75,8 @@ html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한�
 @supports (height:100lvh){@media (display-mode:standalone){html.sb-under,html.sb-under body{height:100lvh;}}}
 button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;} /* 버튼을 꾹 누르면 글자가 선택되며 복사·번역 막대가 떴다(안드로이드) */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes metroflash{0%{background:rgba(var(--accent-rgb),.28);box-shadow:inset 0 0 0 2px var(--accent)}60%{background:rgba(var(--accent-rgb),.1);box-shadow:inset 0 0 0 2px var(--accent)}100%{background:var(--surface);box-shadow:none}}
+@keyframes metroflash{0%{background:rgba(var(--ok-rgb),.22);box-shadow:inset 0 0 0 2px var(--ok)}60%{background:rgba(var(--ok-rgb),.08);box-shadow:inset 0 0 0 2px var(--ok)}100%{background:var(--surface);box-shadow:none}}
+@keyframes metroring{0%,60%{box-shadow:inset 0 0 0 2px var(--ok)}100%{box-shadow:none}}
 
 /* 컴팩트 글자 버튼 (36 px) — 누르는 영역은 ::after 로 44 px */
 .compact-btn{position:relative;height:var(--h-compact);padding:0 12px;background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);font-size:var(--fs-md);font-weight:var(--fw-md);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
@@ -188,9 +189,10 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #tuner-history{flex:1;min-height:80px;border-radius:var(--r-sm);background:var(--tuner-bg);display:block;width:100%;border:none;position:relative;overflow:hidden;clip-path:inset(0 round var(--r-sm));} /* clip-path: 합성 레이어인 캔버스도 둥근 모서리로 확실히 자른다(옛 WebKit 은 overflow 만으로 못 자른 적이 있다) */
 #tuner-history-cv{position:absolute;left:0;bottom:0;width:100%;display:block;} /* 높이는 ui/tuner 가 비트맵에 맞춰 — 영역보다 크고 위쪽이 잘린다 */
 
-/* 메트로놈 — 카드 하나, 헤어라인 하나. 강박은 면과 안쪽 링으로 */
+/* 메트로놈 — 카드 하나, 헤어라인 하나. 마디 첫 박은 면과 안쪽 링(첫 박 점과 같은 초록)으로 */
 #metro-card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--line);overflow:hidden;transition:box-shadow .06s,background .1s;}
-#metro-card.flash-strong{animation:metroflash .22s ease-out forwards;}
+#metro-card.flash-strong{animation:metroflash .22s ease-out forwards;} /* 접힘: 띠가 작아 면까지 칠한다 — 멀리서 보는 신호 */
+#metro-card.flash-ring{animation:metroring .22s ease-out forwards;} /* 펼침: 카드가 커서 테두리만 */
 #metro-hdr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);gap:10px;min-height:52px;}
 #metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;padding:8px 10px 8px 0;margin:-8px 0;}
 #metro-hdr-label::after{content:'';position:absolute;top:0;bottom:0;left:100%;width:40px;} /* ♩BPM 끌기 자리를 숫자 오른쪽으로 손가락 하나만큼 — 숫자를 손가락으로 가리지 않고 옆을 잡아 끈다. 그보다 오른쪽은 카드 끌기 */
@@ -273,13 +275,13 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #metro-grids-wrap .m-seg{color:var(--text-2);}
 #metro-grids-wrap .m-seg.on{border-color:var(--text-2);color:var(--text);background:var(--sel);}
 #metro-card.full #sd-grid .note-glyph{transform:scale(1.15);}
-/* 세이코식 LED 줄: 칸 수 고정, 불이 한 박에 끝→끝으로 쓸고 간다. 양 끝 = 박, 사이 = 분할. 색 있는 점은 마디의 첫 박 하나 */
+/* 세이코식 LED 줄: 칸 수 고정, 불이 한 박에 끝→끝으로 쓸고 간다. 양 끝 = 박(첫 박 초록 · 나머지 빨강), 사이 = 분할(회색) */
 .led{border-radius:50%;background:var(--line);flex-shrink:0;transition:background .05s,transform .05s,box-shadow .05s;}
 /* 히트는 켜질 때 즉시, 꺼질 때만 램프 — 켜질 때도 램프가 걸리면 불이 소리보다 50 ms 늦다 */
 .led.hit-sub,.led.hit-beat,.led.hit-acc{transition:none;}
 .led.mv{background:var(--line-strong);} /* 쓸고 가는 불 — 맥락이지 사건이 아니다. L* 36, 꺼진 점(25)과 11 차이 */
 .led.hit-sub{background:var(--sub-led);transform:scale(1.25);} /* 번짐 없음 — 빛은 박에만 */
-.led.hit-beat{background:var(--beat-led);transform:scale(1.4);box-shadow:var(--beat-glow);}
+.led.hit-beat{background:var(--accent);transform:scale(1.4);box-shadow:0 0 10px rgba(var(--accent-rgb),.85);}
 .led.hit-acc{background:var(--ok);transform:scale(1.4);box-shadow:0 0 12px rgba(var(--ok-rgb),.9);} /* 첫 박은 박과 같은 크기, 색으로만 구분 */
 #beat-vis .led{width:min(13px,calc((100% - 8 * 3px) / 9));height:auto;aspect-ratio:1;} /* 90 cm 보면대에서 보이는 크기. 접힘·펼침, 재생·정지 모두 같다 — 켜고 끌 때 줄이 커졌다 작아지지 않게 */
 #sweep{display:none;padding:4px 0 0;}
@@ -629,7 +631,7 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
   .tour-dots i{transition:none;}
   #rec-hdr-btn.rec-on #rec-hdr-dot{animation:none;}
   /* 동작 줄이기: 마디 첫 박의 카드 번쩍임과 박 점의 커짐은 끄고(색만 바뀐다), 카드 접기·창 열기·안내는 바로 */
-  #metro-card.flash-strong{animation:none;}
+  #metro-card.flash-strong,#metro-card.flash-ring{animation:none;}
   .led.hit-sub,.led.hit-beat,.led.hit-acc,#sweep-leds .led.hit-sub,#sweep-leds .led.hit-beat,#sweep-leds .led.hit-acc{transform:none;}
   #metro-body-wrap,#metro-body-clip,#drone-pop,.toast,.nav-glyph,#metro-full-btn,#metro-hdr-label{transition:none!important;}
 }

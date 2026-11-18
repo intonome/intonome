@@ -115,13 +115,14 @@ function animHeight(el: HTMLElement, from: number, to: number, mb: [string, stri
   animTimers.set(el, setTimeout(() => clearAnim(el), 570))
 }
 function flashBeat(tick: number): void {
-  const card = q('metro-card'); card.classList.remove('flash-strong')
-  // 화면 번쩍임은 접혀서 LED 줄만 보일 때, 마디 첫 박(accent)에만 — 멀리서 마디의 시작을 보는 신호. 다른 박·세분박은 LED 가 맡는다.
+  const card = q('metro-card'); card.classList.remove('flash-strong', 'flash-ring')
+  // 카드 번쩍임은 마디 첫 박(accent)에만 — 멀리서 마디의 시작을 보는 신호. 다른 박·세분박은 LED 가 맡는다.
+  // 접힘은 면과 테두리, 펼침은 테두리만(카드가 커서). 전용 모드는 카드가 곧 화면 전체라 칠하지 않는다.
   // '없음' 박자는 마디가 없어 첫 박도 없다(tick 이 늘 0 이라 2.5.7 은 매 박 번쩍였다). 튜너 쪽(헤더 선)은 칠하지 않는다
-  if (!isCollapsedNow()) return
+  if (stateNow() === 'f') return
   const s = settingsStore.get()
   if (tickKind({ timeSig: s.timeSig, subDiv: s.subDiv }, tick) !== 'accent') return
-  reflow(card); card.classList.add('flash-strong')
+  reflow(card); card.classList.add(isCollapsedNow() ? 'flash-strong' : 'flash-ring')
 }
 
 /** 끌어서 BPM 을 바꾼다(다이얼 · 숫자 ↕). 값이 실제로 바뀔 때만 눈금 진동 */

@@ -48,13 +48,13 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Plays without the mic
 - [A] Play/stop from the card button, the header button (whenever collapsed: ▶ when stopped, ■ when playing) and the space bar
 - [A] Header beat dots are one size in collapsed and expanded, playing or stopped
-- [A] Beat dots: the first beat of a bar is the only dot in colour (green); other beats light off-white (dark grey in the light theme) with a glow, subdivisions grey without one. With no time signature every beat is the same off-white
+- [A] Beat dots: the first beat of a bar lights green, the other beats red, both with a glow; subdivisions light grey without one. With no time signature every beat is red
 - [A] BPM −/+, drag (follows finger speed: 6 px per BPM slowly, 2 px fast), clamped to 40–200
 - [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions, counts the tempo in dotted quarters (♩. glyph in the header, a bar = two beats of three eighths) (unit tests + e2e)
 - [A] Volume slider: square taper — half is −12 dB, a tenth −40 dB, 0 is silent (unit test)
 - [A] Cello C2 (65 Hz), double bass B0 (30.9 Hz, 5-string), C1 (extension) and a loose E string (38.9 Hz) read their own note steadily within 0.3 s (unit tests)
 - [A] Turning the A = drum while a note sounds relabels it on the very next frame; dragging 440 → 443 never moves the Hz readout (unit tests)
-- [A] Collapsed and playing: the card flashes on the first beat of each bar only (other beats and subdivisions are on the LED row); the tuner header never flashes; expanded and full: no flash
+- [A] Playing: the card flashes green on the first beat of each bar only (other beats and subdivisions are on the LED row) — collapsed, its face and edge; expanded, its edge only; full: no flash. The tuner header never flashes
 - [A] Playing never changes the size; the size button goes collapsed ⇄ expanded, and from full one step down to expanded. Full is reached by dragging the card up or, on a phone, with the "Show metronome only" button in the expanded header (on a wide screen, where nothing collapses, the size button goes expanded ⇄ full)
 - [A] Phone, expanded: the header's left slot is the "Show metronome only" button instead of ♩80 — the BPM shows once, as the big number with its beat note (♩, ♩. in 6/8); collapsed shows ♩80 again. A drag that starts on the button moves the card and never the BPM; with the keyboard, focus moves to the button that takes its place. The header dots stay centred with their spacing down to 320 px, and at 320 px in English ▶ stays inside the card
 - [A] Dragging the card follows the finger: up grows a step, down shrinks a step; a short drag springs back. With reduced motion a 40 px push moves one step, up or down

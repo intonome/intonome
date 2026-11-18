@@ -301,7 +301,7 @@ await scenario('metro: full mode adds −5/+5 at both ends — steps of 5, clamp
   for (let i = 0; i < 30; i++) await p.click('.m-adj5[data-step="5"]'); assert.equal(await bpm(), 200, 'clamp max')
   for (let i = 0; i < 40; i++) await p.click('.m-adj5[data-step="-5"]'); assert.equal(await bpm(), 40, 'clamp min')
 })
-await scenario('metro: full mode is the second expanded step — only the tuner hides, header and mic stay, LEDs sweep end to end and hit at the ends, the first beat alone in colour', 'violin_A4.wav', async p => {
+await scenario('metro: full mode is the second expanded step — only the tuner hides, header and mic stay, LEDs sweep end to end and hit at the ends, the first beat green and the other beats red', 'violin_A4.wav', async p => {
   await darkTheme(p) // 아래 색 단언은 다크 토큰 값
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await toFull(p) // 접힘 → 펼침(버튼) → 전용(위로 밀기)
@@ -323,7 +323,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   await p.click('[data-sd="2"]'); await p.click('#metro-play-btn')
   const seen = new Set(), hits = new Set(); let flashed = false
   for (let i = 0; i < 40; i++) {
-    const r = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#sweep-leds .led')); const c = document.getElementById('metro-card').classList; return { mv: l.findIndex(d => d.classList.contains('mv')), hit: l.findIndex(d => d.classList.contains('hit-beat') || d.classList.contains('hit-acc')), sub: l.findIndex(d => d.classList.contains('hit-sub')), flash: c.contains('flash-strong') } })
+    const r = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#sweep-leds .led')); const c = document.getElementById('metro-card').classList; return { mv: l.findIndex(d => d.classList.contains('mv')), hit: l.findIndex(d => d.classList.contains('hit-beat') || d.classList.contains('hit-acc')), sub: l.findIndex(d => d.classList.contains('hit-sub')), flash: c.contains('flash-strong') || c.contains('flash-ring') } })
     if (r.mv >= 0) seen.add(r.mv); if (r.hit >= 0) hits.add(r.hit); if (r.sub >= 0) hits.add('s' + r.sub); if (r.flash) flashed = true
     await sleep(p, 40)
   }
@@ -337,12 +337,12 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
     for (const c of ['hit-sub', 'hit-beat', 'hit-acc']) { d.classList.add(c); await new Promise(r => setTimeout(r, 120)); out[c] = getComputedStyle(d).transform; d.classList.remove(c) } return out })
   assert.match(scales['hit-acc'], /^matrix\(1\.6/, '첫 박은 박과 같은 크기, 색으로만 구분: ' + scales['hit-acc'])
   assert.match(scales['hit-beat'], /^matrix\(1\.6/, '박 1.6 배')
-  // 점의 색: 색 있는 점은 첫 박 하나(초록). 박은 회백 + 번짐, 분할은 회색에 번짐 없음. 라이트는 속성만 바꿔 잰다
+  // 점의 색: 첫 박 초록 · 박 빨강(둘 다 번짐) · 분할은 회색에 번짐 없음. 라이트는 속성만 바꿔 잰다
   const ledLook = await p.evaluate(async () => { const out = {}, d = document.querySelectorAll('#sweep-leds .led')[5], root = document.documentElement, was = root.getAttribute('data-theme')
     for (const th of ['dark', 'light']) { if (th === 'light') root.setAttribute('data-theme', 'light')
       for (const c of ['hit-sub', 'hit-beat', 'hit-acc']) { d.classList.add(c); await new Promise(r => setTimeout(r, 60)); const cs = getComputedStyle(d); out[`${th} ${c}`] = cs.backgroundColor + (cs.boxShadow === 'none' ? '' : ' glow'); d.classList.remove(c) } }
     if (was == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', was); return out })
-  assert.deepEqual(ledLook, { 'dark hit-sub': 'rgb(139, 146, 156)', 'dark hit-beat': 'rgb(195, 200, 207) glow', 'dark hit-acc': 'rgb(34, 197, 94) glow', 'light hit-sub': 'rgb(123, 131, 143)', 'light hit-beat': 'rgb(73, 81, 91) glow', 'light hit-acc': 'rgb(22, 163, 74) glow' }, '점의 색: ' + JSON.stringify(ledLook))
+  assert.deepEqual(ledLook, { 'dark hit-sub': 'rgb(139, 146, 156)', 'dark hit-beat': 'rgb(241, 95, 84) glow', 'dark hit-acc': 'rgb(34, 197, 94) glow', 'light hit-sub': 'rgb(123, 131, 143)', 'light hit-beat': 'rgb(191, 50, 39) glow', 'light hit-acc': 'rgb(22, 163, 74) glow' }, '점의 색: ' + JSON.stringify(ledLook))
   assert.ok(seen.size >= 6, `불이 여러 칸을 지나가야 한다: ${[...seen]}`)
   assert.ok(hits.has(0) || hits.has(12), `정박은 양 끝 칸에서: ${[...hits]}`)
   assert.ok([...hits].some(h => h === 's6'), `2분할은 가운데 칸(6)에서: ${[...hits]}`)
@@ -364,15 +364,18 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   await settled(p)
   assert.deepEqual(await p.evaluate(() => [document.getElementById('metro-card').classList.contains('full'), document.getElementById('metro-body-wrap').classList.contains('collapsed')]), [false, false], '전용의 ∨ 는 한 단계 — 펼침까지')
   await sizeTap(p) // 펼침의 ∨ → 접힘
-  // 화면을 칠하는 박 표시는 접혔을 때만
+  // 카드 번쩍임: 마디 첫 박에만, 초록. 접힘은 면 + 테두리, 펼침은 테두리만 (전용 모드는 위 시나리오 — 번쩍임 없음)
   // 3.3 s(80 bpm 4/4 한 마디 = 3 s) 동안 카드 번쩍임이 몇 번 시작됐는지, 튜너 헤더 선이 한 번이라도 바뀌었는지
   const flashesWhile = () => p.evaluate(() => new Promise(res => {
     const card = document.getElementById('metro-card'), hdr = document.getElementById('tuner-hdr'), line0 = getComputedStyle(hdr).borderBottomColor
-    let starts = 0, was = card.classList.contains('flash-strong'), hdrMoved = false; const t0 = performance.now()
+    const lit = () => card.classList.contains('flash-strong') || card.classList.contains('flash-ring')
+    let starts = 0, was = lit(), hdrMoved = false, ring = '', fill = false; const t0 = performance.now()
     const id = setInterval(() => {
-      const on = card.classList.contains('flash-strong'); if (on && !was) starts++; was = on
+      const on = lit(); if (on && !was) starts++; was = on
+      // 테두리 색은 다 그려진 동안(불투명 rgb)만 본다 — 사라지는 끝은 투명 검정으로 보간된다
+      if (on) { const cs = getComputedStyle(card); if (/^rgb\(.*inset$/.test(cs.boxShadow)) { const [r, g, b] = cs.boxShadow.match(/\d+/g).map(Number); ring = ring === 'other' ? ring : g - r > 80 && g - b > 40 ? 'green' : 'other' } if (cs.backgroundColor.startsWith('rgba(34, 197, 94')) fill = true }
       if (getComputedStyle(hdr).borderBottomColor !== line0) hdrMoved = true
-      if (performance.now() - t0 > 3300) { clearInterval(id); res({ starts, hdrMoved }) }
+      if (performance.now() - t0 > 3300) { clearInterval(id); res({ starts, hdrMoved, ring, fill }) }
     }, 15)
   }))
   // 접힌 채 재생 — 접혀 있으면 본체 버튼이 안 보이므로 Space 로. 방금 누른 버튼에 포커스가 남아 있으면
@@ -383,9 +386,13 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   let fl = await flashesWhile()
   assert.ok(fl.starts >= 1 && fl.starts <= 2, `접혔을 때는 마디 첫 박에만 카드를 칠한다 — 띠 하나뿐이라 이게 원거리 신호다 (3.3 s 에 ${fl.starts} 번, 박마다면 4~5 번)`)
   assert.equal(fl.hdrMoved, false, '튜너 헤더 선은 박에 따라 바뀌지 않는다 — 연습 내내 보는 자리')
+  assert.equal(fl.ring, 'green', '번쩍임 테두리는 첫 박 점과 같은 초록')
+  assert.equal(fl.fill, true, '접힘은 면도 칠한다 — 띠가 작다')
   await sizeTap(p) // 펼침
   fl = await flashesWhile()
-  assert.equal(fl.starts, 0, '펼치면 LED 줄이 박을 말하므로 화면은 칠하지 않는다')
+  assert.ok(fl.starts >= 1 && fl.starts <= 2, `펼쳐도 마디 첫 박에 카드가 번쩍인다 (3.3 s 에 ${fl.starts} 번)`)
+  assert.equal(fl.ring, 'green', '펼침도 초록 테두리')
+  assert.equal(fl.fill, false, '펼침은 테두리만 — 카드가 커서 면을 칠하지 않는다')
   await p.click('#metro-play-btn')
 })
 await scenario('metro: full-mode dial — BPM follows the ring, stops at the ends, terms and ticks', 'silence_lowfloor.wav', async p => {

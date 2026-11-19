@@ -26,7 +26,7 @@ type Row = { leds: HTMLElement[]; n: number; lit: number }
 const rows: Row[] = []
 function buildRow(id: string, n: number): Row {
   const wrap = q(id); wrap.innerHTML = ''
-  for (let i = 0; i < n; i++) { const d = document.createElement('div'); d.className = 'led'; wrap.appendChild(d) }
+  for (let i = 0; i < n; i++) { const d = document.createElement('div'); d.className = i > 0 && i < n - 1 ? 'led mid' : 'led'; wrap.appendChild(d) } // 사이 점(.mid)은 작게 — 박은 양 끝에서만 울린다
   return { leds: Array.from(wrap.querySelectorAll<HTMLElement>('.led')), n, lit: -1 }
 }
 function buildBeatVis(): void {
@@ -34,7 +34,7 @@ function buildBeatVis(): void {
   rows.push(buildRow('beat-vis', HDR_LEDS))
   if (metroStore.get().full) rows.push(buildRow('sweep-leds', FULL_LEDS))
 }
-const clearDots = (): void => { rows.forEach(r => { r.leds.forEach(d => { d.className = 'led' }); r.lit = -1 }) }
+const clearDots = (): void => { rows.forEach(r => { r.leds.forEach(d => d.classList.remove('mv', 'hit-acc', 'hit-beat', 'hit-sub')); r.lit = -1 }) }
 
 let swT0 = 0, swDur = 0, swDir: 1 | -1 = -1, swRaf: number | null = null
 function sweepFrame(): void {

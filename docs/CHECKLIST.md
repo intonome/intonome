@@ -47,7 +47,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 ## Metronome
 - [A] Plays without the mic
 - [A] Play/stop from the card button, the header button (whenever collapsed: ▶ when stopped, ■ when playing) and the space bar
-- [A] Header beat dots are one size in collapsed and expanded, playing or stopped
+- [A] Header beat dots are one size in collapsed and expanded, playing or stopped. On both rows the two end dots, where the beats land, are full size and the dots between them 0.85×; the sweeping light grows a dot between to 0.9× and a subdivision to 1.25× (1.4× on the full-size row), larger than an end dot at rest
 - [A] Beat dots: the first beat of a bar lights green, the other beats red, both with a glow; subdivisions light grey without one. With no time signature every beat is red
 - [A] BPM −/+, drag (follows finger speed: 6 px per BPM slowly, 2 px fast), clamped to 40–200
 - [A] Time signatures none/2/4/3/4/4/4/6/8, subdivisions; 6/8 disables subdivisions, counts the tempo in dotted quarters (♩. glyph in the header, a bar = two beats of three eighths) (unit tests + e2e)

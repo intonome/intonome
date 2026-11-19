@@ -222,7 +222,7 @@ const freezeDownbeat = async p => {
   await p.evaluate(() => {
     for (const id of ['sweep-leds', 'beat-vis']) {
       const leds = Array.from(document.querySelectorAll(`#${id} .led`)); if (!leds.length) continue
-      leds.forEach(l => { l.className = 'led' }); leds[0].className = 'led mv hit-acc'
+      leds.forEach(l => l.classList.remove('mv', 'hit-acc', 'hit-beat', 'hit-sub')); leds[0].classList.add('mv', 'hit-acc') // 사이 점의 mid 는 둔다
     }
     for (const id of ['metro-play-btn', 'metro-play-hdr-btn']) { const b = document.getElementById(id); if (b) b.innerHTML = '<svg class="tp-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="15" height="15" rx="2"/></svg>' }
   })

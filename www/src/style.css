@@ -280,10 +280,12 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 /* 히트는 켜질 때 즉시, 꺼질 때만 램프 — 켜질 때도 램프가 걸리면 불이 소리보다 50 ms 늦다 */
 .led.hit-sub,.led.hit-beat,.led.hit-acc{transition:none;}
 .led.mv{background:var(--line-strong);} /* 쓸고 가는 불 — 맥락이지 사건이 아니다. L* 36, 꺼진 점(25)과 11 차이 */
-.led.hit-sub{background:var(--sub-led);transform:scale(1.25);} /* 번짐 없음 — 빛은 박에만 */
+.led.mid{transform:scale(.85);} /* 사이 점은 한 단 작게 — 박은 양 끝에서만 울리고, 사이에서 켜지는 분할은 작은 점이 커지는 움직임으로 보인다. .6 · .75 는 줄이 끝 점 둘과 부스러기로 갈라져 보였다 */
+.led.mid.mv{transform:scale(.9);} /* 쓸고 가는 불은 사이 점에서 조금 커진다 — 작은 점 위에서도 흐름이 보이게 */
+.led.hit-sub,.led.mid.hit-sub{background:var(--sub-led);transform:scale(1.25);} /* 번짐 없음 — 빛은 박에만 */
 .led.hit-beat{background:var(--accent);transform:scale(1.4);box-shadow:0 0 10px rgba(var(--accent-rgb),.85);}
 .led.hit-acc{background:var(--ok);transform:scale(1.4);box-shadow:0 0 12px rgba(var(--ok-rgb),.9);} /* 첫 박은 박과 같은 크기, 색으로만 구분 */
-#beat-vis .led{width:min(13px,calc((100% - 8 * 3px) / 9));height:auto;aspect-ratio:1;} /* 90 cm 보면대에서 보이는 크기. 접힘·펼침, 재생·정지 모두 같다 — 켜고 끌 때 줄이 커졌다 작아지지 않게 */
+#beat-vis .led{width:min(13px,calc((100% - 8 * 1px) / 9));height:auto;aspect-ratio:1;} /* 90 cm 보면대에서 보이는 크기. 접힘·펼침, 재생·정지 모두 같다 — 켜고 끌 때 줄이 커졌다 작아지지 않게. 사이 점이 작아(.75) 칸 사이 최소 1 px 이면 켜져도 이웃에 닿지 않는다 */
 #sweep{display:none;padding:4px 0 0;}
 #metro-card.full #sweep{display:block;}
 #sweep-leds{display:flex;justify-content:space-between;align-items:center;height:48px;padding:0 2px;}
@@ -633,5 +635,6 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
   /* 동작 줄이기: 마디 첫 박의 카드 번쩍임과 박 점의 커짐은 끄고(색만 바뀐다), 카드 접기·창 열기·안내는 바로 */
   #metro-card.flash-strong,#metro-card.flash-ring{animation:none;}
   .led.hit-sub,.led.hit-beat,.led.hit-acc,#sweep-leds .led.hit-sub,#sweep-leds .led.hit-beat,#sweep-leds .led.hit-acc{transform:none;}
+  .led.mid.mv,.led.mid.hit-sub,#sweep-leds .led.mid.hit-sub{transform:scale(.85);}
   #metro-body-wrap,#metro-body-clip,#drone-pop,.toast,.nav-glyph,#metro-full-btn,#metro-hdr-label{transition:none!important;}
 }

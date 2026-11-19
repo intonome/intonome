@@ -332,6 +332,15 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   // L11: 쓸고 가는 불의 색 — 재생 중엔 .mv 가 칸을 옮겨 다니며 늘 전이 중이라, 정지 후 한 칸에 붙여 놓고 잰다
   const mvColor = await p.evaluate(async () => { const d = document.querySelectorAll('#sweep-leds .led')[3]; d.classList.add('mv'); await new Promise(r => setTimeout(r, 150)); const c = getComputedStyle(d).backgroundColor; d.classList.remove('mv'); return c })
   assert.equal(mvColor, 'rgb(77, 85, 96)', '쓸고 가는 불은 --line-strong: ' + mvColor)
+  // 점 크기: 박이 울리는 양 끝은 그대로, 사이 점은 한 단 작게(.85). 쓸고 가는 불은 사이에서 .9, 분할이 켜지면 끝 점보다 크게(헤더 1.25 · 전용 1.4) — 작은 점이 커져 보인다
+  const dotScale = await p.evaluate(async () => {
+    const sx = el => { const t = getComputedStyle(el).transform; return t === 'none' ? 1 : +t.match(/^matrix\(([^,]+)/)[1] }
+    const at = async (el, c) => { if (c) el.classList.add(c); await new Promise(r => setTimeout(r, 120)); const v = sx(el); if (c) el.classList.remove(c); return v }
+    const out = {}, hv = document.getElementById('beat-vis'); hv.style.setProperty('display', 'flex', 'important') // 전용 모드에선 헤더 줄이 숨어 있다 — 잴 때만 꺼낸다
+    for (const [row, n] of [['beat-vis', 9], ['sweep-leds', 13]]) { const l = document.querySelectorAll(`#${row} .led`), mid = l[(n - 1) / 2]
+      out[row] = { ends: [await at(l[0]), await at(l[n - 1])], mid: await at(mid), mv: await at(mid, 'mv'), sub: await at(mid, 'hit-sub') } }
+    hv.style.removeProperty('display'); return out })
+  assert.deepEqual(dotScale, { 'beat-vis': { ends: [1, 1], mid: 0.85, mv: 0.9, sub: 1.25 }, 'sweep-leds': { ends: [1, 1], mid: 0.85, mv: 0.9, sub: 1.4 } }, '점 크기: ' + JSON.stringify(dotScale))
   // M5: 전용 줄에서만 히트가 한 단 크다
   const scales = await p.evaluate(async () => { const out = {}; const d = document.querySelectorAll('#sweep-leds .led')[5]
     for (const c of ['hit-sub', 'hit-beat', 'hit-acc']) { d.classList.add(c); await new Promise(r => setTimeout(r, 120)); out[c] = getComputedStyle(d).transform; d.classList.remove(c) } return out })

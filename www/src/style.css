@@ -199,15 +199,18 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #metro-hdr-label .note-glyph{width:8.1px;height:20px;vertical-align:0;}
 /* 6/8: 박 단위가 점4분음표라 글리프도 ♩. — 숫자가 무엇을 세는지 보이게 */
 #metro-hdr-label .note-glyph.g-dq{width:11.8px;display:none;} #metro-card.compound #metro-hdr-label .g-q{display:none;} #metro-card.compound #metro-hdr-label .g-dq{display:block;}
+/* 악보의 ♩ = 80 — 인쇄 악보처럼 = 는 숫자와 같은 글꼴·같은 색, 가는 획(300)에 .85 배라 숫자보다 가볍다(굵은 = 는 숫자보다 먼저 튀었고, 연한 색은 따로 놀았다).
+   높이는 숫자 가운데보다 .035em 아래 — 음표 머리가 아래에 있어 정가운데면 = 가 떠 보였고, .06em 이면 처졌다.
+   여백은 잉크 틈이 양쪽 6.5 px 가 되게 — = 의 빈자리 .113em(상자 .6em − 잉크 .44em × .85 의 반) · 숫자의 왼쪽 빈자리 .055em · 음표의 오른쪽 빈자리 .68 px · 칸 사이 6 px 를 뺀 값 */
+.bpm-eq{font-weight:300;transform:translateY(.035em) scale(.85);}
+#metro-hdr-label .bpm-eq{display:inline-block;margin:0 calc(.5px - .168em) 0 calc(-.18px - .113em);}
 #metro-hdr-bpm{display:inline-block;width:3ch;} /* 늘 세 자리 폭(DM Mono 는 숫자 폭이 같다, BPM 은 최대 200) — 80 → 120 으로 바뀌어도 옆 LED 줄이 움직이지 않는다 */
 #metro-hdr-title{display:none;font-size:var(--fs-sm);color:var(--ink);font-weight:var(--fw-b);letter-spacing:var(--ls-caps-wide);align-items:center;} /* #tuner-label 과 같은 글씨 */
 #metro-card.full #metro-hdr-label{display:none;} #metro-card.full #metro-hdr-title{display:flex;}
 /* LED 9칸(metro.ts HDR_LEDS). 폭이 모자라면(세 자리 BPM·좁은 폰·접힘의 재생 버튼) 간격만 줄인다 — 고정 gap 이면 오른쪽 버튼이 카드 밖으로 밀린다.
    max-width = 점 9개 + 간격 7px×8 이라 여유가 있을 땐 전과 같은 그림 */
 #beat-vis{display:flex;align-items:center;justify-content:space-between;height:22px;width:100%;min-width:0;max-width:calc(9*13px + 8*7px);justify-self:center;}
-/* 펼침(접힘도 전용도 아닐 때): 헤더에 ♩BPM 과 크기 버튼만 있으니 LED 줄을 카드 가운데로. 양옆 칸은 같은 폭(최소 64 = ♩ + 세 자리 BPM 칸), 좁으면 줄이 줄어든다.
-   헤더 안쪽 여백이 왼쪽 16 · 오른쪽 12 라 칸의 가운데가 카드 가운데보다 2 px 오른쪽 → 줄을 2 px 왼쪽으로 */
-#metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr{grid-template-columns:minmax(64px,1fr) minmax(0,calc(9*13px + 8*7px)) minmax(64px,1fr);}
+/* 펼침(접힘도 전용도 아닐 때)의 헤더 칸 나누기는 폰(max-width 699.98 — 양옆 같은 폭이라 LED 줄이 카드 가운데)과 넓은 화면(min-width 700 — ♩ = BPM 과 버튼 사이 가운데) 규칙에 따로 있다 */
 #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr-label{justify-self:start;} /* 칸이 넓어져도 ♩BPM 끌기 자리는 글자 폭 그대로(나머지는 카드 끌기) */
 /* grid 세 번째 칸에 고정 — 전용 모드에서 #beat-vis 가 display:none 이라 grid 항목이 줄어도 오른쪽 끝에 남게 */
 #metro-hdr-right{display:flex;align-items:center;gap:6px;grid-column:3;grid-row:1;justify-self:end;}
@@ -285,7 +288,7 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 .led.hit-sub,.led.mid.hit-sub{background:var(--sub-led);transform:scale(1.25);} /* 번짐 없음 — 빛은 박에만 */
 .led.hit-beat{background:var(--accent);transform:scale(1.4);box-shadow:0 0 10px rgba(var(--accent-rgb),.85);}
 .led.hit-acc{background:var(--ok);transform:scale(1.4);box-shadow:0 0 12px rgba(var(--ok-rgb),.9);} /* 첫 박은 박과 같은 크기, 색으로만 구분 */
-#beat-vis .led{width:min(13px,calc((100% - 8 * 1px) / 9));height:auto;aspect-ratio:1;} /* 90 cm 보면대에서 보이는 크기. 접힘·펼침, 재생·정지 모두 같다 — 켜고 끌 때 줄이 커졌다 작아지지 않게. 사이 점이 작아(.75) 칸 사이 최소 1 px 이면 켜져도 이웃에 닿지 않는다 */
+#beat-vis .led{width:min(13px,calc((100% - 8 * 2px) / 9));height:auto;aspect-ratio:1;} /* 90 cm 보면대에서 보이는 크기. 접힘·펼침, 재생·정지 모두 같다 — 켜고 끌 때 줄이 커졌다 작아지지 않게. 칸 사이 최소 2 px: 켜진 끝 점(1.4)과 옆 사이 점의 불(.9)이 320 px 에서도 닿지 않는다 */
 #sweep{display:none;padding:4px 0 0;}
 #metro-card.full #sweep{display:block;}
 #sweep-leds{display:flex;justify-content:space-between;align-items:center;height:48px;padding:0 2px;}
@@ -323,17 +326,19 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #metro-bpm{font-family:'DM Mono',monospace;font-size:min(var(--fs-d2),14vw);font-weight:var(--fw-md);line-height:1;min-width:90px;text-align:center;color:var(--text);}
 /* 박 단위 음표 — 폰에서 헤더 ♩80 이 펼침에선 안 보이므로 본문 숫자가 '무엇을 세는지' 말한다(6/8 이면 ♩.) */
 #metro-bpm-line{display:flex;align-items:flex-end;justify-content:center;font-size:min(var(--fs-d2),14vw);line-height:1;}
-#metro-bpm-unit{display:none;}
+#metro-bpm-unit,#metro-bpm-eq{display:none;}
 @media (max-width:699.98px){
   /* 크기·높이는 헤더 ♩80 과 같은 비율(픽셀로 잼): 음표 잉크가 숫자보다 위로 0.068em · 아래로 0.045em(머리가 숫자 바닥에 앉는다).
      음표 칸은 음표 폭 그대로 — 음표+숫자 묶음이 칸 가운데에 온다(♩. 폭으로 고정하면 ♩ 일 때 묶음이 오른쪽으로 쏠렸다).
-     음표–숫자 틈 약 0.2em. 줄의 최소 폭은 ♩. + 세 자리 — 두 자리·세 자리를 오가도 버튼 폭이 안 바뀐다.
+     ♩ = 80: = 는 헤더와 같은 모양(가는 획 · .85 배 · 숫자 가운데보다 .035em 아래), 음표–= · =–숫자 잉크 틈 .22em — 인쇄 악보의 띄어 쓴 「♩ = 80」. = 의 빈자리 .113em · 음표 오른쪽 .031em · 숫자 왼쪽 .055em 을 여백에서 뺀다.
+     줄의 최소 폭은 ♩. = 200 — 두 자리·세 자리, 4/4·6/8 을 오가도 버튼 폭이 안 바뀐다(= 와 앞뒤 띄움을 넣어 버튼은 2.9.15 보다 384 px 에서 약 10 px 좁다(52.6 → 42.6 px). 숫자 크기는 그대로 둔다 — 멀리서 읽는 쪽이 먼저).
      숫자 칸과 −·+·▶ 사이 18 px: 세 자리일 때 숫자 양옆 여백(카드 테 · − 버튼)이 같아진다(10 px 이면 버튼에 붙어 보였다) */
   #metro-bpm-row{gap:clamp(12px,4.6vw,18px);} /* 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
   #metro-bpm{min-width:0;}
-  #metro-bpm-line{min-width:2.5em;}
+  #metro-bpm-line{min-width:3.06em;}
   #metro-bpm-wrap{align-self:stretch;justify-content:center;padding-bottom:5px;} /* 오른쪽 묶음 높이 전체가 끌기 영역. 음표+숫자의 잉크 가운데가 카드 본문(헤더 선 ~ 박자 버튼) 가운데에 오게 2.5 px 위로 — 상자 가운데 그대로면 잉크가 2~3 px 아래(오른쪽 묶음이 본문 가운데보다 4 px 아래에 있어서) */
-  #metro-bpm-unit{display:flex;flex:none;height:.9em;margin:0 .13em .076em 0;color:var(--text);}
+  #metro-bpm-unit{display:flex;flex:none;height:.9em;margin:0 0 .076em 0;color:var(--text);}
+  #metro-bpm-eq{display:block;flex:none;font-family:'DM Mono',monospace;line-height:1;margin:0 .052em 0 .076em;color:var(--text);} /* 숫자와 같은 상자 — 막대 높이의 기준이 숫자 가운데 */
   #metro-bpm-unit .note-glyph{width:.366em;height:.9em;vertical-align:0;} #metro-bpm-unit .note-glyph.g-dq{width:.531em;display:none;}
   #metro-card.compound #metro-bpm-unit .g-q{display:none;} #metro-card.compound #metro-bpm-unit .g-dq{display:block;}
 }
@@ -538,7 +543,9 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
   #hdr,#main-body{max-width:680px;}
   #main-body{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);flex:1;min-height:0;width:100%;}
   #main-body.metro-full{grid-template-columns:1fr;} /* 전용 모드에서 튜너가 숨으면 메트로놈이 두 칸을 다 쓴다 */
-  #beat-vis{gap:8px;height:24px;}
+  #beat-vis{height:24px;}
+  /* 넓은 화면의 펼침은 왼쪽 칸에 ♩ = BPM 이 보인다(폰은 그 자리에 버튼) — 줄은 글자와 오른쪽 버튼 사이 가운데. 양옆 같은 폭이면 ♩. = 200 때문에 줄이 버튼에 닿았다 */
+  #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr{grid-template-columns:auto minmax(0,1fr) auto;}
   #metro-bpm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   #metro-bpm-wrap{flex:1;}
   #metro-bpm{font-size:84px;text-align:left;line-height:1;}

@@ -169,6 +169,12 @@ await scenario('settings: note names C D E — tuner shows A with Korean "라" a
 // U1: 재생은 접힘을 건드리지 않는다. 접힘은 접기 버튼으로만 바뀐다.
 await scenario('metro: play/stop doesn’t change the size, header bpm', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 900)
+  // 접힌 헤더도 악보처럼 ♩ = 80: 음표 · = · 숫자 순서로 한 줄
+  // 잉크 틈: 음표 그림의 오른쪽 빈자리 0.68 px, 숫자 글자의 왼쪽 빈자리 .055em 을 빼고 양쪽이 같다(= 자체의 빈자리는 양쪽 같아 상쇄된다)
+  const hl = await p.evaluate(() => { const lab = document.getElementById('metro-hdr-label'), g = lab.querySelector('.note-glyph.g-q').getBoundingClientRect(), e = lab.querySelector('.bpm-eq'), nEl = document.getElementById('metro-hdr-bpm'), n = nEl.getBoundingClientRect(), er = e.getBoundingClientRect(), fs = parseFloat(getComputedStyle(nEl).fontSize)
+    const left = er.left - (g.right - 0.68), right = (n.left + 0.055 * fs) - er.right
+    return { eq: e.textContent, order: g.right <= er.left && er.right <= n.left, row: Math.abs((er.top + er.bottom) / 2 - (n.top + n.bottom) / 2) < 1, even: Math.abs(left - right) <= 1, sameSize: getComputedStyle(e).fontSize === getComputedStyle(nEl).fontSize, left: +left.toFixed(2), right: +right.toFixed(2) } })
+  assert.deepEqual({ ...hl, left: 0, right: 0 }, { eq: '=', order: true, row: true, even: true, sameSize: true, left: 0, right: 0 }, '헤더 ♩ = BPM — = 는 숫자와 같은 크기, 음표–= · =–숫자 틈이 같다 ' + JSON.stringify(hl))
   const collapsedEl = () => p.evaluate(() => (document.getElementById('metro-body-wrap') || document.getElementById('metro-body')).classList.contains('collapsed'))
   const hdr = () => p.evaluate(() => getComputedStyle(document.getElementById('metro-play-hdr-btn')).display)
   const hdrGlyph = () => p.evaluate(() => document.getElementById('metro-play-hdr-btn').dataset.glyph)
@@ -475,21 +481,40 @@ await scenario('metro: on a phone the expanded header has a "metronome only" but
 })
 // 펼침 본문의 ♩BPM 묶음: 칸 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px).
 // 아래 안내 줄이 없으므로 끌기 영역은 오른쪽 묶음(− + ▶ · 음량) 높이 전체, 숫자는 카드 본문(헤더 선 ~ 박자 버튼) 세로 가운데 근처
-for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred in their column with no hint below, clear of the − button`, 'silence_lowfloor.wav', async p => {
+for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note, = and BPM sit centred in their column with no hint below, clear of the − button`, 'silence_lowfloor.wav', async p => {
   await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   const r = await p.evaluate(() => {
     const g = Array.from(document.querySelectorAll('#metro-bpm-unit .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect()
     const box = id => document.getElementById(id).getBoundingClientRect()
     const n = box('metro-bpm'), w = box('metro-bpm-wrap'), col = box('metro-adj-col'), l = box('metro-bpm-line'), hd = box('metro-hdr'), gr = box('metro-grids-wrap'), m = document.querySelector('.m-adj').getBoundingClientRect()
-    return { off: Math.abs((g.left + n.right) / 2 - (w.left + w.right) / 2), gapMinus: m.left - n.right, gapNote: n.left - g.right, hint: !!document.getElementById('metro-bpm-hint'), dragH: w.height - col.height, vOff: (l.top + l.bottom) / 2 - (hd.bottom + gr.top) / 2 }
+    const eq = box('metro-bpm-eq'), fs = parseFloat(getComputedStyle(document.getElementById('metro-bpm')).fontSize)
+    // 잉크 틈: 음표 그림 오른쪽 빈자리(♩ .031em · ♩. .028em)와 숫자 왼쪽 빈자리 .055em 을 빼고 비교
+    const noteR = g.right - (g.width / fs > .45 ? .028 : .031) * fs, inkL = eq.left - noteR, inkR = (n.left + .055 * fs) - eq.right
+    return { off: Math.abs((g.left + n.right) / 2 - (w.left + w.right) / 2), gapMinus: m.left - n.right, gapNote: n.left - g.right, hint: !!document.getElementById('metro-bpm-hint'), dragH: w.height - col.height, vOff: (l.top + l.bottom) / 2 - (hd.bottom + gr.top) / 2,
+      eq: document.getElementById('metro-bpm-eq').textContent, eqBetween: eq.width > 0 && eq.left >= g.right && eq.right <= n.left, eqMid: (eq.top + eq.bottom) / 2 - (n.top + n.bottom) / 2, inkL, inkR }
   })
+  assert.equal(r.eq, '=', '악보처럼 ♩ = BPM'); assert.equal(r.eqBetween, true, '= 는 음표와 숫자 사이 ' + JSON.stringify(r))
+  assert.ok(Math.abs(r.eqMid) <= 0.5, '= 는 숫자와 같은 상자 — 막대가 숫자 높이 가운데 ' + JSON.stringify(r))
+  assert.ok(Math.abs(r.inkL - r.inkR) <= 1, '음표–= · =–숫자 틈이 같다 ' + JSON.stringify(r))
   assert.ok(r.off <= 1, '음표+숫자 묶음이 칸 가운데 ' + JSON.stringify(r))
   assert.ok(r.gapMinus >= 16, '− 버튼과 띄움 ' + JSON.stringify(r)); assert.ok(r.gapNote >= 4, '음표와 숫자 사이 틈 ' + JSON.stringify(r))
   assert.equal(r.hint, false, '아래 안내 줄 없음')
   assert.ok(r.dragH >= -0.5, '끌기 영역이 오른쪽 묶음 높이 전체 ' + JSON.stringify(r))
   assert.ok(Math.abs(r.vOff) <= 3, '숫자 줄이 본문 세로 가운데 근처 ' + JSON.stringify(r))
 }, { viewport: { width: 375, height: 812 } })
+// 두 자리 ↔ 세 자리, ♩ ↔ ♩. 를 오가도 −·+·▶ 폭이 그대로 — 끌어서 99 → 100 을 넘을 때 버튼이 움찔하지 않는다
+for (const w of [320, 384]) await scenario(`layout: expanded at ${w}px — the −, + and ▶ buttons keep their width from ♩ = 72 to ♩. = 200`, 'silence_lowfloor.wav', async p => {
+  const at = async (bpm, ts) => {
+    await p.evaluate(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'dark', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
+    await p.reload(); await sleep(p, 800); await sizeTap(p)
+    return p.evaluate(() => ({ bpm: document.getElementById('metro-bpm').textContent, w: ['.m-adj', '#metro-play-btn'].map(s => +document.querySelector(s).getBoundingClientRect().width.toFixed(2)) }))
+  }
+  await p.goto(URL_); await sleep(p, 300)
+  const a = await at(72, 4), b = await at(200, 6)
+  assert.deepEqual([a.bpm, b.bpm], ['72', '200'], '두 자리 → 세 자리')
+  assert.deepEqual(b.w, a.w, `버튼 폭 그대로 (♩ = 72 → ♩. = 200)`)
+}, { viewport: { width: w, height: 800 } })
 // 좁은 폰(320 px) · 영어 'Volume' · 세 자리 BPM: 펼침의 ▶ 가 카드 안에 남는다(슬라이더가 줄어든다), LED 줄은 제 간격
 await scenario('layout: expanded at 320px in English with BPM 200 — ▶ stays inside the card and the header LEDs keep their spacing', 'silence_lowfloor.wav', async p => {
   await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'en', theme: 'light', bpm: 200 })))

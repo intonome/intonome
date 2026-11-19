@@ -10,20 +10,15 @@ export function release(m: MicNow): Release {
   return 'keep'
 }
 
-export interface HideNow extends MicNow { native: boolean; metroPlaying: boolean; droneOn: boolean; refToneOn: boolean; hasPendingToast: boolean }
-export type HideToast = 'app.stoppedOnHide'
+export interface HideNow extends MicNow { native: boolean; metroPlaying: boolean }
 export interface HidePlan {
-  /** Android 앱은 백그라운드 마이크를 무음으로 만든다 — 무음 파일이 되기 전에 녹음을 끝내 저장한다 */
+  /** Android 앱은 백그라운드 마이크를 무음으로 만든다 — 무음 파일이 되기 전에 녹음을 끝내 저장한다(저장 결과는 녹음 쪽이 알린다) */
   stopRec: boolean
   stopMetro: boolean
-  /** 돌아왔을 때 띄울 안내를 새로 정한다(null 이면 이미 잡힌 안내를 그대로 둔다). 녹음을 끝낸 경우는 저장 결과를 녹음 쪽이 알린다 */
-  setPending: HideToast | null
   release: Release
 }
-/** 화면이 숨겨질 때. 드론·A 듣기는 늘 멈춘다(호출부) — 여기서는 그 안내와 나머지를 정한다 */
+/** 화면이 숨겨질 때. 드론·A 듣기는 늘 멈춘다(호출부). 소리를 멈췄다고 따로 알리지 않는다 — 숨긴 것은 사용자이고, 돌아오면 ▶ 가 보인다 */
 export function onHide(h: HideNow): HidePlan {
   const stopRec = h.native && h.recording
-  const sounding = h.metroPlaying || h.droneOn || h.refToneOn
-  const setPending: HideToast | null = !stopRec && sounding && !h.hasPendingToast ? 'app.stoppedOnHide' : null
-  return { stopRec, stopMetro: h.metroPlaying, setPending, release: release({ ...h, recording: h.recording && !stopRec }) }
+  return { stopRec, stopMetro: h.metroPlaying, release: release({ ...h, recording: h.recording && !stopRec }) }
 }

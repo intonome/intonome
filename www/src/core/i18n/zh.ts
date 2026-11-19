@@ -248,7 +248,6 @@ export const ZH: Record<TKey, string> = {
   'tour.progressAria': '第 {n} 步，共 {total} 步',
 
   'app.updateReady': '新版本已就绪 · 点按更新',
-  'app.stoppedOnHide': '应用已切换到后台，声音已停止',
   'app.shareFailed': '无法打开分享面板。请再点按一次',
   'app.shareTitle': '保存 / 分享',
 }

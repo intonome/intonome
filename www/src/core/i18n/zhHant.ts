@@ -248,7 +248,6 @@ export const ZH_HANT: Record<TKey, string> = {
   'tour.progressAria': '第 {n} 步，共 {total} 步',
 
   'app.updateReady': '新版本已就緒 · 點一下更新',
-  'app.stoppedOnHide': 'App 已切換到背景，聲音已停止',
   'app.shareFailed': '無法開啟分享面板。請再點一次',
   'app.shareTitle': '儲存 / 分享',
 }

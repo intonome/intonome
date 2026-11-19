@@ -248,7 +248,6 @@ export const EN: Record<TKey, string> = {
   'tour.skipHint': 'Close anytime',
   'tour.progressAria': 'Step {n} of {total}',
 
-  'app.stoppedOnHide': 'The app went to the background, so the sound was stopped',
   'app.updateReady': 'New version ready · Tap to update',
   'app.shareFailed': 'Couldn’t open the share sheet. Tap again',
   'app.shareTitle': 'Save / Share',

@@ -248,7 +248,6 @@ export const ES: Record<TKey, string> = {
   'tour.progressAria': 'Paso {n} de {total}',
 
   'app.updateReady': 'Nueva versión lista · Pulsa para actualizar',
-  'app.stoppedOnHide': 'La app pasó a segundo plano, así que el sonido se detuvo',
   'app.shareFailed': 'No se pudo abrir el menú de compartir. Pulsa otra vez',
   'app.shareTitle': 'Guardar / Compartir',
 }

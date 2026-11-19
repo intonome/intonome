@@ -118,6 +118,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Offline: the service worker precache lets the tuner run after a reload without network; fonts are self-hosted
 - [A] If the context is stopped from outside (iOS "interrupted"), it resumes on return; if it can't within 1.5 s, the metronome stops with a notice
 - [A] App update: a new service worker is applied only when idle (no mic session in use, metronome, drone, recording or editor)
+- [A] Leaving the app (another app, home, screen off) stops the metronome with no notice on return — the person left; ▶ shows and the mic reopens
+- [D] The drone and Play A stop the same way, with no notice on return
 - [D] Android app going to the background saves an in-progress recording and ends it (no background recording); "saved" shows on return only if the save worked
 - [A] The system muting the mic during a recording pauses it; back within 1.5 s it carries on, otherwise (or never) the file is saved up to the mute with a notice; REC while muted refuses with a notice
 - [D] iPhone home-screen app: REC, screen off for a minute, back → "The mic was cut off…" and the file ends where the screen went off

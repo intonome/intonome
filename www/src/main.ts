@@ -120,16 +120,15 @@ function letGo(r: Release): boolean {
   return true
 }
 const micNow = () => ({ micOpen: !!A.micStream, opening: isOpening(), recording: sessionStore.get().recording })
-// 숨김: 소리 나는 것은 전부 멈추고(복귀 시 자동 재개 안 함) 마이크를 놓는다. 녹음 중이면 마이크는 둔다(안드로이드 앱은 녹음을 먼저 저장)
+// 숨김: 소리 나는 것은 전부 멈추고(복귀 시 자동 재개 안 함, 따로 알리지도 않는다) 마이크를 놓는다. 녹음 중이면 마이크는 둔다(안드로이드 앱은 녹음을 먼저 저장)
 // 복귀: 컨텍스트 재개 + wake lock 재획득 + 놓았던 마이크를 다시 연다(못 열면 탭 안내)
-let micReleasedByHide = false, pendingToast: string | null = null
+let micReleasedByHide = false
 on(document, 'visibilitychange', () => {
   if (document.visibilityState !== 'visible') {
-    const plan = onHide({ ...micNow(), native: isNative(), metroPlaying: metroStore.get().playing, droneOn: droneOn(), refToneOn: refToneStore.get().active, hasPendingToast: pendingToast !== null })
+    const plan = onHide({ ...micNow(), native: isNative(), metroPlaying: metroStore.get().playing })
     if (plan.stopRec) stopRec('hidden') // '앱이 뒤로 가서 녹음을 저장했어요' 는 저장이 끝난 뒤 녹음 쪽이 알린다(실패면 실패 안내)
     if (plan.stopMetro) stopMetro()
     stopDrone(); stopRefNote() // A 듣기는 마이크를 놓을 때만 꺼져서, 마이크가 닫혀 있거나 녹음 중이면 뒤에서 계속 울렸다(2.5.7 까지)
-    if (plan.setPending) pendingToast = t(plan.setPending)
     if (letGo(plan.release)) micReleasedByHide = true
     return
   }
@@ -137,7 +136,6 @@ on(document, 'visibilitychange', () => {
   // 숨긴 채 돌던 것(녹음으로 둔 마이크)이 있으면: 그 사이 전화로 멈춘 컨텍스트는 상태가 다시 바뀌지 않아 아래 리스너가 안 불린다 — 돌아와서도 못 깨우면 안내.
   // 마이크를 놓고 숨긴 경우는 일부러 재운 컨텍스트라 검사하지 않는다(다시 여는 쪽이 안내한다)
   if (!micReleasedByHide && somethingRuns()) checkInterruptedSoon()
-  if (pendingToast) { toast(pendingToast); pendingToast = null }
   // 다시 열릴 때까지 플래그 유지 — 여는 도중 또 숨겨져 busy 로 끝나도 다음 복귀에서 재시도
   if (micReleasedByHide) tryOpenMic().then(ok => { if (ok) micReleasedByHide = false; else if (document.visibilityState === 'visible' && !A.micStream && !isOpening()) showTapHint(tryOpenMic) }) // isOpening: 다른 호출이 여는 중이면 그 위에 버튼을 띄우지 않는다
 })

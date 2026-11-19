@@ -248,7 +248,6 @@ export const JA: Record<TKey, string> = {
   'tour.progressAria': '全 {total} ステップ中 {n} 番目',
 
   'app.updateReady': '新しいバージョンの準備ができました · タップして更新',
-  'app.stoppedOnHide': 'アプリがバックグラウンドに移ったため音を止めました',
   'app.shareFailed': '共有シートを開けませんでした。もう一度タップしてください',
   'app.shareTitle': '保存 / 共有',
 }

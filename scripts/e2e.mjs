@@ -1850,6 +1850,8 @@ await scenario('lifecycle: hidden → mic released and metronome stopped; the ti
   assert.equal(await p.evaluate(() => document.getElementById('timer-toggle-btn').textContent), '정지', '숨김: 타이머는 멈추지 않는다 (연습이 끝난 게 아니다)')
   assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').dataset.glyph), 'play', '숨김: 메트로놈은 멈춘다')
   // 복귀: waitNote 는 숨기기 전 텍스트를 보고 바로 통과하므로 micOpen 을 직접 기다린다
+  // 복귀 순간부터 새로 붙는 토스트를 센다 — 다 끝난 뒤에 보면 토스트(2.5 s)가 이미 사라졌을 수 있다
+  await p.evaluate(() => { window.__newToasts = []; new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.classList?.contains('toast')) window.__newToasts.push(n.textContent) }).observe(document.getElementById('toast-host'), { childList: true }) })
   await setVisibility(p, 'visible')
   const hintOnReturn = await p.evaluate(async () => { const t0 = performance.now(); let hint = false; while (performance.now() - t0 < 3000) { if (document.getElementById('tuner-card').classList.contains('tap-hint')) hint = true; if (window.__tt.stats().micOpen) break; await new Promise(r => setTimeout(r, 16)) } return hint })
   assert.equal(hintOnReturn, false, '복귀 재개 중에도 "켜라" 고 말하지 않는다')
@@ -1857,6 +1859,7 @@ await scenario('lifecycle: hidden → mic released and metronome stopped; the ti
   await waitNote(p, t => t.note === '라', 5000)
   assert.equal(await p.evaluate(() => !document.getElementById('tuner-card').classList.contains('tap-hint')), true, '복귀: 시작 버튼 없이 바로')
   assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').dataset.glyph), 'play', '복귀: 메트로놈이 저절로 다시 켜지지는 않는다 (놀라게 하지 않는다)')
+  assert.deepEqual(await p.evaluate(() => window.__newToasts), [], '복귀: 멈춘 것을 따로 알리지 않는다 (숨긴 것은 사용자다)')
 })
 await scenario('lifecycle: on the web the mic stays open when hidden during a recording (a recording must not break)', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')

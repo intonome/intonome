@@ -258,7 +258,6 @@ export const KO = {
 
   // 앱
   'app.updateReady': '새 버전이 준비됐어요 · 눌러서 적용',
-  'app.stoppedOnHide': '앱이 뒤로 가서 소리를 멈췄어요',
   'app.shareFailed': '공유 창을 열지 못했어요. 다시 눌러 주세요',
   'app.shareTitle': '저장 / 공유',
 } as const

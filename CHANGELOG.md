@@ -2,10 +2,15 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
-- Settings saved by 2.4.x and earlier are no longer read (the defaults apply), and the app no longer looks for storage left by its earlier names. Neither can exist at the current web address or app ID; recordings are unaffected
+## [2.9.15] - 2026-11-19
+Clean-up before release: no notice when you come back after leaving the app, clearer wording when a recording was saved on leaving, and old code, tools and CI jobs removed.
+
+App
 - Coming back after leaving the app no longer shows a notice that the sound was stopped; leaving is what stops it, and ▶ shows on return
 - The notice after a recording was saved on leaving the Android app now says the recording was stopped as well as saved, in plain words
+- Settings saved by 2.4.x and earlier are no longer read (the defaults apply), and the app no longer looks for storage left by its earlier names. The current web address and the Play release start with empty storage, so neither can be there; recordings are unaffected
+
+CI and tools
 - CI no longer takes and uploads screenshots. Its fonts differ from the development environment, so they were never compared there; `npm run shots` compares them in development as before
 - CI drops its separate e2e result job (it only mirrored the three shards for an old branch rule); a failing shard still fails CI and holds back the deploy
 - Removed tools nothing used any more: the comparison with the old single-file tuner (v1) and its benchmark reports, the trace images from 2.0.2 and their renderer, and two comparison scripts (one could no longer set up most of its scenes)

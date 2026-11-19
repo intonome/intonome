@@ -126,7 +126,7 @@ let micReleasedByHide = false
 on(document, 'visibilitychange', () => {
   if (document.visibilityState !== 'visible') {
     const plan = onHide({ ...micNow(), native: isNative(), metroPlaying: metroStore.get().playing })
-    if (plan.stopRec) stopRec('hidden') // '앱이 뒤로 가서 녹음을 저장했어요' 는 저장이 끝난 뒤 녹음 쪽이 알린다(실패면 실패 안내)
+    if (plan.stopRec) stopRec('hidden') // 저장 안내(rec.savedOnHide)는 저장이 끝난 뒤 녹음 쪽이 알린다(실패면 실패 안내)
     if (plan.stopMetro) stopMetro()
     stopDrone(); stopRefNote() // A 듣기는 마이크를 놓을 때만 꺼져서, 마이크가 닫혀 있거나 녹음 중이면 뒤에서 계속 울렸다(2.5.7 까지)
     if (letGo(plan.release)) micReleasedByHide = true

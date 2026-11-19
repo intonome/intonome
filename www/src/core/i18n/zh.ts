@@ -132,7 +132,7 @@ export const ZH: Record<TKey, string> = {
   'rec.startFailed': '无法开始录音。请完全关闭应用后重新打开',
   'rec.rolledOver': '已超过 60 分钟，将在新文件中继续录音',
   'rec.savedOnCut': '麦克风已断开，已保存断开前的录音',
-  'rec.savedOnHide': '应用已切换到后台，录音已保存',
+  'rec.savedOnHide': '已离开应用，录音已停止并保存',
   'rec.recovered': '已恢复 {n} 条未保存的录音',
   'rec.expiredDeleted': '已删除 {n} 条超过 30 天的录音',
   'rec.recoveredSuffix': '_恢复',

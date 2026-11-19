@@ -136,7 +136,7 @@ export const KO = {
   'rec.startFailed': '녹음을 시작하지 못했어요. 앱을 완전히 닫았다가 다시 열어 주세요',
   'rec.rolledOver': '60분이 넘어 새 파일로 이어서 녹음해요',
   'rec.savedOnCut': '마이크가 끊겨 그 전까지 녹음한 것을 저장했어요',
-  'rec.savedOnHide': '앱이 뒤로 가서 녹음을 저장했어요',
+  'rec.savedOnHide': '앱을 나가서 녹음을 끝내고 저장했어요',
   'rec.recovered': '저장되지 않았던 녹음 {n}개를 복구했어요',
   'rec.expiredDeleted': '30일이 지난 녹음 {n}개를 지웠어요',
   'rec.recoveredSuffix': '_복구',

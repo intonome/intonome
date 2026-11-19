@@ -133,7 +133,7 @@ export const EN: Record<TKey, string> = {
   'rec.startFailed': 'Couldn’t start recording. Close the app completely and open it again',
   'rec.rolledOver': 'Reached 60 minutes. Recording continues in a new file',
   'rec.savedOnCut': 'The mic was cut off, so the recording was saved up to that point',
-  'rec.savedOnHide': 'The app went to the background, so the recording was saved',
+  'rec.savedOnHide': 'You left the app, so the recording was stopped and saved',
   'rec.recovered': 'Recovered {n} unsaved {n|recording|recordings}',
   'rec.expiredDeleted': 'Deleted {n} {n|recording|recordings} older than 30 days',
   'rec.recoveredSuffix': '_recovered',

@@ -132,7 +132,7 @@ export const ZH_HANT: Record<TKey, string> = {
   'rec.startFailed': '無法開始錄音。請完全關閉 App 後重新開啟',
   'rec.rolledOver': '已超過 60 分鐘，將在新檔案中繼續錄音',
   'rec.savedOnCut': '麥克風已斷開，已儲存斷開前的錄音',
-  'rec.savedOnHide': 'App 已切換到背景，錄音已儲存',
+  'rec.savedOnHide': '已離開 App，錄音已停止並儲存',
   'rec.recovered': '已恢復 {n} 段未儲存的錄音',
   'rec.expiredDeleted': '已刪除 {n} 段超過 30 天的錄音',
   'rec.recoveredSuffix': '_恢復',

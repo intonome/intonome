@@ -132,7 +132,7 @@ export const JA: Record<TKey, string> = {
   'rec.startFailed': '録音を開始できませんでした。アプリを完全に終了してから、もう一度開いてください',
   'rec.rolledOver': '60分を超えたため、新しいファイルに続けて録音します',
   'rec.savedOnCut': 'マイクが切れたため、そこまでの録音を保存しました',
-  'rec.savedOnHide': 'アプリがバックグラウンドに移ったため録音を保存しました',
+  'rec.savedOnHide': 'アプリを離れたので録音を止めて保存しました',
   'rec.recovered': '保存されていなかった録音 {n}件を復元しました',
   'rec.expiredDeleted': '30日を過ぎた録音 {n}件を削除しました',
   'rec.recoveredSuffix': '_復元',

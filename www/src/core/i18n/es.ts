@@ -132,7 +132,7 @@ export const ES: Record<TKey, string> = {
   'rec.startFailed': 'No se pudo empezar a grabar. Cierra la app del todo y vuelve a abrirla',
   'rec.rolledOver': 'Pasaron 60 minutos, así que la grabación sigue en un archivo nuevo',
   'rec.savedOnCut': 'Se cortó el micrófono, así que la grabación se guardó hasta ese punto',
-  'rec.savedOnHide': 'La app pasó a segundo plano, así que la grabación se guardó',
+  'rec.savedOnHide': 'Saliste de la app, así que la grabación se detuvo y se guardó',
   'rec.recovered': 'Se {n|recuperó|recuperaron} {n} {n|grabación|grabaciones} sin guardar',
   'rec.expiredDeleted': 'Se {n|eliminó|eliminaron} {n} {n|grabación|grabaciones} de más de 30 días',
   'rec.recoveredSuffix': '_recuperada',

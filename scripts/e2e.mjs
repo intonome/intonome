@@ -1210,7 +1210,7 @@ await scenario('rec: start/stop → list item, persists reload, rename persists,
   assert.equal(await p.evaluate(() => document.getElementById('menu-overlay').classList.contains('open')), true, 'back to menu')
   assert.equal((await names())[0], '연습곡A')
   await p.reload(); await sleep(p, 1200)
-  results.push(['rec: rename persisted after reload', (await names())[0] === '연습곡A' ? 'ok' : 'NO (v1 known bug)'])
+  assert.equal((await names())[0], '연습곡A', 'rename persisted after reload')
   await p.click('#menu-btn'); await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 300)
   assert.equal((await names()).length, 0)
   await p.click('#toast'); await sleep(p, 500) // 실행 취소
@@ -2226,6 +2226,6 @@ await scenario('tuner trace: a badly out-of-tune performance breaks fake crossin
 
 killServer()
 let fail = 0
-for (const [n, r] of results) { if (r !== 'ok' && !r.startsWith('NO')) fail++; console.log((r === 'ok' ? '  ok   ' : r.startsWith('NO') ? '  note ' : '  FAIL ') + n + (r === 'ok' ? '' : '  → ' + r)) }
+for (const [n, r] of results) { if (r !== 'ok') fail++; console.log((r === 'ok' ? '  ok   ' : '  FAIL ') + n + (r === 'ok' ? '' : '  → ' + r)) }
 console.log(`\n${results.length - fail} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

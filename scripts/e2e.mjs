@@ -33,7 +33,7 @@ let browser
 /** --only <정규식> 로 시나리오 이름을 골라 돌린다  */
 const ONLY = typeof args.only === 'string' ? new RegExp(args.only) : null
 /** 앱 기본은 다크, 첫 실행 언어는 폰을 따른다(테스트 브라우저는 영어 폰).  시나리오는 한국어 문구 · 라이트 색으로 짜여 있어, 저장이 없으면 한국어 · 라이트 · 도레미를 심고 연다(__seed 표시: 앱이 한 번 저장하면 사라진다). { fresh: true } 면 심지 않는다 */
-const SEED = () => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', __seed: 1 })) }
+const SEED = () => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'light', noteNames: 'ko', __seed: 1 })) }
 // --shard k/n: 시나리오를 n 묶음으로 나눠 k 번째만 돈다 (CI 가 병렬로 — 전체는 25 분을 넘겼다). 순서 기준이라 묶음은 결정적이다
 const SHARD = typeof args.shard === 'string' && /^\d+\/\d+$/.test(args.shard) ? args.shard.split('/').map(Number) : null
 if (args.shard !== undefined && (!SHARD || SHARD[0] < 1 || SHARD[0] > SHARD[1])) { console.error(`bad --shard ${args.shard} (want k/n with 1 <= k <= n)`); process.exit(2) } // 범위 밖이면 0 개 돌고 초록이 된다
@@ -58,7 +58,7 @@ const sleep = (p, ms) => p.waitForTimeout(ms)
 /** BPM 숫자 끌기를 천천히(5 px / 100 ms = 0.05 px/ms) — 끌기 감도는 손가락 속도를 따르므로(core/metro/dragRate) 천천히면 1 BPM = 6 px 로 정해진다 */
 const slowDragY = async (p, x, y, dy) => { await p.mouse.move(x, y); await p.mouse.down(); const n = Math.round(Math.abs(dy) / 5); for (let i = 1; i <= n; i++) { await sleep(p, 100); await p.mouse.move(x, y - dy * i / n) } await p.mouse.up() }
 /** 색·캔버스 픽셀을 다크 토큰 기준으로 재는 시나리오용 — 기본 테마는 라이트라 다크를 저장해 두고 연다 */
-const darkTheme = p => p.addInitScript(() => { const s = localStorage.getItem('intonome_settings_v1'); if (!s || JSON.parse(s).__seed) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', noteNames: 'ko', theme: 'dark' })) })
+const darkTheme = p => p.addInitScript(() => { const s = localStorage.getItem('intonome_settings_v1'); if (!s || JSON.parse(s).__seed) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', noteNames: 'ko', theme: 'dark' })) })
 /** 카드를 아래로 밀어 한 단계 내리기. 헤더의 빈 가운데에서 시작한다 */
 /** 한 단계 넘기는 끌기: 단계 거리의 30 % 를 확실히 넘게(200 px) 끌고, 멈춘 뒤 놓는다 — 놓는 속도를 0 으로 만들어 러너 속도와 무관하게 거리로만 판정되게.
  * (60 px 를 끌고 바로 놓으면 튕김 속도에 기대는데, 느린 러너에서는 손 떼기가 100 ms 넘게 늦게 도착해 속도 0 → 되돌아갔다) */
@@ -438,7 +438,7 @@ await scenario('metro: full-mode dial — BPM follows the ring, stops at the end
 // 폰의 펼침: 헤더 왼쪽 칸이 '메트로놈만 크게' 버튼 — 끌지 않고 누르기로도 펼침2 에 간다(끌기의 대안, WCAG 2.5.7).
 // BPM 은 한 번만(본문 큰 숫자, 음표도 거기 — 6/8 이면 ♩.), 접힘에선 헤더 ♩80 이 돌아온다. 버튼에서 시작해 끌면 카드가 움직이고 BPM 은 그대로
 await scenario('metro: on a phone the expanded header has a "metronome only" button where ♩80 was — tap goes to full, BPM shows once with its note, a drag from it moves the card', 'silence_lowfloor.wav', async p => {
-  await p.addInitScript(() => { const o = JSON.parse(localStorage.getItem('intonome_settings_v1') || '{}'); if (!o.bpm) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: 96, timeSig: 6 })) })
+  await p.addInitScript(() => { const o = JSON.parse(localStorage.getItem('intonome_settings_v1') || '{}'); if (!o.bpm) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'light', bpm: 96, timeSig: 6 })) })
   await p.goto(URL_); await sleep(p, 800)
   const vis = id => p.evaluate(i => { const e = document.getElementById(i), c = getComputedStyle(e); return c.display !== 'none' && c.visibility === 'visible' }, id)
   const st = () => p.evaluate(() => document.getElementById('metro-card').classList.contains('full') ? 'f' : document.getElementById('metro-body-wrap').classList.contains('collapsed') ? 'c' : 'e')
@@ -467,7 +467,7 @@ await scenario('metro: on a phone the expanded header has a "metronome only" but
 // 펼침 본문의 ♩BPM 묶음: 칸 가운데(♩ 이든 ♩. 이든), 세 자리여도 − 버튼과 띄움(2.6.2 는 ♩ 일 때 4.7 px 오른쪽 · 세 자리에서 − 와 10 px).
 // 아래 안내 줄이 없으므로 끌기 영역은 오른쪽 묶음(− + ▶ · 음량) 높이 전체, 숫자는 카드 본문(헤더 선 ~ 박자 버튼) 세로 가운데 근처
 for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: expanded at 375px · ${bpm} in ${ts}/${ts === 6 ? 8 : 4} — the note and BPM sit centred in their column with no hint below, clear of the − button`, 'silence_lowfloor.wav', async p => {
-  await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
+  await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'light', bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   const r = await p.evaluate(() => {
     const g = Array.from(document.querySelectorAll('#metro-bpm-unit .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect()
@@ -483,7 +483,7 @@ for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: e
 }, { viewport: { width: 375, height: 812 } })
 // 좁은 폰(320 px) · 영어 'Volume' · 세 자리 BPM: 펼침의 ▶ 가 카드 안에 남는다(슬라이더가 줄어든다), LED 줄은 제 간격
 await scenario('layout: expanded at 320px in English with BPM 200 — ▶ stays inside the card and the header LEDs keep their spacing', 'silence_lowfloor.wav', async p => {
-  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'en', theme: 'light', bpm: 200 })))
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'en', theme: 'light', bpm: 200 })))
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   const r = await p.evaluate(() => { const c = document.getElementById('metro-card'), cr = c.getBoundingClientRect(), inner = cr.right - parseFloat(getComputedStyle(c).borderRightWidth), pl = document.getElementById('metro-play-btn').getBoundingClientRect(), leds = Array.from(document.querySelectorAll('#beat-vis .led')).map(e => e.getBoundingClientRect()); return { pad: inner - pl.right, gap: Math.min(...leds.slice(1).map((l, i) => l.left - leds[i].right)) } })
   assert.ok(r.pad >= 8, '▶ 오른쪽에 여백 ' + JSON.stringify(r)); assert.ok(r.gap >= 4, 'LED 사이 간격 ' + JSON.stringify(r))
@@ -552,7 +552,7 @@ for (const w of [360, 384]) await scenario(`layout: collapsed, stopped and playi
 
 // 펼침: 헤더 LED 줄이 카드 가운데(좁으면 줄이 줄어든다), 양옆과 겹치지 않는다
 for (const w of [412, 375, 360, 320]) await scenario(`layout: expanded at ${w}px · BPM 200 — the header LEDs sit in the middle of the card`, 'silence_lowfloor.wav', async p => {
-  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', bpm: 200 })))
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'light', bpm: 200 })))
   await p.goto(URL_); await sleep(p, 800); await sizeTap(p)
   // 펼침의 헤더 왼쪽 칸은 '메트로놈만 크게' 버튼(♩80 은 본문 큰 숫자가 같은 값이라 접힘에서만)
   const r = await p.evaluate(() => { const c = document.getElementById('metro-card').getBoundingClientRect(), v = document.getElementById('beat-vis').getBoundingClientRect(), f = document.getElementById('metro-full-btn').getBoundingClientRect(), s = document.getElementById('metro-size-btn').getBoundingClientRect(); return { off: Math.abs((v.left + v.right) - (c.left + c.right)) / 2, gapL: v.left - f.right, gapR: s.left - v.right } })
@@ -561,7 +561,7 @@ for (const w of [412, 375, 360, 320]) await scenario(`layout: expanded at ${w}px
 
 for (const w of [360, 384, 412]) await scenario(`layout: collapsed at ${w}px — the header LEDs stay put when BPM goes from two to three digits`, 'silence_lowfloor.wav', async p => {
   const leds = async bpm => {
-    await p.addInitScript(b => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, bpm: b })), bpm)
+    await p.addInitScript(b => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, bpm: b })), bpm)
     await p.goto(URL_); await sleep(p, 800)
     assert.equal(await p.evaluate(() => document.getElementById('metro-hdr-bpm').textContent), String(bpm))
     return p.evaluate(() => Array.from(document.querySelectorAll('#beat-vis .led')).map(e => Math.round(e.getBoundingClientRect().left * 10) / 10))
@@ -762,7 +762,7 @@ for (const top of [0, 59]) await scenario(`ios: home-screen app ${top ? 'drawn u
   if (top) await s.send('Emulation.setSafeAreaInsetsOverride', { insets: { top, bottom: 34 } })
   await p.addInitScript(() => { const mm = window.matchMedia.bind(window); window.matchMedia = q => q.includes('display-mode: standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q) })
   for (const theme of ['dark', 'light']) {
-    await p.addInitScript(t => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, theme: t })), theme)
+    await p.addInitScript(t => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, theme: t })), theme)
     await p.goto(URL_); await sleep(p, 600)
     assert.equal(await p.evaluate(() => document.documentElement.classList.contains('sb-under')), top > 0, theme)
   }
@@ -817,7 +817,7 @@ await scenario('i18n: English — no Korean on any screen, nothing clipped, surv
   await p.click('#settings-back-btn'); await waitNote(p, t => t.note === '라')
 })
 await scenario('i18n: English mic popup when the mic is blocked', 'silence_lowfloor.wav', async p => {
-  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'en' })))
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'en' })))
   await p.goto(URL_); await sleep(p, 1500)
   const r = await screenText(p); assert.deepEqual(r.korean, []); assert.deepEqual(r.overflow, [])
   assert.equal(await p.evaluate(() => document.documentElement.classList.contains('i18n-pending')), false, 'page is revealed')
@@ -1122,12 +1122,6 @@ await scenario('first-run guide (wide screen): the bubble does not cover the met
   await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
 }, { fresh: true, locale: 'ko-KR', viewport: { width: 900, height: 1000 }, isMobile: false })
 
-await scenario('first-run guide: an install that ran before but never saved a setting does not see it either', 'violin_A4.wav', async (p, ctx) => {
-  await ctx.addInitScript(() => { if (!localStorage.getItem('intonome_legacy_cleared_v1')) localStorage.setItem('intonome_legacy_cleared_v1', '1') }) // 앱이 첫 실행마다 남기는 표식만 있고 설정은 없다
-  await p.goto(URL_); await waitNote(p, t => t.note === '라'); await sleep(p, 1500)
-  assert.equal(await p.evaluate(() => !!document.getElementById('tour')), false)
-  assert.equal(await p.evaluate(() => localStorage.getItem('intonome_tour_v1')), 'done')
-}, { fresh: true, locale: 'ko-KR' })
 await scenario('first-run guide: going to the background mid-step puts the step back before settings are saved', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)
   await tourNext(p); await tourNext(p)
@@ -1650,7 +1644,7 @@ await scenario('metro: bpm change while playing does not restart (beats keep com
 })
 // 이어폰: 앱 음이 마이크에 들어가지 않는다(가짜 마이크는 파일이라 이어폰과 같다). 기준음 440 = 파일의 라 — 늘 잘라내면 같은 음이 '--' 가 된다
 await scenario('Play A with earphones (the tone never reaches the mic): the same A keeps reading in tune', 'e2e/violin_A4_open.wav', async p => {
-  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 2, lang: 'ko', theme: 'light', noteNames: 'ko', refHz: 440 })))
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'light', noteNames: 'ko', refHz: 440 })))
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   await p.click('#ref-a-btn'); await sleep(p, 700)
   assert.equal(await p.evaluate(() => document.getElementById('ref-a-btn').classList.contains('on')), true, 'A 듣기 on')

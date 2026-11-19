@@ -14,7 +14,7 @@ const AREAS = [
   { e2e: ['editor', 'ux', 'playback', 'keys'],
     files: [/^www\/src\/ui\/editor\.ts$/, /^www\/src\/audio\/(playback|editorPlayer|stretchPlayer|stretch\.worklet|decode)\.ts$/, /^www\/src\/core\/(playbackGain|softclip|editRange|stretch|mono)\.ts$/] },
   { e2e: ['first-run'], files: [/^www\/src\/(ui|persist)\/tour\.ts$/, /^www\/src\/core\/(tourPlace|metro\/card)\.ts$/] },
-  { e2e: ['settings', 'theme', 'first launch', 'i18n', 'first-run'], files: [/^www\/src\/state\//, /^www\/src\/persist\/(settings|legacy)\.ts$/] },
+  { e2e: ['settings', 'theme', 'first launch', 'i18n', 'first-run'], files: [/^www\/src\/state\//, /^www\/src\/persist\/settings\.ts$/] },
   { e2e: ['i18n', 'first launch', 'settings: note names'], shots: true, files: [/^www\/src\/core\/i18n\//, /^www\/src\/ui\/lang\.ts$/] },
   { e2e: ['theme'], shots: true, files: [/^www\/src\/ui\/theme\.ts$/] },
   { e2e: ['ux: edge swipe', 'keys', 'settings', 'rec:'], shots: true, files: [/^www\/src\/ui\/(menu|settings|swipeBack|about|licensesText)\.ts$/] },

@@ -1,34 +1,14 @@
-/** 설정 영속화 (localStorage). 스키마 v3 — 읽을 때 v2·v1 을 옮겨 온다 */
-import { settingsStore, RMS_LEVELS, V1_RMS_LEVELS, V201_RMS_LEVELS, SMOOTH_LEVELS, V246_SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
+/** 설정 영속화 (localStorage). 스키마 v3 만 읽는다 — 다른 형식은 기본값(2.4.x 이전 값은 지금의 웹 주소·앱 ID 에 있을 수 없다) */
+import { settingsStore, RMS_LEVELS, SMOOTH_LEVELS, CFG, type Settings, type SubDiv, type TimeSig } from '../state/index.ts'
 import { t, isLang } from '../core/i18n/index.ts'
 import { notice } from '../core/notice.ts'
 
 export const SETTINGS_KEY = 'intonome_settings_v1'
-export const LEGACY_SETTINGS_KEYS = ['gopractice_settings_v1', 'gp_mic_intro', 'tempotune_settings_v1', 'tempotune_legacy_cleared_v1'] // 옛 이름(Go practice · TempoTune) 키 — persist/legacy.ts 가 지운다
 
-/** v3 (2.5.0~): 반응 속도 값이 새 표. v2 (2.0.2~2.4.6)는 같은 모양에 옛 표 — 같은 숫자가 다른 단계라 버전으로 가른다 */
-type StoredV3 = { v: 2 | 3 } & Settings
-interface StoredV1 { cents?: number; rms?: number; smooth?: number; wakelock?: boolean; bpm?: number; timeSig?: number; subDiv?: number | string; refHz?: number; vol?: number; savedAt?: number }
+type StoredV3 = { v: 3 } & Settings
 
-/** 저장된 감도 값 → 현재 단계 값. 숫자가 아니라 단계(인덱스)를 옮긴다. 표는 저장 키로 고른다 — v1 rms 와 v2 rmsMin 은 값 범위가 겹친다 */
-function rmsStep(v: unknown, tables: ReadonlyArray<ReadonlyArray<number>>): number | null {
-  if (typeof v !== 'number' || !isFinite(v)) return null
-  for (const table of tables) {
-    const i = table.findIndex(x => Math.abs(x - v) < x * 0.05) // 그 표의 값과 5 % 안에서 일치
-    if (i >= 0) return RMS_LEVELS[i]!
-  }
-  return null
-}
-/** 저장된 반응 속도 값 → 현재 단계 값. 감도와 같은 규칙 — 단계(인덱스)를 옮긴다. 표는 저장 버전으로 고른다(.12·.20 이 두 표에 다 있다) */
-function smoothStep(v: unknown, table: ReadonlyArray<number>): number | null {
-  if (typeof v !== 'number' || !isFinite(v)) return null
-  const i = table.findIndex(x => Math.abs(x - v) < .001)
-  return i >= 0 ? SMOOTH_LEVELS[i]! : null
-}
-/** v2 키(`rmsMin`): 현재 값 또는 v2.0.0~2.0.1 값 */
-const V2_TABLES = [RMS_LEVELS, V201_RMS_LEVELS]
-/** v1 키(`rms`): v1 값만 */
-const V1_TABLES = [V1_RMS_LEVELS]
+/** 저장된 값이 지금 단계 표에 있으면 그 값 */
+const step = (v: unknown, table: ReadonlyArray<number>): number | null => typeof v === 'number' && table.some(x => Math.abs(x - v) < 1e-9) ? v : null
 function isTimeSig(v: unknown): v is TimeSig { return v === 1 || v === 2 || v === 3 || v === 4 || v === 6 } // 1 = 정박 모드 — 빠지면 새로고침에 풀린다
 function isSubDiv(v: unknown): v is SubDiv { return v === 1 || v === 2 || v === 3 || v === 4 || v === 'd' }
 const clampBpm = (v: number) => Math.max(CFG.metro.bpmMin, Math.min(CFG.metro.bpmMax, Math.round(v))) // 음수 BPM 은 스케줄러 무한루프
@@ -38,42 +18,27 @@ export function parseStored(raw: string | null): Partial<Settings> {
   if (!raw) return {}
   let d: unknown
   try { d = JSON.parse(raw) } catch { return {} }
-  if (!d || typeof d !== 'object') return {}
+  if (!d || typeof d !== 'object' || (d as StoredV3).v !== 3) return {}
   const out: Partial<Settings> = {}
   // 값 범위도 검증한다 — 손상된 저장값(refHz 1000 등)이 분석기 전체를 틀리게 하지 않게
   const num = (v: unknown, lo: number, hi: number): number | null => typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : null
   const tol = (v: unknown): number | null => (typeof v === 'number' && [5, 10, 15].includes(v)) ? v : null
-  const ver = (d as StoredV3).v
-  if (ver === 3 || ver === 2) {
-    const s = d as Partial<StoredV3>
-    { const v = tol(s.tolCents); if (v !== null) out.tolCents = v }
-      { const v = rmsStep(s.rmsMin, V2_TABLES); if (v !== null) out.rmsMin = v }
-    { const v = smoothStep(s.smoothing, ver === 3 ? SMOOTH_LEVELS : V246_SMOOTH_LEVELS); if (v !== null) out.smoothing = v }
-    if (typeof s.bpm === 'number' && isFinite(s.bpm)) out.bpm = clampBpm(s.bpm)
-    if (isTimeSig(s.timeSig)) out.timeSig = s.timeSig
-    if (isSubDiv(s.subDiv)) out.subDiv = s.subDiv
-    { const v = num(s.refHz, CFG.ref.min, CFG.ref.max); if (v !== null) out.refHz = Math.round(v) }
-    { const v = num(s.metroVol, 0, 1); if (v !== null) out.metroVol = v }
-    if (s.noteNames === 'ko' || s.noteNames === 'en') out.noteNames = s.noteNames
-    if (typeof s.autoDelete === 'boolean') out.autoDelete = s.autoDelete
-    if (s.theme === 'dark' || s.theme === 'light') out.theme = s.theme
-    if (isLang(s.lang)) out.lang = s.lang
-    if (s.aOctave === 2 || s.aOctave === 3 || s.aOctave === 4) out.aOctave = s.aOctave
-    if (typeof s.haptics === 'boolean') out.haptics = s.haptics
-    if (out.timeSig === 6) out.subDiv = 1 // 6/8 은 세분 없음 — 따로 저장된 옛 값이 시퀀서·스윕을 어긋나게 한다
-    return out
-  }
-  // v1 스키마
-  const s = d as StoredV1
-  { const v = tol(s.cents); if (v !== null) out.tolCents = v }
-  { const v = rmsStep(s.rms, V1_TABLES); if (v !== null) out.rmsMin = v }
-  if (s.smooth) { const V1_SMOOTH = [.05, .10, .15]; const i = V1_SMOOTH.findIndex(v => Math.abs(v - s.smooth!) < .001); if (i >= 0) out.smoothing = SMOOTH_LEVELS[i]! }
+  const s = d as Partial<StoredV3>
+  { const v = tol(s.tolCents); if (v !== null) out.tolCents = v }
+  { const v = step(s.rmsMin, RMS_LEVELS); if (v !== null) out.rmsMin = v }
+  { const v = step(s.smoothing, SMOOTH_LEVELS); if (v !== null) out.smoothing = v }
   if (typeof s.bpm === 'number' && isFinite(s.bpm)) out.bpm = clampBpm(s.bpm)
   if (isTimeSig(s.timeSig)) out.timeSig = s.timeSig
   if (isSubDiv(s.subDiv)) out.subDiv = s.subDiv
   { const v = num(s.refHz, CFG.ref.min, CFG.ref.max); if (v !== null) out.refHz = Math.round(v) }
-  { const v = num(s.vol, 0, 1); if (v !== null) out.metroVol = v }
-  if (out.timeSig === 6) out.subDiv = 1
+  { const v = num(s.metroVol, 0, 1); if (v !== null) out.metroVol = v }
+  if (s.noteNames === 'ko' || s.noteNames === 'en') out.noteNames = s.noteNames
+  if (typeof s.autoDelete === 'boolean') out.autoDelete = s.autoDelete
+  if (s.theme === 'dark' || s.theme === 'light') out.theme = s.theme
+  if (isLang(s.lang)) out.lang = s.lang
+  if (s.aOctave === 2 || s.aOctave === 3 || s.aOctave === 4) out.aOctave = s.aOctave
+  if (typeof s.haptics === 'boolean') out.haptics = s.haptics
+  if (out.timeSig === 6) out.subDiv = 1 // 6/8 은 세분 없음 — 따로 저장된 값이 시퀀서·스윕을 어긋나게 한다
   return out
 }
 

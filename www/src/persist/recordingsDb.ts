@@ -1,8 +1,7 @@
 /**
  * 녹음 영속화 (IndexedDB). recordings = 큰 blob(거의 안 바뀜), meta = 편집 상태(자주 바뀜, blob 을 다시 쓰지 않게 분리), chunks = 녹음 중 조각.
  */
-export const REC_DB = 'intonome_rec', REC_STORE = 'recordings', META_STORE = 'meta', CHUNK_STORE = 'chunks'
-export const LEGACY_REC_DBS = ['gopractice_rec', 'tempotune_rec'] // 옛 이름(Go practice · TempoTune) DB — persist/legacy.ts 가 지운다
+const REC_DB = 'intonome_rec', REC_STORE = 'recordings', META_STORE = 'meta', CHUNK_STORE = 'chunks'
 const REC_DB_VERSION = 4 // v3: meta 분리, v4: chunks
 import { REC_TTL, expires } from '../core/recPolicy.ts'
 import { t } from '../core/i18n/index.ts'
@@ -28,21 +27,11 @@ const committed = <T>(r: IDBRequest<T>): Promise<T> => new Promise((res, rej) =>
 export function openRecDb(): Promise<IDBDatabase> {
   return new Promise((res, rej) => {
     const r = indexedDB.open(REC_DB, REC_DB_VERSION)
-    r.onupgradeneeded = e => {
-      const d = (e.target as IDBOpenDBRequest).result, tx = (e.target as IDBOpenDBRequest).transaction!
-      const recs = d.objectStoreNames.contains(REC_STORE) ? tx.objectStore(REC_STORE) : d.createObjectStore(REC_STORE, { keyPath: 'id', autoIncrement: true })
-      const meta = d.objectStoreNames.contains(META_STORE) ? tx.objectStore(META_STORE) : d.createObjectStore(META_STORE, { keyPath: 'id' })
+    r.onupgradeneeded = e => { // 이 DB 는 2.4.0 에 v4 로 처음 만들어졌다 — 옛 버전에서 옮겨 올 행이 없다
+      const d = (e.target as IDBOpenDBRequest).result
+      if (!d.objectStoreNames.contains(REC_STORE)) d.createObjectStore(REC_STORE, { keyPath: 'id', autoIncrement: true })
+      if (!d.objectStoreNames.contains(META_STORE)) d.createObjectStore(META_STORE, { keyPath: 'id' })
       if (!d.objectStoreNames.contains(CHUNK_STORE)) d.createObjectStore(CHUNK_STORE, { keyPath: 'seq', autoIncrement: true }).createIndex('session', 'session')
-      if (e.oldVersion < 3) { // 옛 행의 편집 필드를 meta 로 옮기고 행에서는 제거
-        const cur = recs.openCursor()
-        cur.onsuccess = () => {
-          const c = cur.result; if (!c) return
-          const row = c.value as RecRow & Partial<RecMeta>
-          meta.put({ id: row.id!, bookmarks: Array.isArray(row.bookmarks) ? row.bookmarks : [], ab: row.ab ?? null, peaks: row.peaks })
-          if ('bookmarks' in row || 'ab' in row || 'peaks' in row) { delete row.bookmarks; delete row.ab; delete row.peaks; c.update(row) }
-          c.continue()
-        }
-      }
     }
     r.onsuccess = e => {
       const d = (e.target as IDBOpenDBRequest).result

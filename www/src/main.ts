@@ -8,7 +8,6 @@ import { settingsStore, tunerStore, metroStore, refToneStore, droneStore, CFG } 
 import { loadSettings, startSettingsAutosave } from './persist/settings.ts'
 import { isNewInstall, tourPending, markTourDone } from './persist/tour.ts'
 import { openRecDb } from './persist/recordingsDb.ts'
-import { clearLegacyStorage } from './persist/legacy.ts'
 import { openMic, closeMic, onMic, A, resumeIfRunning, setIdleCheck, onContextState, isPermissionError, isOpening, cancelOpen, untilOpenSettled } from './audio/engine.ts'
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag, onPlaybackChange } from './audio/playback.ts'
@@ -44,8 +43,7 @@ import { registerSW } from 'virtual:pwa-register'
 
 initStatusBar(); fitStandaloneHeight(); applyFontScale()
 
-const newInstall = isNewInstall() // 처음 안내용 — 아래 clearLegacyStorage 가 남기는 표식을 보기 전에
-clearLegacyStorage()
+const newInstall = isNewInstall() // 처음 안내용
 
 // 설정 복원은 화면 마운트 전에 — 초기 렌더가 복원값을 쓴다
 loadSettings(); startSettingsAutosave()

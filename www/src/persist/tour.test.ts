@@ -1,7 +1,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { tourPending, markTourDone, isNewInstall, TOUR_KEY } from './tour.ts'
 import { SETTINGS_KEY } from './settings.ts'
-import { DONE_KEY as LEGACY_DONE_KEY } from './legacy.ts'
 
 /** 처음 안내를 누가 보는가: 새로 설치한 기기만. 업데이트로 받은 사람(저장된 설정이 있다)은 저절로 뜨지 않는다 */
 describe('who sees the first-run guide', () => {
@@ -46,6 +45,5 @@ describe('what counts as a new install', () => {
   })
   test('nothing stored: new', () => expect(isNewInstall()).toBe(true))
   test('saved settings: not new', () => { store[SETTINGS_KEY] = '{}'; expect(isNewInstall()).toBe(false) })
-  test('no saved settings but the app has run before (never changed a setting): not new', () => { store[LEGACY_DONE_KEY] = '1'; expect(isNewInstall()).toBe(false) })
   test('storage unavailable: not new', () => { vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied') } }); expect(isNewInstall()).toBe(false) })
 })

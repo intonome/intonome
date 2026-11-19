@@ -4,6 +4,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 ## [Unreleased]
 - CI no longer takes and uploads screenshots. Its fonts differ from the development environment, so they were never compared there; `npm run shots` compares them in development as before
+- CI drops its separate e2e result job (it only mirrored the three shards for an old branch rule); a failing shard still fails CI and holds back the deploy
 
 ## [2.9.14] - 2026-11-19
 On the metronome the other beats light red again, and the card flashes green on the first beat of a bar, collapsed or expanded.

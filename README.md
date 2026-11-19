@@ -41,7 +41,7 @@ npm run verify       # check + shots + e2e
 ```
 
 e2e and screenshots need Playwright's Chromium: `npx playwright install chromium` (or point `CHROMIUM_PATH` at an existing Chrome).
-CI runs the same checks on every push and PR, and deploys to GitHub Pages when `main` is green.
+CI runs the type check, module boundaries, unit tests and e2e on every push to `main` and every PR, and deploys to GitHub Pages when `main` is green; screenshots and the benchmark run in development.
 
 The source is split into `core / state / audio / persist / platform / ui` layers (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 

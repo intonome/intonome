@@ -45,7 +45,7 @@ export function plan(files) {
     if (f === 'PRIVACY.md') { if (unit !== 'all') unit.push('www/src/ui/about.test.ts'); parts.add('settings: the bottom'); parts.add('i18n'); continue } // 앱에 번들되는 문서(vite define) — .md 지만 방침 화면이 읽는다
     if (NONE.some(r => r.test(f))) continue
     if (/\.test\.(ts|mjs)$/.test(f)) continue // 테스트만 바뀌면 그 테스트만
-    if (/^scripts\/(bench\.mjs|gen-signals\.mjs|lib\/(adapter-v[12]|metrics)\.mjs)$/.test(f)) { bench = true; continue }
+    if (/^scripts\/(bench\.mjs|gen-signals\.mjs|lib\/(adapter-v2|metrics)\.mjs)$/.test(f)) { bench = true; continue }
     if (/^scripts\/screenshots\.mjs$/.test(f) || /^test-assets\/screens\//.test(f)) { shots = true; continue }
     if (ALL.some(r => r.test(f))) { e2eAll = true; shots = true; continue }
     if (/^scripts\//.test(f)) continue // 그 밖의 도구 스크립트는 자기 테스트(unit)로

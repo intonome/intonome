@@ -1,23 +1,16 @@
 #!/usr/bin/env node
 // 튜너 벤치마크 — test-assets/signals/*.wav 를 알고리즘 어댑터에 흘려 지표를 낸다.
-// 사용: node scripts/bench.mjs [--adapters v2,v1] [--out test-assets/bench/result.md] [--json out.json]
+// 사용: node scripts/bench.mjs [--adapters v2] [--out test-assets/bench/result.md] [--json out.json]
 // latest.md 에는 결정적인 지표만 쓴다(날짜·처리 시간은 화면에만) — 분석기를 바꾸고 `git diff test-assets/bench/latest.md` 가 비면 결과가 같다
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createV1 } from './lib/adapter-v1.mjs'
 import { harmonicRel } from './lib/metrics.mjs'
+import { adapters as ADAPTERS } from './lib/adapter-v2.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SIG = join(ROOT, 'test-assets', 'signals')
 const args = Object.fromEntries(process.argv.slice(2).map((a, i, arr) => a.startsWith('--') ? [a.slice(2), arr[i + 1] && !arr[i + 1].startsWith('--') ? arr[i + 1] : true] : []).filter(Boolean))
-
-const ADAPTERS = {
-  v1: sr => createV1({ sampleRate: sr }),
-  v1skip4: sr => createV1({ sampleRate: sr, skip: 4 }),
-}
-// v2 (core/pitch) 어댑터는 있을 때만 등록
-try { const m = await import('./lib/adapter-v2.mjs'); Object.assign(ADAPTERS, m.adapters) } catch (e) { if (!/Cannot find module/.test(e.message)) throw e }
 
 const HOP = 1024, STEADY_SKIP = 0.15 // 온셋 후 0.15 s 이후를 정상 상태로 간주
 const OFFSET_GRACE = 0.1 // 음 종료 후 (창 길이 + 0.1 s) 동안은 채점 제외 — 창 안에 아직 소리가 남아 있어 어떤 튜너도 알 수 없는 구간
@@ -114,7 +107,7 @@ function summarize(rows) {
   return { centsBiasAbs: median(by('centsBias').map(Math.abs)), centsP90: median(by('centsP90')), missingPct: median(by('missingPct')), harmPct: median(by('harmPct')), falseNotePct: median(by('falseNotePct')), lockMs: median(by('lockMs')), playF1: median(by('playF1')), timeErrPct: median(by('timeErrPct')), msP95: pct(by('msP95'), .95) }
 }
 
-const names = (typeof args.adapters === 'string' ? args.adapters : 'v2').split(',') // 기본은 앱이 쓰는 v2 — v1 은 옛 HTML 판 비교용
+const names = (typeof args.adapters === 'string' ? args.adapters : 'v2').split(',') // 기본은 앱이 쓰는 v2
 const files = readdirSync(SIG).filter(n => n.endsWith('.wav')).sort().map(n => join(SIG, n))
 let md = `# 튜너 벤치마크\n\n신호 ${files.length}개 · hop ${HOP} · 정상상태 판정 온셋+${STEADY_SKIP}s\n\n`
 md += `지표: bias=정상상태 cents 오차 중앙값(부호), p90=|오차| 90퍼센타일, miss=정상상태인데 표시 없음 %(분모=정상상태 프레임 전체), harm=배음 관계 오류 %(×2·÷2·÷3·÷4… 전부. 같은 분모. 이 프레임은 센트 통계에서 제외), false=비연주 구간에 새로 측정한 음을 표시한 %(소리가 끝난 뒤 마지막 음을 잠시 유지하는 것은 설계라 제외), lock=온셋→올바른 음이름 3프레임 연속 (ms, 중앙값), F1=연주감지, fPlay=비연주 구간을 연주로 본 %, tErr=연주시간 계산 오차 %((FP+FN)/실제)\n\n`

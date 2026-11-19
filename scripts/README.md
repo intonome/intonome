@@ -15,7 +15,7 @@ CI runs `check-deps`, the unit tests and `e2e.mjs`; the rest, screenshots includ
 | `bench.mjs` | Tuner benchmark on synthetic signals; the report in `test-assets/bench/latest.md` only changes when results change |
 | `gen-signals.mjs` | Deterministic synthetic string, noise and speech signals for the benchmark and e2e |
 | `*.test.mjs`, `lib/*.test.mjs` | Unit tests run by `npm test`: the scripts themselves, the on-screen text dictionary and no Korean text outside it (`i18n`), the splash tags in `index.html` (`splash`), the CI image against the lock file (`ci-image`), the benchmark metrics (`lib/bench`) |
-| `lib/` | Shared helpers: tuner adapters and metrics for the benchmark (`adapter-v1`, `adapter-v2`, `metrics`, `fft` for v1), the affected-checks table, string-literal extraction for the Korean-text check (`strings`), waiting for the preview server |
+| `lib/` | Shared helpers: the tuner adapter and metrics for the benchmark (`adapter-v2`, `metrics`), the affected-checks table, string-literal extraction for the Korean-text check (`strings`), waiting for the preview server |
 
 ## Build and release
 
@@ -32,8 +32,5 @@ CI runs `check-deps`, the unit tests and `e2e.mjs`; the rest, screenshots includ
 |---|---|
 | `analyze-recording.mjs` | Runs a real recording (mono WAV) through the analyzer: shown frames, impossible notes, frame time |
 | `sim-scale.mjs` | A synthetic scale through the real analyzer; its frames feed the two e2e trace scenarios (in tune, out of tune) |
-| `busy-compare.mjs` | Before/after comparison of how busy and how wrong the tuner screen is on a fixed set |
 | `metro-blip.mjs` | Whether metronome clicks show up as notes on the tuner |
 | `click-level.mjs` | Click level of the metronome compared with v2.0.1 |
-| `render-trace.mjs` | Renders the tuner trace in the real app from injected frames (`test-assets/trace`) |
-| `ux-compare.mjs` | Side-by-side captures of several builds or CSS variants |

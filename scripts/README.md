@@ -4,14 +4,14 @@ Every script describes itself in its first lines (with its usage where it takes 
 
 ## Checks
 
-CI runs `check-deps`, the unit tests and `e2e.mjs`, and captures screenshots without comparing them; the rest run in the development environment.
+CI runs `check-deps`, the unit tests and `e2e.mjs`; the rest, screenshots included (CI's fonts differ), run in the development environment.
 
 | Script | What it does |
 |---|---|
 | `affected.mjs` (`npm run affected`) | Picks the checks for the files that changed since `origin/main` (table in `lib/affected.mjs`); `--run` runs them |
 | `check-deps.mjs` | Module boundary rules between `www/src` layers (part of `npm run check`) |
 | `e2e.mjs` | Browser scenarios in headless Chromium with a WAV file as the microphone; `--only <regex>`, `--shard k/n` |
-| `screenshots.mjs` | 18 screens compared with `test-assets/screens/baseline` |
+| `screenshots.mjs` | 42 screens compared with `test-assets/screens/baseline` |
 | `bench.mjs` | Tuner benchmark on synthetic signals; the report in `test-assets/bench/latest.md` only changes when results change |
 | `gen-signals.mjs` | Deterministic synthetic string, noise and speech signals for the benchmark and e2e |
 | `*.test.mjs`, `lib/*.test.mjs` | Unit tests run by `npm test`: the scripts themselves, the on-screen text dictionary and no Korean text outside it (`i18n`), the splash tags in `index.html` (`splash`), the CI image against the lock file (`ci-image`), the benchmark metrics (`lib/bench`) |

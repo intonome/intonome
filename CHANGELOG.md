@@ -2,6 +2,9 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+- CI no longer takes and uploads screenshots. Its fonts differ from the development environment, so they were never compared there; `npm run shots` compares them in development as before
+
 ## [2.9.14] - 2026-11-19
 On the metronome the other beats light red again, and the card flashes green on the first beat of a bar, collapsed or expanded.
 

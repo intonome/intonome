@@ -132,7 +132,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] Phone calls during and after use, Bluetooth headphone latency
 
 ## Look and feel
-- [M] Screenshot baselines: 42 screens (dark and light Korean, English, Spanish, Japanese, Simplified and Traditional Chinese; 6 scenes each) match pixel for pixel in the development environment; CI only uploads its screenshots as an artifact (its fonts differ)
+- [M] Screenshot baselines: 42 screens (dark and light Korean, English, Spanish, Japanese, Simplified and Traditional Chinese; 6 scenes each) match pixel for pixel in the development environment; CI takes no screenshots (its fonts differ)
 - [A] Touch targets are at least 44 px (visible size unchanged)
 - [A] Play / stop / pause marks are drawn (SVG, `data-glyph`), the same on every platform, centred in their buttons
 - [A] Text and control contrast meets WCAG AA in both themes

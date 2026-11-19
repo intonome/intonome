@@ -108,7 +108,7 @@ Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base 
 | Module boundaries | `scripts/check-deps.mjs` |
 | Which checks a change needs | `npm run affected` (table in `scripts/lib/affected.mjs`: changed files → unit tests via `vitest related`, e2e scenarios by name, benchmark, screenshots); `--run` runs them |
 
-CI (`ci.yml`): check and build run side by side; the three e2e shards start after build, inside the Playwright image (its tag must equal the locked `playwright` version — `scripts/ci-image.test.mjs`), and report through one result job `e2e (fake mic WAV)`; screenshots run after check and are only uploaded. `deploy-pages.yml` deploys only when CI is green on main.
+CI (`ci.yml`): check and build run side by side; the three e2e shards start after build, inside the Playwright image (its tag must equal the locked `playwright` version — `scripts/ci-image.test.mjs`), and report through one result job `e2e (fake mic WAV)`; CI takes no screenshots (its fonts differ from the development environment, so `npm run shots` compares them there). `deploy-pages.yml` deploys only when CI is green on main.
 
 ## 7. Android release
 

@@ -2,6 +2,20 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.0] - 2026-11-20
+The metronome reads its tempo as ♩ = 80, its dots show subdivisions better, the first-beat flash reaches the full-size metronome and the no-time-signature mode, and a new setting turns off the edge flash on the larger views.
+
+Metronome
+- The tempo reads ♩ = 80 (♩. = 60 in 6/8), as tempo is written in a score: on the collapsed bar, and in front of the big number when expanded on a phone. The = is set as in a printed score: the digits' typeface and colour in a lighter weight at 0.85×, just below their middle, with the same space before and after it. The dial of the full-size metronome is unchanged
+- With the = added, the −, + and ▶ buttons next to the big number still keep one width whatever the tempo and beat note (from ♩ = 72 to ♩. = 200); on a 384 px phone they are about 10 px narrower than before
+- On both rows of dots the two end dots, where the beats land, keep their size and the dots between them are 0.85×. The sweeping light grows a dot between to 0.9×, and a subdivision grows it to 1.25× (1.4× on the full-size row), so subdivisions on the collapsed and expanded bar are easier to see
+- With no time signature there is no bar, so every beat lights green like a first beat and flashes the card; the click is still the plain beat. Until now every beat lit red with no flash
+- The full-size metronome now flashes its card edge on the first beat of a bar, like the expanded card
+- Expanded and full-size, the edge flash is solid for a moment and then fades out over 0.42 s, with a soft glow along the inside of the edge, instead of vanishing after 0.2 s. Collapsed, the face and edge flash as before. A subdivision click no longer cuts a flash short (with sixteenths it stopped after 0.19 s), and a flash never lasts more than 60 % of the time to the next one, so at fast tempos it does not stay on
+
+Settings
+- First-beat flash (on by default): turn it off to stop the edge flash on the expanded and full-size metronome. The collapsed bar keeps its flash, the cue you catch from the corner of your eye while watching the tuner
+
 ## [2.9.15] - 2026-11-19
 Clean-up before release: no notice when you come back after leaving the app, clearer wording when a recording was saved on leaving, and old code, tools and CI jobs removed.
 

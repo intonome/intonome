@@ -170,11 +170,12 @@ await scenario('settings: note names C D E — tuner shows A with Korean "라" a
 await scenario('metro: play/stop doesn’t change the size, header bpm', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 900)
   // 접힌 헤더도 악보처럼 ♩ = 80: 음표 · = · 숫자 순서로 한 줄
-  // 잉크 틈: 음표 그림의 오른쪽 빈자리 0.68 px, 숫자 글자의 왼쪽 빈자리 .055em 을 빼고 양쪽이 같다(= 자체의 빈자리는 양쪽 같아 상쇄된다)
+  // 인쇄 악보처럼 = 는 숫자와 같은 글꼴·색·크기 상자에 가는 획(300), .85 배, 숫자 가운데보다 .035em 아래
+  // 잉크 틈(양쪽 6.5 px): 음표 그림의 오른쪽 빈자리 .68 px, 숫자의 왼쪽 빈자리 .055em, = 의 빈자리(줄인 상자 폭 − 잉크 .44em × .85)를 뺀다 — DM Mono 300 의 글자 치수
   const hl = await p.evaluate(() => { const lab = document.getElementById('metro-hdr-label'), g = lab.querySelector('.note-glyph.g-q').getBoundingClientRect(), e = lab.querySelector('.bpm-eq'), nEl = document.getElementById('metro-hdr-bpm'), n = nEl.getBoundingClientRect(), er = e.getBoundingClientRect(), fs = parseFloat(getComputedStyle(nEl).fontSize)
-    const left = er.left - (g.right - 0.68), right = (n.left + 0.055 * fs) - er.right
-    return { eq: e.textContent, order: g.right <= er.left && er.right <= n.left, row: Math.abs((er.top + er.bottom) / 2 - (n.top + n.bottom) / 2) < 1, even: Math.abs(left - right) <= 1, sameSize: getComputedStyle(e).fontSize === getComputedStyle(nEl).fontSize, left: +left.toFixed(2), right: +right.toFixed(2) } })
-  assert.deepEqual({ ...hl, left: 0, right: 0 }, { eq: '=', order: true, row: true, even: true, sameSize: true, left: 0, right: 0 }, '헤더 ♩ = BPM — = 는 숫자와 같은 크기, 음표–= · =–숫자 틈이 같다 ' + JSON.stringify(hl))
+    const eb = (er.width - 0.44 * 0.85 * fs) / 2, left = er.left + eb - (g.right - 0.68), right = (n.left + 0.055 * fs) - (er.right - eb), drop = ((er.top + er.bottom) / 2 - (n.top + n.bottom) / 2) / fs, cs = getComputedStyle(e), ns = getComputedStyle(nEl)
+    return { eq: e.textContent, order: g.right <= er.left && er.right <= n.left, drop: Math.abs(drop - 0.035) <= 0.01, sameSize: cs.fontSize === ns.fontSize, scale: getComputedStyle(e).transform.match(/^matrix\(([^,]+), [^,]+, [^,]+, ([^,]+),/).slice(1).map(v => +(+v).toFixed(2)).join(' '), light: cs.fontWeight === '300' && cs.color === ns.color, gaps: Math.abs(left - 6.5) <= 0.4 && Math.abs(right - 6.5) <= 0.4, left: +left.toFixed(2), right: +right.toFixed(2) } })
+  assert.deepEqual({ ...hl, left: 0, right: 0 }, { eq: '=', order: true, drop: true, sameSize: true, scale: '0.85 0.85', light: true, gaps: true, left: 0, right: 0 }, '헤더 ♩ = BPM — = 는 숫자와 같은 글꼴·색, 가는 획 .85 배, 살짝 아래, 음표–= · =–숫자 잉크 틈 6.5 px ' + JSON.stringify(hl))
   const collapsedEl = () => p.evaluate(() => (document.getElementById('metro-body-wrap') || document.getElementById('metro-body')).classList.contains('collapsed'))
   const hdr = () => p.evaluate(() => getComputedStyle(document.getElementById('metro-play-hdr-btn')).display)
   const hdrGlyph = () => p.evaluate(() => document.getElementById('metro-play-hdr-btn').dataset.glyph)
@@ -279,6 +280,32 @@ await scenario('metro: changing the time signature while playing starts the firs
   await p.click('[data-sd="2"]'); await sleep(p, 120)
   assert.equal(await firstBeatCell(), 0, '세분을 바꿔도 첫 박은 왼쪽 끝')
   await p.click('#metro-play-btn')
+})
+// 설정 › 첫 박 깜빡임 꺼짐: 펼침·전용의 테두리만 꺼진다. 접힌 띠의 번쩍임(면 + 테)은 그대로 — 튜너를 보며 곁눈으로 첫 박을 아는 신호
+await scenario('metro: Settings › first-beat flash off — the expanded and full-size card no longer flash, the collapsed bar still does, and it survives a reload', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 300)
+  await p.evaluate(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'dark', bpm: 160, timeSig: 2 }))) // 다시 불러와도 남게 init 스크립트가 아니라 한 번만
+  await p.reload(); await sleep(p, 800); await dismissMicPopup(p)
+  assert.equal(await p.evaluate(() => document.querySelector('#ring-steps .step-btn.on').dataset.v), '1', '기본은 켜짐')
+  await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#ring-steps .step-btn[data-v="0"]'); await p.click('#settings-back-btn'); await sleep(p, 400)
+  // 2/4 · 160 bpm: 마디 0.75 s — 2 s 동안 번쩍임이 몇 번 시작하는지
+  const flashes = () => p.evaluate(() => new Promise(res => {
+    const card = document.getElementById('metro-card'), n = { face: 0, ring: 0 }
+    const on = e => { if (e.target !== card) return; if (e.animationName === 'metroflash') n.face++; if (e.animationName === 'metroring') n.ring++ }
+    card.addEventListener('animationstart', on); setTimeout(() => { card.removeEventListener('animationstart', on); res(n) }, 2000)
+  }))
+  await p.click('#metro-play-hdr-btn'); await sleep(p, 300)
+  assert.equal(await p.evaluate(() => document.getElementById('metro-play-btn').dataset.glyph), 'stop', '재생 중')
+  const collapsed = await flashes()
+  await sizeTap(p); await sleep(p, 300)
+  const expanded = await flashes()
+  await p.click('#metro-full-btn'); await sleep(p, 600)
+  const full = await flashes()
+  await p.click('#metro-play-btn')
+  assert.ok(collapsed.face >= 2, '접힌 띠는 설정과 상관없이 번쩍인다 ' + JSON.stringify(collapsed))
+  assert.deepEqual([expanded, full], [{ face: 0, ring: 0 }, { face: 0, ring: 0 }], '펼침·전용은 번쩍임 없음 ' + JSON.stringify({ expanded, full }))
+  await p.reload(); await sleep(p, 800)
+  assert.equal(await p.evaluate(() => document.querySelector('#ring-steps .step-btn.on').dataset.v), '0', '꺼짐이 남는다')
 })
 await scenario('metro: no time signature — no bars, so every beat lights green like a first beat and flashes the card edge', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 500); await sizeTap(p)
@@ -401,7 +428,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
     const id = setInterval(() => {
       const on = lit()
       // 테두리 색은 다 그려진 동안(불투명 rgb)만 본다 — 사라지는 끝은 투명 검정으로 보간된다
-      if (on) { const cs = getComputedStyle(card); if (/^rgb\(.*inset$/.test(cs.boxShadow)) { const [r, g, b] = cs.boxShadow.match(/\d+/g).map(Number); ring = ring === 'other' ? ring : g - r > 80 && g - b > 40 ? 'green' : 'other' } if (cs.backgroundColor.startsWith('rgba(34, 197, 94')) fill = true }
+      if (on) { const cs = getComputedStyle(card); const sh = cs.boxShadow.match(/^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)[^,]*inset/); if (sh && (sh[4] === undefined || +sh[4] >= 0.5)) { const [r, g, b] = sh.slice(1, 4).map(Number); ring = ring === 'other' ? ring : g - r > 80 && g - b > 40 ? 'green' : 'other' } if (cs.backgroundColor.startsWith('rgba(34, 197, 94')) fill = true }
       if (getComputedStyle(hdr).borderBottomColor !== line0) hdrMoved = true
       if (performance.now() - t0 > 3300) { clearInterval(id); card.removeEventListener('animationstart', start); card.removeEventListener('animationend', end); card.removeEventListener('animationcancel', cancel); res({ starts, ends, cut, hdrMoved, ring, fill }) }
     }, 15)
@@ -418,6 +445,7 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.equal(fl.fill, true, '접힘은 면도 칠한다 — 띠가 작다')
   await sizeTap(p) // 펼침
   await p.click('[data-sd="4"]') // 16분 — 분할 틱(0.19 s 마다)이 옅어지는 테를 끊지 않아야 한다
+  await sleep(p, 700) // 분할을 바꾸면 마디가 새로 시작해 바로 번쩍인다 — 그 번쩍임이 앞의 것을 끊는 것은 정상이라 지나간 뒤부터 잰다
   fl = await flashesWhile()
   assert.ok(fl.starts >= 1 && fl.starts <= 2, `펼쳐도 마디 첫 박에 카드가 번쩍인다 (3.3 s 에 ${fl.starts} 번)`)
   assert.ok(fl.ends >= 1 && fl.cut === 0, `테는 분할 틱에 끊기지 않고 끝까지 옅어진다 (끝남 ${fl.ends} · 끊김 ${fl.cut})`)
@@ -505,13 +533,13 @@ for (const [bpm, ts] of [[72, 4], [130, 2], [125, 6]]) await scenario(`layout: e
     const n = box('metro-bpm'), w = box('metro-bpm-wrap'), col = box('metro-adj-col'), l = box('metro-bpm-line'), hd = box('metro-hdr'), gr = box('metro-grids-wrap'), m = document.querySelector('.m-adj').getBoundingClientRect()
     const eq = box('metro-bpm-eq'), fs = parseFloat(getComputedStyle(document.getElementById('metro-bpm')).fontSize)
     // 잉크 틈: 음표 그림 오른쪽 빈자리(♩ .031em · ♩. .028em)와 숫자 왼쪽 빈자리 .055em 을 빼고 비교
-    const noteR = g.right - (g.width / fs > .45 ? .028 : .031) * fs, inkL = eq.left - noteR, inkR = (n.left + .055 * fs) - eq.right
+    const noteR = g.right - (g.width / fs > .45 ? .028 : .031) * fs, eb = (eq.width - .44 * .85 * fs) / 2, inkL = eq.left + eb - noteR, inkR = (n.left + .055 * fs) - (eq.right - eb), want = .22 * fs
     return { off: Math.abs((g.left + n.right) / 2 - (w.left + w.right) / 2), gapMinus: m.left - n.right, gapNote: n.left - g.right, hint: !!document.getElementById('metro-bpm-hint'), dragH: w.height - col.height, vOff: (l.top + l.bottom) / 2 - (hd.bottom + gr.top) / 2,
-      eq: document.getElementById('metro-bpm-eq').textContent, eqBetween: eq.width > 0 && eq.left >= g.right && eq.right <= n.left, eqMid: (eq.top + eq.bottom) / 2 - (n.top + n.bottom) / 2, inkL, inkR }
+      eq: document.getElementById('metro-bpm-eq').textContent, eqBetween: eq.width > 0 && eq.left >= g.right && eq.right <= n.left, eqDrop: ((eq.top + eq.bottom) / 2 - (n.top + n.bottom) / 2) / fs, eqLight: getComputedStyle(document.getElementById('metro-bpm-eq')).fontWeight, eqScale: getComputedStyle(document.getElementById('metro-bpm-eq')).transform.match(/^matrix\(([^,]+), [^,]+, [^,]+, ([^,]+),/).slice(1).map(v => +(+v).toFixed(2)).join(' '), inkL, inkR, want }
   })
   assert.equal(r.eq, '=', '악보처럼 ♩ = BPM'); assert.equal(r.eqBetween, true, '= 는 음표와 숫자 사이 ' + JSON.stringify(r))
-  assert.ok(Math.abs(r.eqMid) <= 0.5, '= 는 숫자와 같은 상자 — 막대가 숫자 높이 가운데 ' + JSON.stringify(r))
-  assert.ok(Math.abs(r.inkL - r.inkR) <= 1, '음표–= · =–숫자 틈이 같다 ' + JSON.stringify(r))
+  assert.ok(Math.abs(r.eqDrop - 0.035) <= 0.01 && r.eqLight === '300' && r.eqScale === '0.85 0.85', '= 는 가는 획 .85 배, 숫자 가운데보다 .035em 아래 — 음표 머리 쪽으로 살짝 ' + JSON.stringify(r))
+  assert.ok(Math.abs(r.inkL - r.want) <= 0.5 && Math.abs(r.inkR - r.want) <= 0.5, '음표–= · =–숫자 잉크 틈이 둘 다 .22em ' + JSON.stringify(r))
   assert.ok(r.off <= 1, '음표+숫자 묶음이 칸 가운데 ' + JSON.stringify(r))
   assert.ok(r.gapMinus >= 16, '− 버튼과 띄움 ' + JSON.stringify(r)); assert.ok(r.gapNote >= 4, '음표와 숫자 사이 틈 ' + JSON.stringify(r))
   assert.equal(r.hint, false, '아래 안내 줄 없음')
@@ -607,6 +635,16 @@ for (const w of [412, 375, 360, 320]) await scenario(`layout: expanded at ${w}px
   const r = await p.evaluate(() => { const c = document.getElementById('metro-card').getBoundingClientRect(), v = document.getElementById('beat-vis').getBoundingClientRect(), f = document.getElementById('metro-full-btn').getBoundingClientRect(), s = document.getElementById('metro-size-btn').getBoundingClientRect(); return { off: Math.abs((v.left + v.right) - (c.left + c.right)) / 2, gapL: v.left - f.right, gapR: s.left - v.right } })
   assert.ok(r.off <= 0.6, 'LED 줄 가운데 ' + JSON.stringify(r)); assert.ok(r.gapL >= 6 && r.gapR >= 6, '양옆과 안 겹침 ' + JSON.stringify(r))
 }, { viewport: { width: w, height: 800 } })
+
+// 넓은 화면의 펼침: 왼쪽 칸에 ♩. = 200 이 보인다 — 점 줄은 그 글자와 오른쪽 버튼 사이 가운데, 제 크기, 어느 쪽에도 닿지 않는다
+for (const w of [820, 1024]) await scenario(`layout: wide screen ${w}px · ♩. = 200 — the header LEDs sit between the tempo and the button, full size, touching neither`, 'silence_lowfloor.wav', async p => {
+  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'dark', bpm: 200, timeSig: 6 })))
+  await p.goto(URL_); await sleep(p, 900)
+  const r = await p.evaluate(() => { const R = e => e.getBoundingClientRect(), leds = [...document.querySelectorAll('#beat-vis .led')], lab = R(document.getElementById('metro-hdr-label')), btn = R(document.getElementById('metro-hdr-right')), L = R(leds[0]).left, Rr = R(leds.at(-1)).right
+    return { led: +R(leds[0]).width.toFixed(1), fromLabel: +(L - lab.right).toFixed(1), toBtn: +(btn.left - Rr).toFixed(1) } })
+  assert.equal(r.led, 13, '점은 제 크기 ' + JSON.stringify(r))
+  assert.ok(r.fromLabel >= 8 && r.toBtn >= 8 && Math.abs(r.fromLabel - r.toBtn) <= 1, '글자와 버튼 사이 가운데, 닿지 않음 ' + JSON.stringify(r))
+}, { viewport: { width: w, height: 900 } })
 
 for (const w of [360, 384, 412]) await scenario(`layout: collapsed at ${w}px — the header LEDs stay put when BPM goes from two to three digits`, 'silence_lowfloor.wav', async p => {
   const leds = async bpm => {

@@ -39,12 +39,14 @@ export interface Settings {
   aOctave: 2 | 3 | 4
   /** 끌어서 값을 바꿀 때 눈금 진동(다이얼 · BPM · 기준음 드럼) */
   haptics: boolean
+  /** 펼친·전용 메트로놈의 첫 박 테두리. 접힌 띠의 번쩍임은 늘 켜져 있다 — 튜너를 보며 곁눈으로 첫 박을 아는 신호라서 */
+  ringFlash: boolean
 }
 export const settingsStore = createStore<Settings>({
   tolCents: 10, rmsMin: RMS_LEVELS[1], smoothing: SMOOTH_LEVELS[1],
   // metroVol 기본 1.0 — 슬라이더는 줄이는 용도. 이미 저장된 값이 있으면 그 값 유지
   bpm: 80, timeSig: 4, subDiv: 1, refHz: CFG.ref.default, metroVol: 1.0, noteNames: 'ko', autoDelete: true, theme: 'dark', lang: 'en',
-  aOctave: 4, haptics: true,
+  aOctave: 4, haptics: true, ringFlash: true,
 })
 
 // 튜너 (고빈도)

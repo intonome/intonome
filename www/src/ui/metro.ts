@@ -69,6 +69,13 @@ function sweepStop(): void {
   hitTimers.splice(0).forEach(clearTimeout)
   swDur = 0; swDir = -1
   clearDots()
+  clearFlash()
+}
+/** 멈추면 번쩍임 클래스를 뗀다 — 남아 있으면 '동작 줄이기' 를 끌 때 한 번 다시 번쩍인다. 옅어지는 중이면 끝까지 옅어진 뒤에(멈춤을 누르는 순간 테가 뚝 끊기지 않게) */
+function clearFlash(): void {
+  const card = q('metro-card')
+  const done = (): void => { if (!metroStore.get().playing) card.classList.remove('flash-strong', 'flash-ring') }
+  if (card.getAnimations().some(a => a instanceof CSSAnimation)) card.addEventListener('animationend', done, { once: true }); else done()
 }
 // 전용 모드 = 펼침의 2단계 (접힘 → 펼침 → 전용). 튜너 카드만 숨기고(#main-body.metro-full) 헤더·마이크는 펼침과 같다
 function applyFull(): void {
@@ -119,8 +126,9 @@ function flashBeat(tick: number): void {
   // 클래스는 다음 번쩍임 때 뗀다 — 분할 틱마다 떼면 옅어지는 도중에 끊긴다(16분이면 0.19 s 에)
   const s = settingsStore.get()
   if (lightKind(s, tick) !== 'accent') return
-  const card = q('metro-card'); card.classList.remove('flash-strong', 'flash-ring')
   const face = isCollapsedNow()
+  const card = q('metro-card'); card.classList.remove('flash-strong', 'flash-ring')
+  if (!face && !s.ringFlash) return // 설정 › 첫 박 깜빡임 꺼짐: 펼침·전용만 끈다
   card.style.setProperty('--flash-dur', flashDurS(s, face ? FLASH_FACE_S : FLASH_RING_S) + 's')
   reflow(card); card.classList.add(face ? 'flash-strong' : 'flash-ring')
 }

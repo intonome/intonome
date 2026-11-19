@@ -190,6 +190,8 @@ export const EN: Record<TKey, string> = {
   'set.wakeUnsupported': 'This browser can’t keep the screen on',
   'set.haptics': 'Haptic feedback',
   'set.hapticsDesc': 'A light vibration for each step as you turn the dial or slide the tempo or the reference pitch',
+  'set.ring': 'First-beat flash',
+  'set.ringDesc': 'A green edge flashes on the first beat, also when the metronome is expanded',
   'set.fs': 'Full screen',
   'set.fsDesc': 'Hides the browser’s address bar and uses the whole screen',
   'set.fsUnsupported': 'On this device, add the app to your home screen to use it full screen',

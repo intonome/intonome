@@ -34,6 +34,7 @@ export function mountSettings(): void {
   bindSteps('theme-steps', v => settingsStore.set({ theme: v === 1 ? 'light' : 'dark' }))
   bindSteps('lang-steps', v => keepInPlace('lang-steps', () => settingsStore.set({ lang: LANGS[v] ?? 'en' }))) // 언어 카드는 맨 아래 — 바꾸면 위 카드들의 글자 길이와 아래 푸터(한 줄 ↔ 세 줄)가 함께 바뀌어 손가락 아래 카드가 뛴다(ja → ko 약 80 px)
   bindSteps('haptics-steps', v => settingsStore.set({ haptics: v === 1 }))
+  bindSteps('ring-steps', v => settingsStore.set({ ringFlash: v === 1 }))
   bindSteps('apitch-steps', v => { if (v === 2 || v === 3 || v === 4) settingsStore.set({ aOctave: v }) })
 
   settingsStore.select(s => s.tolCents, v => markSteps('cents-steps', v), { immediate: true })
@@ -45,6 +46,7 @@ export function mountSettings(): void {
   settingsStore.select(s => s.lang, v => markSteps('lang-steps', Math.max(0, LANGS.indexOf(v))), { immediate: true })
   settingsStore.select(s => s.aOctave, v => markSteps('apitch-steps', v), { immediate: true })
   settingsStore.select(s => s.haptics, v => markSteps('haptics-steps', v ? 1 : 0), { immediate: true })
+  settingsStore.select(s => s.ringFlash, v => markSteps('ring-steps', v ? 1 : 0), { immediate: true })
   if (!canVibrate()) q('haptics-row').style.display = 'none' // 진동을 낼 수 없는 곳(오래된 아이폰 사파리 등)
   // 점은 좁힌 칸에(.ver-dot) — 고정폭 글꼴은 점에도 숫자 한 칸을 줘서 「2 . 9 . 7」 로 흩어져 보였다
   q('settings-version').replaceChildren(...__APP_VERSION__.split(/(\.)/).filter(Boolean).map(s => s === '.' ? Object.assign(document.createElement('span'), { className: 'ver-dot', textContent: '.' }) : s))

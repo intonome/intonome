@@ -189,6 +189,8 @@ export const JA: Record<TKey, string> = {
   'set.wakeUnsupported': 'このブラウザは画面の常時オンに対応していません',
   'set.haptics': '振動フィードバック',
   'set.hapticsDesc': 'ダイヤルを回したり、テンポや基準音をスライドして変えたりするとき、1目盛りごとに軽く振動します',
+  'set.ring': '1拍目の点滅',
+  'set.ringDesc': 'メトロノームを開いたときも、1拍目に枠が光ります',
   'set.fs': '全画面',
   'set.fsDesc': 'ブラウザのアドレスバーを隠して画面全体を使います',
   'set.fsUnsupported': 'この端末ではホーム画面に追加すると全画面で使えます',

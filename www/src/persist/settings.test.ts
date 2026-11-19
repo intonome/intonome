@@ -25,6 +25,11 @@ describe('parseStored', () => {
     for (const v of [5, 10, 15]) expect(parseStored(JSON.stringify({ v: 3, tolCents: v })).tolCents).toBe(v)
     for (const v of [20, 25, 12, '10']) expect(parseStored(JSON.stringify({ v: 3, tolCents: v }))).toEqual({})
   })
+  test('first-beat flash: true/false pass, anything else is ignored (on by default); records without it keep the default', () => {
+    expect(parseStored(JSON.stringify({ v: 3, ringFlash: false }))).toEqual({ ringFlash: false })
+    expect(parseStored(JSON.stringify({ v: 3, ringFlash: true }))).toEqual({ ringFlash: true })
+    expect(parseStored(JSON.stringify({ v: 3, ringFlash: 'off' }))).toEqual({})
+  })
   test('bad timeSig is ignored', () => expect(parseStored(JSON.stringify({ v: 3, timeSig: 5 }))).toEqual({}))
   test('theme: only dark/light pass, anything else is ignored (the default applies)', () => {
     expect(parseStored(JSON.stringify({ v: 3, theme: 'light' })).theme).toBe('light')

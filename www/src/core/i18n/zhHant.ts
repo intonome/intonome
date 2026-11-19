@@ -189,6 +189,8 @@ export const ZH_HANT: Record<TKey, string> = {
   'set.wakeUnsupported': '此瀏覽器不支援保持螢幕常亮',
   'set.haptics': '震動回饋',
   'set.hapticsDesc': '轉動轉盤、滑動速度或標準音時，每動一格就輕震一下',
+  'set.ring': '第一拍閃爍',
+  'set.ringDesc': '展開節拍器時，第一拍也會亮起綠色邊框',
   'set.fs': '全螢幕',
   'set.fsDesc': '隱藏瀏覽器網址列，使用整個螢幕',
   'set.fsUnsupported': '在此裝置上，加入主畫面後即可全螢幕使用',

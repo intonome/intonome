@@ -189,6 +189,8 @@ export const ES: Record<TKey, string> = {
   'set.wakeUnsupported': 'Este navegador no puede mantener la pantalla encendida',
   'set.haptics': 'Vibración',
   'set.hapticsDesc': 'Una vibración breve en cada paso al girar la rueda o deslizar el tempo o el La de referencia',
+  'set.ring': 'Destello del primer tiempo',
+  'set.ringDesc': 'Un borde verde destella en el primer tiempo, también con el metrónomo desplegado',
   'set.fs': 'Pantalla completa',
   'set.fsDesc': 'Oculta la barra de direcciones del navegador y usa toda la pantalla',
   'set.fsUnsupported': 'En este dispositivo, añade la app a la pantalla de inicio para usarla a pantalla completa',

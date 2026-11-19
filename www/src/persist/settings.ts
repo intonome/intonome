@@ -38,6 +38,7 @@ export function parseStored(raw: string | null): Partial<Settings> {
   if (isLang(s.lang)) out.lang = s.lang
   if (s.aOctave === 2 || s.aOctave === 3 || s.aOctave === 4) out.aOctave = s.aOctave
   if (typeof s.haptics === 'boolean') out.haptics = s.haptics
+  if (typeof s.ringFlash === 'boolean') out.ringFlash = s.ringFlash
   if (out.timeSig === 6) out.subDiv = 1 // 6/8 은 세분 없음 — 따로 저장된 값이 시퀀서·스윕을 어긋나게 한다
   return out
 }

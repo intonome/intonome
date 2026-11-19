@@ -189,6 +189,8 @@ export const ZH: Record<TKey, string> = {
   'set.wakeUnsupported': '此浏览器不支持保持屏幕常亮',
   'set.haptics': '振动反馈',
   'set.hapticsDesc': '转动转盘、滑动速度或标准音时，每格轻振一下',
+  'set.ring': '第一拍闪烁',
+  'set.ringDesc': '展开节拍器时，第一拍也会亮起绿色边框',
   'set.fs': '全屏',
   'set.fsDesc': '隐藏浏览器地址栏，使用整个屏幕',
   'set.fsUnsupported': '在此设备上，添加到主屏幕后即可全屏使用',

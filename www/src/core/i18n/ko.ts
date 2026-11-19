@@ -195,6 +195,8 @@ export const KO = {
   'set.wakeUnsupported': '이 브라우저는 화면 켜짐 유지를 지원하지 않아요',
   'set.haptics': '진동 피드백',
   'set.hapticsDesc': '다이얼을 돌리거나 빠르기·기준음을 밀어서 바꿀 때 짧게 진동해요',
+  'set.ring': '첫 박 깜빡임',
+  'set.ringDesc': '메트로놈을 펼쳤을 때도 첫 박에 테두리가 깜빡여요',
   'set.fs': '전체화면',
   'set.fsDesc': '브라우저 주소창을 숨기고 화면 전체를 써요',
   'set.fsUnsupported': '이 기기에서는 홈 화면에 추가하면 전체화면으로 사용할 수 있어요',

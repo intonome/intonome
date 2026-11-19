@@ -3,7 +3,7 @@
  * 막대는 한 박에 한쪽 끝에서 반대쪽 끝까지 직선으로 가고(박마다 방향 반전), 박은 끝에서, 분할은 사이에서 울린다.
  */
 import type { Pattern } from './sequencer.ts'
-import { totalTicks } from './sequencer.ts'
+import { totalTicks, tickKind } from './sequencer.ts'
 
 type P = Pick<Pattern, 'bpm' | 'timeSig' | 'subDiv'>
 
@@ -35,4 +35,17 @@ export function hitIndex(p: Pick<Pattern, 'timeSig' | 'subDiv'>, tick: number, d
   const per = ticksPerBeat(p), k = tick % per
   const x = k === 0 ? 0 : (p.subDiv === 'd' && p.timeSig !== 6 ? 0.75 : k / per)
   return ledIndex(dir === 1 ? x : 1 - x, n)
+}
+
+/** 점·카드 번쩍임이 쓰는 박 종류. 소리(tickKind)와 같되, 박자표 없음은 마디가 없어 매 박이 기준점이라 첫 박처럼 보인다(소리는 그대로 '박') */
+export function lightKind(p: Pick<Pattern, 'timeSig' | 'subDiv'>, tick: number): 'accent' | 'beat' | 'sub' {
+  const k = tickKind(p, tick)
+  return p.timeSig === 1 && k === 'beat' ? 'accent' : k
+}
+
+/** 카드 번쩍임 길이(초): 접힘(면 + 테) .22 s · 펼침·전용(테만) .42 s. 다음 번쩍임까지의 60 % 를 넘지 않는다 — 빠른 박에서 늘 켜져 있지 않게 */
+export const FLASH_FACE_S = 0.22, FLASH_RING_S = 0.42
+export function flashDurS(p: P, base: number): number {
+  const every = beatDurS(p) * (p.timeSig === 1 ? 1 : beatCount(p))
+  return Math.min(base, every * 0.6)
 }

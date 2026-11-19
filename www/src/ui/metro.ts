@@ -4,13 +4,12 @@
  */
 import { CFG, metroStore, settingsStore, type SubDiv, type TimeSig } from '../state/index.ts'
 import { setBPM, adjBPM, setTimeSig, setSubDiv, setMetroVol, toggleMetro } from '../audio/metronome.ts'
-import { tickKind } from '../core/metro/sequencer.ts'
 import { isPhoneLayout } from '../platform/index.ts'
 import { buildDial, setDialBpm, onDialChange } from './dial.ts'
 import { attachVDrag } from './swipeStep.ts'
 import { t } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
-import { beatDurS, isBeatStart, sweepX, ledIndex, hitIndex } from '../core/metro/sweep.ts'
+import { beatDurS, isBeatStart, sweepX, ledIndex, hitIndex, lightKind, flashDurS, FLASH_FACE_S, FLASH_RING_S } from '../core/metro/sweep.ts'
 import { stageOf, stageChange, sizeBtnTarget, dragTarget, dragProgress, dragCommits, stepCommits, type Stage } from '../core/metro/card.ts'
 import { setGlyph, q, qsa, on, reflow, setOn } from './dom.ts'
 import { toast } from './toast.ts'
@@ -52,7 +51,7 @@ function litBeat(tick: number): void {
   const p = settingsStore.get()
   const beatStart = isBeatStart(p, tick)
   if (beatStart) { swDir = swDir === 1 ? -1 : 1; swDur = beatDurS(p) * 1000; swT0 = performance.now(); if (swRaf == null) swRaf = requestAnimationFrame(sweepFrame) }
-  const kind = tickKind(p, tick)
+  const kind = lightKind(p, tick)
   const cls = kind === 'accent' ? 'hit-acc' : kind === 'beat' ? 'hit-beat' : 'hit-sub'
   for (const r of rows) {
     const i = hitIndex(p, tick, swDir, r.n)
@@ -115,14 +114,15 @@ function animHeight(el: HTMLElement, from: number, to: number, mb: [string, stri
   animTimers.set(el, setTimeout(() => clearAnim(el), 570))
 }
 function flashBeat(tick: number): void {
-  const card = q('metro-card'); card.classList.remove('flash-strong', 'flash-ring')
-  // 카드 번쩍임은 마디 첫 박(accent)에만 — 멀리서 마디의 시작을 보는 신호. 다른 박·세분박은 LED 가 맡는다.
-  // 접힘은 면과 테두리, 펼침은 테두리만(카드가 커서). 전용 모드는 카드가 곧 화면 전체라 칠하지 않는다.
-  // '없음' 박자는 마디가 없어 첫 박도 없다(tick 이 늘 0 이라 2.5.7 은 매 박 번쩍였다). 튜너 쪽(헤더 선)은 칠하지 않는다
-  if (stateNow() === 'f') return
+  // 카드 번쩍임은 첫 박 점(초록)과 같은 때 — 마디 첫 박, 박자표 없음이면 매 박(lightKind). 다른 박·세분박은 LED 가 맡는다.
+  // 접힘은 면과 테두리(띠가 작아 멀리서 보는 신호), 펼침·전용은 테두리만(카드가 커서). 튜너 쪽(헤더 선)은 칠하지 않는다.
+  // 클래스는 다음 번쩍임 때 뗀다 — 분할 틱마다 떼면 옅어지는 도중에 끊긴다(16분이면 0.19 s 에)
   const s = settingsStore.get()
-  if (tickKind({ timeSig: s.timeSig, subDiv: s.subDiv }, tick) !== 'accent') return
-  reflow(card); card.classList.add(isCollapsedNow() ? 'flash-strong' : 'flash-ring')
+  if (lightKind(s, tick) !== 'accent') return
+  const card = q('metro-card'); card.classList.remove('flash-strong', 'flash-ring')
+  const face = isCollapsedNow()
+  card.style.setProperty('--flash-dur', flashDurS(s, face ? FLASH_FACE_S : FLASH_RING_S) + 's')
+  reflow(card); card.classList.add(face ? 'flash-strong' : 'flash-ring')
 }
 
 /** 끌어서 BPM 을 바꾼다(다이얼 · 숫자 ↕). 값이 실제로 바뀔 때만 눈금 진동 */

@@ -76,7 +76,7 @@ html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한�
 button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;} /* 버튼을 꾹 누르면 글자가 선택되며 복사·번역 막대가 떴다(안드로이드) */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes metroflash{0%{background:rgba(var(--ok-rgb),.22);box-shadow:inset 0 0 0 2px var(--ok)}60%{background:rgba(var(--ok-rgb),.08);box-shadow:inset 0 0 0 2px var(--ok)}100%{background:var(--surface);box-shadow:none}}
-@keyframes metroring{0%,60%{box-shadow:inset 0 0 0 2px var(--ok)}100%{box-shadow:none}}
+@keyframes metroring{0%,15%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),1),inset 0 0 18px rgba(var(--ok-rgb),.38)}45%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),.45),inset 0 0 18px rgba(var(--ok-rgb),.16)}100%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),0),inset 0 0 18px rgba(var(--ok-rgb),0)}}
 
 /* 컴팩트 글자 버튼 (36 px) — 누르는 영역은 ::after 로 44 px */
 .compact-btn{position:relative;height:var(--h-compact);padding:0 12px;background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);font-size:var(--fs-md);font-weight:var(--fw-md);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
@@ -191,8 +191,8 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 
 /* 메트로놈 — 카드 하나, 헤어라인 하나. 마디 첫 박은 면과 안쪽 링(첫 박 점과 같은 초록)으로 */
 #metro-card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--line);overflow:hidden;transition:box-shadow .06s,background .1s;}
-#metro-card.flash-strong{animation:metroflash .22s ease-out forwards;} /* 접힘: 띠가 작아 면까지 칠한다 — 멀리서 보는 신호 */
-#metro-card.flash-ring{animation:metroring .22s ease-out forwards;} /* 펼침: 카드가 커서 테두리만 */
+#metro-card.flash-strong{animation:metroflash var(--flash-dur,.22s) ease-out forwards;} /* 접힘: 띠가 작아 면까지 칠한다 — 멀리서 보는 신호 */
+#metro-card.flash-ring{animation:metroring var(--flash-dur,.42s) linear forwards;} /* 펼침·전용: 카드가 커서 면은 칠하지 않고 테두리와 안쪽 가장자리의 옅은 번짐만. 짧게 진했다가 천천히 옅어진다(접힘의 옅은 면처럼 잔상이 남게) */
 #metro-hdr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);gap:10px;min-height:52px;}
 #metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;padding:8px 10px 8px 0;margin:-8px 0;}
 #metro-hdr-label::after{content:'';position:absolute;top:0;bottom:0;left:100%;width:40px;} /* ♩BPM 끌기 자리를 숫자 오른쪽으로 손가락 하나만큼 — 숫자를 손가락으로 가리지 않고 옆을 잡아 끈다. 그보다 오른쪽은 카드 끌기 */

@@ -280,17 +280,26 @@ await scenario('metro: changing the time signature while playing starts the firs
   assert.equal(await firstBeatCell(), 0, '세분을 바꿔도 첫 박은 왼쪽 끝')
   await p.click('#metro-play-btn')
 })
-await scenario('metro: beats-only mode — no bars, no first-beat accent', 'silence_lowfloor.wav', async p => {
+await scenario('metro: no time signature — no bars, so every beat lights green like a first beat and flashes the card edge', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 500); await sizeTap(p)
   await p.click('[data-ts="1"]')
   assert.equal(await p.evaluate(() => document.querySelector('[data-ts].on').dataset.ts), '1', '정박 버튼이 켜진다')
-  // 재생해도 어느 틱에서도 액센트(hit-acc)가 나오지 않아야 한다 — 이게 이 모드의 전부다
+  // 마디가 없으니 매 박이 기준점 — 점은 첫 박 색(초록), 빨간 박은 없다. 카드 테도 매 박(80 bpm = 0.75 s 마다)
   await p.click('#metro-play-btn')
-  let sawAccent = false, sawBeat = false
-  for (let i = 0; i < 40; i++) { if (await p.evaluate(() => !!document.querySelector('#beat-vis .led.hit-acc'))) sawAccent = true; if (await p.evaluate(() => !!document.querySelector('#beat-vis .led.hit-beat'))) sawBeat = true; await sleep(p, 40) }
-  assert.equal(sawBeat, true, '정박은 초록으로 친다')
+  const r = await p.evaluate(() => new Promise(res => {
+    const card = document.getElementById('metro-card'), t0 = performance.now(); let acc = false, beat = false, starts = 0
+    // 번쩍임 클래스는 다음 번쩍임까지 남아 있다(빼고 바로 다시 붙인다) — 테 애니메이션이 시작한 횟수를 센다
+    const start = e => { if (e.target === card && e.animationName === 'metroring') starts++ }
+    card.addEventListener('animationstart', start)
+    const id = setInterval(() => {
+      if (document.querySelector('#beat-vis .led.hit-acc')) acc = true; if (document.querySelector('#beat-vis .led.hit-beat')) beat = true
+      if (performance.now() - t0 > 3000) { clearInterval(id); card.removeEventListener('animationstart', start); res({ acc, beat, starts }) }
+    }, 15)
+  }))
   await p.click('#metro-play-btn')
-  assert.equal(sawAccent, false, '정박 모드에서는 액센트가 없어야 한다')
+  assert.equal(r.acc, true, '매 박이 첫 박 색(초록)')
+  assert.equal(r.beat, false, '빨간 박은 없다 — 마디가 없다')
+  assert.ok(r.starts >= 3, `카드 테가 매 박 (3 s 에 ${r.starts} 번, 80 bpm 이면 4 번 안팎)`)
 })
 await scenario('metro: full mode adds −5/+5 at both ends — steps of 5, clamped, not shown outside full mode', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 500); await sizeTap(p) // 접힘 → 펼침
@@ -327,14 +336,14 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.equal(colors.color, 'rgb(223, 227, 232)', '글자는 밝기로 (--text)')
   assert.equal(colors.bg, 'rgba(223, 227, 232, 0.14)', '면은 글자색 14 % (--sel)')
   await p.click('[data-sd="2"]'); await p.click('#metro-play-btn')
-  const seen = new Set(), hits = new Set(); let flashed = false
+  const seen = new Set(), hits = new Set(); let flashed = ''
   for (let i = 0; i < 40; i++) {
-    const r = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#sweep-leds .led')); const c = document.getElementById('metro-card').classList; return { mv: l.findIndex(d => d.classList.contains('mv')), hit: l.findIndex(d => d.classList.contains('hit-beat') || d.classList.contains('hit-acc')), sub: l.findIndex(d => d.classList.contains('hit-sub')), flash: c.contains('flash-strong') || c.contains('flash-ring') } })
-    if (r.mv >= 0) seen.add(r.mv); if (r.hit >= 0) hits.add(r.hit); if (r.sub >= 0) hits.add('s' + r.sub); if (r.flash) flashed = true
+    const r = await p.evaluate(() => { const l = Array.from(document.querySelectorAll('#sweep-leds .led')); const c = document.getElementById('metro-card').classList; return { mv: l.findIndex(d => d.classList.contains('mv')), hit: l.findIndex(d => d.classList.contains('hit-beat') || d.classList.contains('hit-acc')), sub: l.findIndex(d => d.classList.contains('hit-sub')), flash: c.contains('flash-strong') ? 'face' : c.contains('flash-ring') ? 'ring' : '' } })
+    if (r.mv >= 0) seen.add(r.mv); if (r.hit >= 0) hits.add(r.hit); if (r.sub >= 0) hits.add('s' + r.sub); if (r.flash) flashed = r.flash
     await sleep(p, 40)
   }
   await p.click('#metro-play-btn')
-  assert.equal(flashed, false, '전용 모드에서는 카드가 박마다 번쩍이지 않는다')
+  assert.equal(flashed, 'ring', '전용 모드도 마디 첫 박에 카드 테가 번쩍인다(면은 칠하지 않는다)')
   // L11: 쓸고 가는 불의 색 — 재생 중엔 .mv 가 칸을 옮겨 다니며 늘 전이 중이라, 정지 후 한 칸에 붙여 놓고 잰다
   const mvColor = await p.evaluate(async () => { const d = document.querySelectorAll('#sweep-leds .led')[3]; d.classList.add('mv'); await new Promise(r => setTimeout(r, 150)); const c = getComputedStyle(d).backgroundColor; d.classList.remove('mv'); return c })
   assert.equal(mvColor, 'rgb(77, 85, 96)', '쓸고 가는 불은 --line-strong: ' + mvColor)
@@ -379,18 +388,22 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   await settled(p)
   assert.deepEqual(await p.evaluate(() => [document.getElementById('metro-card').classList.contains('full'), document.getElementById('metro-body-wrap').classList.contains('collapsed')]), [false, false], '전용의 ∨ 는 한 단계 — 펼침까지')
   await sizeTap(p) // 펼침의 ∨ → 접힘
-  // 카드 번쩍임: 마디 첫 박에만, 초록. 접힘은 면 + 테두리, 펼침은 테두리만 (전용 모드는 위 시나리오 — 번쩍임 없음)
+  // 카드 번쩍임: 마디 첫 박에만, 초록. 접힘은 면 + 테두리, 펼침은 테두리만 (전용 모드는 위 시나리오 — 테두리만)
   // 3.3 s(80 bpm 4/4 한 마디 = 3 s) 동안 카드 번쩍임이 몇 번 시작됐는지, 튜너 헤더 선이 한 번이라도 바뀌었는지
   const flashesWhile = () => p.evaluate(() => new Promise(res => {
     const card = document.getElementById('metro-card'), hdr = document.getElementById('tuner-hdr'), line0 = getComputedStyle(hdr).borderBottomColor
     const lit = () => card.classList.contains('flash-strong') || card.classList.contains('flash-ring')
-    let starts = 0, was = lit(), hdrMoved = false, ring = '', fill = false; const t0 = performance.now()
+    let starts = 0, ends = 0, cut = 0, hdrMoved = false, ring = '', fill = false; const t0 = performance.now()
+    // 번쩍임 클래스는 다음 번쩍임 때 떼고 바로 다시 붙인다 — 애니메이션이 시작한 횟수를 센다. 끝까지 옅어졌는지는 animationend, 중간에 끊겼는지는 animationcancel
+    const mine = e => e.target === card && /^metro(flash|ring)$/.test(e.animationName)
+    const start = e => { if (mine(e)) starts++ }, end = e => { if (mine(e)) ends++ }, cancel = e => { if (mine(e)) cut++ }
+    card.addEventListener('animationstart', start); card.addEventListener('animationend', end); card.addEventListener('animationcancel', cancel)
     const id = setInterval(() => {
-      const on = lit(); if (on && !was) starts++; was = on
+      const on = lit()
       // 테두리 색은 다 그려진 동안(불투명 rgb)만 본다 — 사라지는 끝은 투명 검정으로 보간된다
       if (on) { const cs = getComputedStyle(card); if (/^rgb\(.*inset$/.test(cs.boxShadow)) { const [r, g, b] = cs.boxShadow.match(/\d+/g).map(Number); ring = ring === 'other' ? ring : g - r > 80 && g - b > 40 ? 'green' : 'other' } if (cs.backgroundColor.startsWith('rgba(34, 197, 94')) fill = true }
       if (getComputedStyle(hdr).borderBottomColor !== line0) hdrMoved = true
-      if (performance.now() - t0 > 3300) { clearInterval(id); res({ starts, hdrMoved, ring, fill }) }
+      if (performance.now() - t0 > 3300) { clearInterval(id); card.removeEventListener('animationstart', start); card.removeEventListener('animationend', end); card.removeEventListener('animationcancel', cancel); res({ starts, ends, cut, hdrMoved, ring, fill }) }
     }, 15)
   }))
   // 접힌 채 재생 — 접혀 있으면 본체 버튼이 안 보이므로 Space 로. 방금 누른 버튼에 포커스가 남아 있으면
@@ -404,8 +417,10 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
   assert.equal(fl.ring, 'green', '번쩍임 테두리는 첫 박 점과 같은 초록')
   assert.equal(fl.fill, true, '접힘은 면도 칠한다 — 띠가 작다')
   await sizeTap(p) // 펼침
+  await p.click('[data-sd="4"]') // 16분 — 분할 틱(0.19 s 마다)이 옅어지는 테를 끊지 않아야 한다
   fl = await flashesWhile()
   assert.ok(fl.starts >= 1 && fl.starts <= 2, `펼쳐도 마디 첫 박에 카드가 번쩍인다 (3.3 s 에 ${fl.starts} 번)`)
+  assert.ok(fl.ends >= 1 && fl.cut === 0, `테는 분할 틱에 끊기지 않고 끝까지 옅어진다 (끝남 ${fl.ends} · 끊김 ${fl.cut})`)
   assert.equal(fl.ring, 'green', '펼침도 초록 테두리')
   assert.equal(fl.fill, false, '펼침은 테두리만 — 카드가 커서 면을 칠하지 않는다')
   await p.click('#metro-play-btn')

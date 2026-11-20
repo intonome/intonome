@@ -2,6 +2,23 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.2] - 2026-11-20
+On the collapsed bar the tempo sits in the middle of its space, the buttons beside the big tempo are square and easier to hit, the first-beat flash is softer, and the Android shell gets a security fix.
+
+Metronome
+- Collapsed, the tempo (♩ = 80) sits midway between the card's left edge and the first dot. Until now it was set to the left of a space as wide as three digits, so a two-digit tempo had about twice as much room on its right (17 px against 34 px), and on 412 to 430 px phones the extra width went to the right of it too
+- The dots on the collapsed bar stay where they are from ♩ = 40 to ♩. = 200; they used to move by about 4 px when switching between 4/4 and 6/8. On a wide screen the tempo stays at the left of its space, as before
+- Expanded on a phone, the −, + and ▶ buttons are square: as tall as they are wide, up to 48 px. On narrower phones they were tall, thin bars (38 × 48 px on a 360 px phone, now 38 × 38); from 412 px they keep their 48 px height. Their touch area reaches up to 12 px above them and halfway into the 8 px gaps between them, so on a 360 px phone each one responds over about 46 × 48 px where it was 38 × 48 with dead gaps; the volume slider below keeps all of its own. The tuner gains the height they gave up (up to 17 px)
+- Collapsed, the ▶ button and the size button ∧ split the 6 px gap between them. ∧ used to cover nearly all of it, so ▶ responded over only 40 × 42 px; now 44 × 44
+- The first-beat flash is softer: collapsed, the face is 15 % green instead of 22 %; expanded and full-size, the inner glow starts at 24 % instead of 38 %. On the dark theme the edge is softer too (80 % collapsed, 75 % expanded and full-size, instead of solid); on the light theme it stays solid, as it is already only 3.3:1 against the card there. Timing is unchanged
+
+Android
+- Capacitor 8.4.3 (was 8.3.0), with the fix for GHSA-rvm3-566m-v7fv: a link to Capacitor's internal proxy path inside the app's page could load outside content at the app's own origin. The app shows no outside content or links that could do this, so it was not reachable here. The update itself leaves the web build unchanged; only the Android part differs
+
+Docs and code
+- docs/STORE.md: the short descriptions match what is in Play Console, without "No ads" (Play Console warns about promotion words in that field; the full description keeps it)
+- Code comments explain the reason for a choice without pointing to where it came from
+
 ## [2.10.1] - 2026-11-20
 The −, + and ▶ buttons beside the big tempo keep one width in every browser.
 

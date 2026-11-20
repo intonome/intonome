@@ -564,12 +564,17 @@ for (const w of [320, 384]) await scenario(`layout: expanded at ${w}px — the �
   const a = await at(72, 4), b = await at(200, 6)
   assert.deepEqual([a.bpm, b.bpm], ['72', '200'], '두 자리 → 세 자리')
   assert.deepEqual(b.w, a.w, `버튼 폭 그대로 (♩ = 72 → ♩. = 200)`)
-  // 정사각형(높이 = 폭, 48 px 까지). 누르는 자리는 위로만 늘어난다 — 단추 2 px 위는 그 단추, 바로 아래는 음량 슬라이더(슬라이더의 누르는 자리를 가져가지 않는다)
+  // 정사각형(높이 = 폭, 48 px 까지). 누르는 자리는 위와 옆으로 늘고 아래로는 늘지 않는다 — 단추 2 px 위는 그 단추, 바로 아래는 음량 슬라이더(슬라이더의 누르는 자리를 가져가지 않는다)
   const sq = await p.evaluate(() => ['.m-adj', '#metro-play-btn'].map(sel => { const el = document.querySelector(sel), r = el.getBoundingClientRect(), x = r.left + r.width / 2
     return { w: +r.width.toFixed(1), h: +r.height.toFixed(1), square: Math.abs(r.height - Math.min(r.width, 48)) <= 0.5, above: document.elementFromPoint(x, r.top - 2) === el, below: document.elementFromPoint(x, r.bottom + 1) !== el } }))
-  for (const r of sq) assert.ok(r.square && r.above && r.below, '−·+·▶ 는 정사각형, 누르는 자리는 위로만 늘어난다 ' + JSON.stringify(sq))
+  for (const r of sq) assert.ok(r.square && r.above && r.below, '−·+·▶ 는 정사각형, 누르는 자리는 위로 늘고 아래로는 안 는다 ' + JSON.stringify(sq))
   const pl = await p.evaluate(() => { const r = document.getElementById('metro-play-btn').getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.bottom + 1)?.id })
   assert.equal(pl, 'metro-vol', '▶ 바로 아래는 음량 슬라이더')
+  // 단추 사이 틈(8 px)은 반씩 — 틈의 왼쪽 절반은 왼쪽 단추, 오른쪽 절반은 오른쪽 단추(경계에서 1 px 은 엔진의 반올림에 맡기고 2 px 안쪽을 찍는다), 틈 한가운데도 둘 중 하나(비는 줄이 없다). − · + 와 + · ▶ 두 틈 모두
+  const gap = await p.evaluate(() => { const [a, b] = document.querySelectorAll('.m-adj'), c = document.getElementById('metro-play-btn')
+    return [[a, b], [b, c]].map(([l, r]) => { const rl = l.getBoundingClientRect(), rr = r.getBoundingClientRect(), y = rl.top + rl.height / 2, mid = (rl.right + rr.left) / 2, e = x => document.elementFromPoint(x, y)
+      return { left: e(mid - 2) === l, right: e(mid + 2) === r, mid: e(mid) === l || e(mid) === r } }) })
+  assert.deepEqual(gap, [{ left: true, right: true, mid: true }, { left: true, right: true, mid: true }], '단추 사이 틈을 눌러도 가까운 단추 ' + JSON.stringify(gap))
 }, { viewport: { width: w, height: 800 } })
 // 좁은 폰(320 px) · 영어 'Volume' · 세 자리 BPM: 펼침의 ▶ 가 카드 안에 남는다(슬라이더가 줄어든다), LED 줄은 제 간격
 await scenario('layout: expanded at 320px in English with BPM 200 — ▶ stays inside the card and the header LEDs keep their spacing', 'silence_lowfloor.wav', async p => {
@@ -685,6 +690,11 @@ for (const w of [320, 384, 430]) await scenario(`layout: collapsed at ${w}px —
   for (const [bpm, ts] of cases) rs.push(await at(bpm, ts))
   assert.deepEqual(rs.map(r => r.bpm), cases.map(c => String(c[0])))
   for (const r of rs.slice(1)) assert.deepEqual(r.leds, rs[0].leds, '점 자리 그대로 (99 · 100 · 40 · ♩. 80 · ♩. 200)')
+  // 접힌 띠의 ▶ 와 ∧: 사이 틈 6 px 을 반씩 — ▶ 의 누르는 폭 44(왼쪽 5 · 오른쪽 3 더), ∧ 가 틈을 다 가져가지 않는다(경계 1 px 은 빼고 찍는다)
+  const hb = await p.evaluate(() => { const pb = document.getElementById('metro-play-hdr-btn'), sb = document.getElementById('metro-size-btn'), r = pb.getBoundingClientRect(), s = sb.getBoundingClientRect(), y = r.top + r.height / 2, at = (x, el) => document.elementFromPoint(x, y) === el
+    const mid = (r.right + s.left) / 2, m = document.elementFromPoint(mid, y)
+    return { playLeft: at(r.left - 4, pb), playRight: at(r.right + 1.5, pb), sizeLeft: at(s.left - 1.5, sb), mid: m === pb || m === sb } })
+  assert.deepEqual(hb, { playLeft: true, playRight: true, sizeLeft: true, mid: true }, '접힌 띠 ▶ 의 누르는 폭 44, ∧ 와 틈을 반씩, 틈 한가운데도 둘 중 하나')
   for (const r of rs) assert.ok(r.fits && Math.abs(r.left - r.right) <= 1 && Math.abs(r.hop) <= 0.5, `템포가 카드 왼쪽 끝과 첫 점 사이 가운데, 칸 안에 들어가고, 펼치는 순간 튀지 않는다 ${JSON.stringify({ ...r, leds: undefined })}`)
 }, { viewport: { width: w, height: 800 } })
 

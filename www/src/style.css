@@ -115,7 +115,7 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #drone-btn,#rec-hdr-btn{height:var(--h-hdr);padding:0 6.5px 0 7.5px;min-width:64px;justify-content:center;font-size:var(--fs-xs);letter-spacing:.04em;} /* 헤더 양쪽의 두 네모: 같은 크기(30×64). 폭은 DRONE 에 여유 조금, 녹음 시간(● 00:00)도 들어간다. 글자 뒤 자간과 점 때문에 잉크가 왼쪽으로 0.5 px 쏠려 여백을 0.5 px 옮긴다 */
 #drone-btn::after,#rec-hdr-btn::after{inset:-7px -2px;} /* 보이는 네모는 30, 누르는 범위는 44 */
 #ref-a-btn::after{inset:-8px -2px;} /* A 듣기 칩은 28 — 누르는 범위 44 */
-#metro-play-hdr-btn{position:relative;} #metro-play-hdr-btn::after{content:'';position:absolute;inset:-4px;} /* 보이는 칸은 옆 ∧ 와 같은 정사각(2.9.5 까지 44×40 으로 옆으로 길었다), 누르는 칸은 44 */
+#metro-play-hdr-btn{position:relative;} #metro-play-hdr-btn::after{content:'';position:absolute;inset:-5px -4px -5px -6px;} /* 보이는 칸은 옆 ∧ 와 같은 정사각(2.9.5 까지 44×40 으로 옆으로 길었다), 누르는 칸은 44 × 44 — 오른쪽은 ∧ 와의 틈 6 px 을 반씩(∧ 가 틈을 거의 다(5 px) 덮어 ▶ 가 40 × 42 였다), 왼쪽은 점 줄까지 10 px 여유에서 5. 값은 테두리 1 px 안쪽 기준이라 1 씩 더 크다 */
 #drone-btn[aria-expanded="true"]{z-index:71;} /* 창이 열린 동안 배경(69)보다 위: 다시 누르면 배경이 아니라 버튼이 받아 창을 닫는다 */
 #drone-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-size:var(--fs-md);letter-spacing:0;}
 #hdr-timer{flex:1;min-width:0;display:flex;align-items:center;gap:5px;margin:0 8px 0 0;padding:0;height:44px;background:transparent;border:none;cursor:pointer;} /* 누르는 범위는 헤더 높이 44 */
@@ -245,7 +245,7 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #metro-play-hdr-btn[data-glyph="play"]{background:transparent;border-color:var(--line-ctl);color:var(--text);} /* 접혀 멈춰 있을 때는 테두리만 — 빨강은 '울리는 중' 일 때만(REC 와 같은 규칙). 튜너를 볼 때 시선을 끌지 않게 */
 /* 크기 버튼 하나 — 상태에 따라 글리프만 바꾼다: 접힘 ∧(펼치러) · 펼침 ∧(펼침2로) · 전용 ∨(접힘으로) */
 #metro-size-btn{position:relative;width:var(--h-compact);height:var(--h-compact);background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;}
-#metro-size-btn::after{content:'';position:absolute;inset:-6px;}
+#metro-size-btn::after{content:'';position:absolute;inset:-6px -6px -6px -4px;} /* 누르는 칸 44 × 46 — 왼쪽은 접힌 띠의 ▶ 와 틈을 반씩(테두리 1 px 안쪽 기준) */
 #metro-size-btn.to-full .nav-glyph.chev{transform:rotate(180deg);} /* 넓은 화면의 펼침 → 펼침2 도 '위로' — ∧ */
 /* 메트로놈 전용 모드 = 펼침의 2단계: 튜너 카드를 숨기고 메트로놈이 그 자리까지 올라온다. 헤더·마이크는 그대로 */
 #main-body.metro-full #tuner-card{display:none;}
@@ -346,10 +346,10 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
   #metro-bpm-row{gap:clamp(12px,4.6vw,18px);} /* 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
   /* −·+·▶ 는 정사각형 — 높이 = 폭(줄 폭에서 틈 8 px 둘을 빼고 셋으로 나눈 값, 320 px 폰 31 px ~ 384 px 42 px), 48 px 까지(412 px 이상 폰은 전처럼 폭 49 ~ 53 · 높이 48).
      폭이 좁은 폰에서 48 px 높이 그대로면 세로로 긴 막대처럼 보였다. aspect-ratio 대신 줄 폭(cqw)으로 계산 — 최대 높이가 폭을 줄이는지가 엔진마다 다를 수 있어서.
-     누르는 자리는 위로만 48 px 까지(최대 12 px — 위는 본문 여백 16 px). 아래로 늘리면 바로 밑 음량 슬라이더의 누르는 자리를 가져간다(슬라이더는 단추 아래 끝부터 잡힌다) */
+     누르는 자리는 옆으로 4 px 씩, 위로 48 px 까지(최대 12 px — 위는 본문 여백 16 px). 아래로 늘리면 바로 밑 음량 슬라이더의 누르는 자리를 가져간다(슬라이더는 단추 아래 끝부터 잡힌다) */
   #metro-card:not(.full) #metro-btn-row{container-type:inline-size;}
   #metro-card:not(.full) .m-adj,#metro-card:not(.full) #metro-play-btn{height:min(var(--h-control),calc((100cqw - 16px) / 3));position:relative;}
-  #metro-card:not(.full) .m-adj::after,#metro-card:not(.full) #metro-play-btn::after{content:'';position:absolute;left:0;right:0;bottom:0;top:max(-12px,calc(100% - var(--h-control)));}
+  #metro-card:not(.full) .m-adj::after,#metro-card:not(.full) #metro-play-btn::after{content:'';position:absolute;left:-5px;right:-5px;bottom:0;top:max(-13px,calc(100% - var(--h-control) + 1px));} /* 옆으로는 단추 사이 틈 8 px 을 반씩 — 틈을 눌러도 가까운 단추. 값은 테두리 1 px 안쪽 기준이라 1 씩 더 크다 */
   #metro-bpm{min-width:0;}
   #metro-bpm-line{min-width:3.1em;} /* ♩. = 200 의 실제 폭 3.058em 에 여유 .04em — 딱 맞추면(3.06) 브라우저마다 소수점 아래가 달라 줄이 넘치고 버튼 폭이 움찔한다 */
   #metro-bpm-wrap{align-self:stretch;justify-content:center;padding-bottom:5px;} /* 오른쪽 묶음 높이 전체가 끌기 영역. 음표+숫자의 잉크 가운데가 카드 본문(헤더 선 ~ 박자 버튼) 가운데에 오게 2.5 px 위로 — 상자 가운데 그대로면 잉크가 2~3 px 아래(오른쪽 묶음이 본문 가운데보다 4 px 아래에 있어서) */

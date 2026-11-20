@@ -1,4 +1,4 @@
-/** 설정 맨 아래: 개인정보처리방침 · 문의 · 오픈소스 라이선스. 방침·라이선스는 앱 안 화면(글꼴 OFL 은 전문이 함께 가야 하고, 방침은 앱 밖으로 튀어 나가면 당황스럽다 — 피드백). 문의만 메일 앱 */
+/** 설정 맨 아래: 개인정보처리방침 · 문의 · 오픈소스 라이선스. 방침·라이선스는 앱 안 화면(글꼴 OFL 은 전문이 함께 가야 하고, 방침은 앱 밖으로 튀어 나가면 당황스럽다). 문의만 메일 앱 */
 import { q, on } from './dom.ts'
 import { attachSwipeBack } from './swipeBack.ts'
 import { getLang, type Lang } from '../core/i18n/index.ts'
@@ -46,7 +46,7 @@ export function privacyHtml(lang: Lang): string {
   flush(); return out.join('')
 }
 
-/** 맨 아래 세 링크의 배열(사용자 결정 2026-11-05): 영어·일본어는 세로 3줄 — 한 줄이면 영어는 간당간당하고 일본어(약 380 px)는 넘친다; 한국어·중국어는 한 줄(약 190~250 px, 균형이 맞는다). 폰마다 다르지 않게 언어로 못 박고, 그래도 안 들어가면(낯선 글꼴) 세로로 */
+/** 맨 아래 세 링크의 배열: 영어·일본어는 세로 3줄 — 한 줄이면 영어는 간당간당하고 일본어(약 380 px)는 넘친다; 한국어·중국어는 한 줄(약 190~250 px, 균형이 맞는다). 폰마다 다르지 않게 언어로 못 박고, 그래도 안 들어가면(낯선 글꼴) 세로로 */
 const STACKED: ReadonlySet<Lang> = new Set(['en', 'ja', 'es']) // 스페인어도 세 항목 약 330 px 라 세로
 function layoutLinks(): void {
   const row = q('settings-links'); row.classList.remove('stack')

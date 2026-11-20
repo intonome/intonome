@@ -18,7 +18,7 @@ export function on<K extends keyof HTMLElementEventMap>(el: HTMLElement | Window
 export function reflow(el: HTMLElement): void { void el.offsetHeight }
 
 /** 재생 버튼의 그림 — 글꼴의 ▶·■·❚❚ 대신 SVG: 글꼴 글리프는 기기마다 크기·위치가 달라 버튼 가운데에서 벗어나 보였다(아이폰).
- * 24 칸 좌표, 크기는 글꼴 글자(안드로이드 ■ 약 15 칸)에 맞춘다 — 2.7.0 의 12 칸은 작아 보였다(사용자). 재생 삼각형은 무게중심이 왼쪽에 있어 테두리 상자를 오른쪽으로 1.5 칸 밀어 눈에 가운데로(세로는 정확히 12 — 2.9.0 까지 축이 0.25 칸 위였다) — 정지·일시정지는 좌우 대칭이라 그대로.
+ * 24 칸 좌표, 크기는 글꼴 글자(안드로이드 ■ 약 15 칸)에 맞춘다 — 2.7.0 의 12 칸은 작아 보였다. 재생 삼각형은 무게중심이 왼쪽에 있어 테두리 상자를 오른쪽으로 1.5 칸 밀어 눈에 가운데로(세로는 정확히 12 — 2.9.0 까지 축이 0.25 칸 위였다) — 정지·일시정지는 좌우 대칭이라 그대로.
  * 정지(■)는 '처음으로', 위치를 유지하는 일시정지는 앱 전체에서 ❚❚ */
 export type Glyph = 'play' | 'stop' | 'pause'
 const GLYPH_PATH: Record<Glyph, string> = {

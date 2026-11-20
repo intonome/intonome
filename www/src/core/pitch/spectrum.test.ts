@@ -179,7 +179,7 @@ describe('the tuner shows the loudest sound, never a second voice above it', () 
 })
 
 describe('the open strings in a room with low rumble — the tuning routine', () => {
-  // 피드백 #12(2026-10-24): 아이폰 웹앱에서 솔(G3)만 안 잡히고 두 현을 같이 그으면 뚝뚝 끊겼다. 바이올린 G 현은 기본음이 2·3배음보다 15~25 dB 약하고,
+  // 아이폰 웹앱에서 솔(G3)만 안 잡히고 두 현을 같이 그으면 뚝뚝 끊겼다. 바이올린 G 현은 기본음이 2·3배음보다 15~25 dB 약하고,
   // 방·폰의 저역 웅웅 잡음은 밴드 중앙값보다 20~30 dB 높다 — 그 둔덕을 피크로 세면 옥타브 내리기가 솔3 를 솔2 로, 5도 중음의 최대공약수(레3)가 레4 자리를 빼앗았다
   const SR = 48000, N = 4096, HOP = 1024
   const NOTE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']

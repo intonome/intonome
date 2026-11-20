@@ -34,7 +34,7 @@ describe('double bass below E1 — 5-string B0, C extension, a loose E string', 
 })
 
 describe('analyzer: reference pitch (refHz) correction', () => {
-  // 리뷰에서 잡은 결함: 트래커 격자가 A=440 이라 |오프셋| > 50 ¢ (바로크 415, 466) 에서 이웃 반음으로 라벨링됐다
+  // 트래커 격자가 A=440 에 묶여 있으면 |오프셋| > 50 ¢ (바로크 415, 466) 에서 이웃 반음으로 라벨링된다 — 기준음을 따라가는지
   test.each([[442, 442], [440, 440], [432, 432], [425, 425], [415, 415], [466, 466], [410, 410]])('at refHz=%i that frequency reads A4 at 0 ¢', (ref, hz) => {
     const f = settle(ref, hz)
     expect(f.midi).toBe(69); expect(Math.abs(f.cents)).toBeLessThanOrEqual(2); expect(f.inTune).toBe(true)
@@ -251,7 +251,7 @@ describe('short detached notes straight after a rest (spiccato, staccato) show f
 })
 
 describe('nothing is played — the tuner shows nothing', () => {
-  // 피드백(2026-10-24): 바깥에서 그냥 켜 두면 주변 소리에 음이 틱틱 떴다. 말소리 음절·새소리·딸깍은 짧거나 피치가 미끄러진다 —
+  // 바깥에서 그냥 켜 두면 주변 소리에 음이 틱틱 떴다. 말소리 음절·새소리·딸깍은 짧거나 피치가 미끄러진다 —
   // 같은 음으로 여러 프레임 이어질 때만 새로 띄운다 (2.5.1 은 3 프레임, 2.5.7 은 6 프레임)
   const sr = 48000, N = 4096, HOP = 1024
   /** 야외 20 s: 분홍+갈색 배경 −45/−40 dBFS, 사건(멀리서 말소리 음절·새·딸깍·차·바람) 최대 −24 dBFS, 시드 고정 */

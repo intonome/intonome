@@ -58,7 +58,7 @@ const hz = (name, ref) => ref * Math.pow(2, (NOTE[name[0]] + (parseInt(name.slic
  *  a: 바이올린 라 — 긴 음, 고른 비브라토가 처음부터 끝까지(궤적이 끊기거나 중간에 모양이 바뀌지 않게 — 한 장면은 한 가지만)
  *  s: 바이올린 라 — 긴 음, 비브라토 없음, 정확(스케일을 들려주면 음이 바뀔 때마다 궤적에 꺾임이 남는다 — 그림은 곧은 선 하나가 낫다)
  *  d: 드론 위의 솔(완전5도) — 긴 음, 정확. 궤적은 곧은 선 하나(문구가 장면을 말하고, 그림은 깔끔하게)
- *  합성음을 사람처럼 비틀면 각지고 어색해 보인다 — 정확한 음이 더 낫다(사용자 결정) */
+ *  합성음을 사람처럼 비틀면 각지고 어색해 보인다 — 정확한 음이 더 낫다 */
 const HOLD = 20
 function makeSignals(ref) {
   const a = join(SIG, `violin_A4_${ref}.wav`), s = join(SIG, `cello_Cmaj_${ref}.wav`), d = join(SIG, `cello_G2_drone_${ref}.wav`)

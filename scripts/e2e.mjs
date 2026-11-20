@@ -20,7 +20,7 @@ if (!existsSync(join(SIG, 'violin_A4.wav')) || !existsSync(join(SIG, 'e2e', 'vio
 
 // 정적 서버 (vite preview 는 outDir 고정이라 직접 띄운다)
 const server = spawn('npx', ['-y', 'serve', '-s', '-l', String(PORT), DIST], { stdio: 'ignore', detached: process.platform !== 'win32', shell: process.platform === 'win32' }) // detached: 프로세스 그룹째 종료 (자식 serve 잔존 방지)
-// 비정상 종료(예외·Ctrl-C)에도 serve 를 남기지 않는다 — 남으면 다음 실행이 옛 dist 를 검사한다 (감사)
+// 비정상 종료(예외·Ctrl-C)에도 serve 를 남기지 않는다 — 남으면 다음 실행이 옛 dist 를 검사한다
 const killServer = () => { try { process.kill(-server.pid, 'SIGTERM') } catch { try { server.kill() } catch { /* */ } } }
 process.on('exit', killServer); process.on('SIGINT', () => { killServer(); process.exit(130) }); process.on('uncaughtException', e => { console.error(e); killServer(); process.exit(1) }); process.on('unhandledRejection', e => { console.error(e); killServer(); process.exit(1) })
 await waitForServer(`http://localhost:${PORT}/`)
@@ -47,7 +47,7 @@ async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   const page = await ctx.newPage()
   const errors = []
   page.on('pageerror', e => errors.push(String(e)))
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) }) // 404·ERR_* 도 실패다 — 빌드에서 청크가 빠지면 여기서 잡힌다 (감사; 옛 tfhub 필터 제거)
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) }) // 404·ERR_* 도 실패다 — 빌드에서 청크가 빠지면 여기서 잡힌다
   try { await fn(page, ctx); assert.deepEqual(errors, [], 'console/page errors'); results.push([name, 'ok']) }
   catch (e) { results.push([name, 'FAIL: ' + (e.message || e).toString().split('\n').slice(0, 3).join(' / ')]) }
   await browser.close()

@@ -343,6 +343,12 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
      줄의 최소 폭은 ♩. = 200 — 두 자리·세 자리, 4/4·6/8 을 오가도 버튼 폭이 안 바뀐다(= 와 앞뒤 띄움을 넣어 버튼은 2.9.15 보다 384 px 에서 약 11 px 좁다(52.6 → 41.9 px). 숫자 크기는 그대로 둔다 — 멀리서 읽는 쪽이 먼저).
      숫자 칸과 −·+·▶ 사이 18 px: 세 자리일 때 숫자 양옆 여백(카드 테 · − 버튼)이 같아진다(10 px 이면 버튼에 붙어 보였다) */
   #metro-bpm-row{gap:clamp(12px,4.6vw,18px);} /* 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
+  /* −·+·▶ 는 정사각형 — 높이 = 폭(줄 폭에서 틈 8 px 둘을 빼고 셋으로 나눈 값, 320 px 폰 31 px ~ 384 px 42 px), 48 px 까지(412 px 이상 폰은 전처럼 폭 49 ~ 53 · 높이 48).
+     폭이 좁은 폰에서 48 px 높이 그대로면 세로로 긴 막대처럼 보였다. aspect-ratio 대신 줄 폭(cqw)으로 계산 — 최대 높이가 폭을 줄이는지가 엔진마다 다를 수 있어서.
+     누르는 자리는 위로만 48 px 까지(최대 12 px — 위는 본문 여백 16 px). 아래로 늘리면 바로 밑 음량 슬라이더의 누르는 자리를 가져간다(슬라이더는 단추 아래 끝부터 잡힌다) */
+  #metro-card:not(.full) #metro-btn-row{container-type:inline-size;}
+  #metro-card:not(.full) .m-adj,#metro-card:not(.full) #metro-play-btn{height:min(var(--h-control),calc((100cqw - 16px) / 3));position:relative;}
+  #metro-card:not(.full) .m-adj::after,#metro-card:not(.full) #metro-play-btn::after{content:'';position:absolute;left:0;right:0;bottom:0;top:max(-12px,calc(100% - var(--h-control)));}
   #metro-bpm{min-width:0;}
   #metro-bpm-line{min-width:3.1em;} /* ♩. = 200 의 실제 폭 3.058em 에 여유 .04em — 딱 맞추면(3.06) 브라우저마다 소수점 아래가 달라 줄이 넘치고 버튼 폭이 움찔한다 */
   #metro-bpm-wrap{align-self:stretch;justify-content:center;padding-bottom:5px;} /* 오른쪽 묶음 높이 전체가 끌기 영역. 음표+숫자의 잉크 가운데가 카드 본문(헤더 선 ~ 박자 버튼) 가운데에 오게 2.5 px 위로 — 상자 가운데 그대로면 잉크가 2~3 px 아래(오른쪽 묶음이 본문 가운데보다 4 px 아래에 있어서) */

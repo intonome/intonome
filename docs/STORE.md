@@ -45,26 +45,26 @@ Intonome: Afinador y metrónomo
 
 ## Short description (80 characters)
 
-The 80 characters that search indexes and that show before "More". Instrument names are what people search for; the one thing other tuners do not have (the pitch trace) is named; the tagline stays on the feature graphic.
+The 80 characters that search indexes and that show before "More". Instrument names are what people search for; the one thing other tuners do not have (the pitch trace) is named; the tagline stays on the feature graphic. No price or promotion words such as "No ads" here: Play Console warns that they can keep the listing out of promotions. The full description and the caption of screenshot 5 still say it.
 
 ```
-바이올린·비올라·첼로·콘트라베이스 튜너+메트로놈. 비브라토가 보이는 튜너, 드론, 녹음. 광고 없음·오프라인.
-```
-
-```
-Violin, viola, cello & bass tuner + metronome that shows your vibrato. No ads
+바이올린·비올라·첼로·콘트라베이스 튜너+메트로놈. 비브라토가 보이는 튜너, 드론, 녹음. 오프라인 동작.
 ```
 
 ```
-バイオリン・ビオラ・チェロ・コントラバスのチューナー＋メトロノーム。ビブラートが見えるチューナー、ドローン、録音。広告なし・オフライン
+Violin, viola, cello & bass tuner + metronome that shows your vibrato. Offline.
 ```
 
 ```
-小提琴、中提琴、大提琴、低音提琴调音器＋节拍器。看得见揉弦的音高曲线，持续音，录音。无广告，可离线使用
+バイオリン・ビオラ・チェロ・コントラバスのチューナー＋メトロノーム。ビブラートが見えるチューナー、ドローン、録音。オフライン対応
 ```
 
 ```
-小提琴、中提琴、大提琴、低音提琴的調音器與節拍器。看得見揉弦（vibrato）的調音器、持續音、錄音。無廣告，可離線使用
+小提琴、中提琴、大提琴、低音提琴调音器＋节拍器。看得见揉弦的音高曲线，持续音，录音。可离线使用
+```
+
+```
+小提琴、中提琴、大提琴、低音提琴的調音器與節拍器。看得見揉弦（vibrato）的調音器、持續音、錄音。可離線使用
 ```
 
 ```

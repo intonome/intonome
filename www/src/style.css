@@ -331,11 +331,11 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
   /* 크기·높이는 헤더 ♩80 과 같은 비율(픽셀로 잼): 음표 잉크가 숫자보다 위로 0.068em · 아래로 0.045em(머리가 숫자 바닥에 앉는다).
      음표 칸은 음표 폭 그대로 — 음표+숫자 묶음이 칸 가운데에 온다(♩. 폭으로 고정하면 ♩ 일 때 묶음이 오른쪽으로 쏠렸다).
      ♩ = 80: = 는 헤더와 같은 모양(가는 획 · .85 배 · 숫자 가운데보다 .035em 아래), 음표–= · =–숫자 잉크 틈 .22em — 인쇄 악보의 띄어 쓴 「♩ = 80」. = 의 빈자리 .113em · 음표 오른쪽 .031em · 숫자 왼쪽 .055em 을 여백에서 뺀다.
-     줄의 최소 폭은 ♩. = 200 — 두 자리·세 자리, 4/4·6/8 을 오가도 버튼 폭이 안 바뀐다(= 와 앞뒤 띄움을 넣어 버튼은 2.9.15 보다 384 px 에서 약 10 px 좁다(52.6 → 42.6 px). 숫자 크기는 그대로 둔다 — 멀리서 읽는 쪽이 먼저).
+     줄의 최소 폭은 ♩. = 200 — 두 자리·세 자리, 4/4·6/8 을 오가도 버튼 폭이 안 바뀐다(= 와 앞뒤 띄움을 넣어 버튼은 2.9.15 보다 384 px 에서 약 11 px 좁다(52.6 → 41.9 px). 숫자 크기는 그대로 둔다 — 멀리서 읽는 쪽이 먼저).
      숫자 칸과 −·+·▶ 사이 18 px: 세 자리일 때 숫자 양옆 여백(카드 테 · − 버튼)이 같아진다(10 px 이면 버튼에 붙어 보였다) */
   #metro-bpm-row{gap:clamp(12px,4.6vw,18px);} /* 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
   #metro-bpm{min-width:0;}
-  #metro-bpm-line{min-width:3.06em;}
+  #metro-bpm-line{min-width:3.1em;} /* ♩. = 200 의 실제 폭 3.058em 에 여유 .04em — 딱 맞추면(3.06) 브라우저마다 소수점 아래가 달라 줄이 넘치고 버튼 폭이 움찔한다 */
   #metro-bpm-wrap{align-self:stretch;justify-content:center;padding-bottom:5px;} /* 오른쪽 묶음 높이 전체가 끌기 영역. 음표+숫자의 잉크 가운데가 카드 본문(헤더 선 ~ 박자 버튼) 가운데에 오게 2.5 px 위로 — 상자 가운데 그대로면 잉크가 2~3 px 아래(오른쪽 묶음이 본문 가운데보다 4 px 아래에 있어서) */
   #metro-bpm-unit{display:flex;flex:none;height:.9em;margin:0 0 .076em 0;color:var(--text);}
   #metro-bpm-eq{display:block;flex:none;font-family:'DM Mono',monospace;line-height:1;margin:0 .052em 0 .076em;color:var(--text);} /* 숫자와 같은 상자 — 막대 높이의 기준이 숫자 가운데 */

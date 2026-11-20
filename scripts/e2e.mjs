@@ -383,6 +383,13 @@ await scenario('metro: full mode is the second expanded step — only the tuner 
       out[row] = { ends: [await at(l[0]), await at(l[n - 1])], mid: await at(mid), mv: await at(mid, 'mv'), sub: await at(mid, 'hit-sub') } }
     hv.style.removeProperty('display'); return out })
   assert.deepEqual(dotScale, { 'beat-vis': { ends: [1, 1], mid: 0.85, mv: 0.9, sub: 1.25 }, 'sweep-leds': { ends: [1, 1], mid: 0.85, mv: 0.9, sub: 1.4 } }, '점 크기: ' + JSON.stringify(dotScale))
+  // 첫 박 깜빡임의 2 px 테두리: 다크는 연하게(접힘 .8 · 펼침 .75), 라이트는 그대로(1 — 바탕과 대비 3.3, 줄이면 3 밑). 면 · 번짐은 두 테마 모두 연하게
+  const edge = await p.evaluate(() => { const card = document.getElementById('metro-card'), root = document.documentElement, th0 = root.dataset.theme, out = {}
+    const kept = ['flash-strong', 'flash-ring'].filter(c => card.classList.contains(c)); card.classList.remove(...kept) // 앞서 재생한 번쩍임이 끝난 채 남아 있을 수 있다 — 떼고 새로 붙여 0 % 를 읽는다
+    for (const th of ['dark', 'light']) { root.dataset.theme = th; for (const c of ['flash-strong', 'flash-ring']) { void card.offsetWidth; card.classList.add(c); out[`${th} ${c}`] = getComputedStyle(card).boxShadow.split(' 0px')[0]; card.classList.remove(c) } }
+    card.classList.add(...kept)
+    if (th0) root.dataset.theme = th0; else delete root.dataset.theme; return out })
+  assert.deepEqual(edge, { 'dark flash-strong': 'rgba(34, 197, 94, 0.8)', 'dark flash-ring': 'rgba(34, 197, 94, 0.75)', 'light flash-strong': 'rgb(22, 163, 74)', 'light flash-ring': 'rgb(22, 163, 74)' }, '첫 박 테두리 세기: ' + JSON.stringify(edge))
   // M5: 전용 줄에서만 히트가 한 단 크다
   const scales = await p.evaluate(async () => { const out = {}; const d = document.querySelectorAll('#sweep-leds .led')[5]
     for (const c of ['hit-sub', 'hit-beat', 'hit-acc']) { d.classList.add(c); await new Promise(r => setTimeout(r, 120)); out[c] = getComputedStyle(d).transform; d.classList.remove(c) } return out })

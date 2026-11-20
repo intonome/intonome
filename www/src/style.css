@@ -17,7 +17,7 @@
   /* 고른 값(설정 단계 버튼·박자 칸) — 무채색. 빨강은 울리는 중·녹음 중·켜짐에만 쓴다 */
   --sel:rgba(var(--text-rgb),.14);
   /* 상태 — 초록은 '맞는 자리': 튜너의 맞음과 메트로놈의 첫 박. --warn(주의 점)과 --mark(북마크)는 같은 색, 다른 뜻 */
-  --ok:#22c55e;--ok-rgb:34,197,94;--ok-text:#22c55e;--warn:#f59e0b;--mark:#f59e0b;--mark-rgb:245,158,11;
+  --ok:#22c55e;--ok-rgb:34,197,94;--flash-edge:.8;--ring-edge:.75;--ring-edge-mid:.34;--ok-text:#22c55e;--warn:#f59e0b;--mark:#f59e0b;--mark-rgb:245,158,11;
   --tune-glow:0 0 18px rgba(34,197,94,.35); /* 맞음: 음이름에 옅은 번짐 하나 — 연습 내내 켜졌다 꺼졌다 하는 것이라 세게 빛나지 않게 */
   --sub-led:#8b929c; /* 메트로놈 점: 첫 박 초록(--ok) · 박 빨강(--accent) · 사이 분할은 회색(L* 60, 번짐 없음) — 쓸고 가는 불(36)보다 밝고 박보다 조용하다 */
   --scrim:rgba(0,0,0,.65);--shadow-rgb:0,0,0;
@@ -55,7 +55,7 @@
   --ink:#111418;
   --accent:#bf3227;--accent-rgb:191,50,39;--accent-soft:rgba(191,50,39,.10);
   --accent-soft-on:linear-gradient(rgba(191,50,39,.08),rgba(191,50,39,.08)) #ffffff;
-  --ok:#16a34a;--ok-rgb:22,163,74;--ok-text:#15803d;--warn:#d97706;--mark:#d97706;--mark-rgb:217,119,6;--mark-text:#b45309;
+  --ok:#16a34a;--ok-rgb:22,163,74;--flash-edge:1;--ring-edge:1;--ring-edge-mid:.45;--ok-text:#15803d;--warn:#d97706;--mark:#d97706;--mark-rgb:217,119,6;--mark-text:#b45309;
   --tune-glow:0 0 18px rgba(22,163,74,.35);
   --sel:rgba(var(--text-rgb),.14);
   --sub-led:#7b838f;
@@ -75,8 +75,9 @@ html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한�
 @supports (height:100lvh){@media (display-mode:standalone){html.sb-under,html.sb-under body{height:100lvh;}}}
 button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;} /* 버튼을 꾹 누르면 글자가 선택되며 복사·번역 막대가 떴다(안드로이드) */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes metroflash{0%{background:rgba(var(--ok-rgb),.22);box-shadow:inset 0 0 0 2px var(--ok)}60%{background:rgba(var(--ok-rgb),.08);box-shadow:inset 0 0 0 2px var(--ok)}100%{background:var(--surface);box-shadow:none}}
-@keyframes metroring{0%,15%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),1),inset 0 0 18px rgba(var(--ok-rgb),.38)}45%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),.45),inset 0 0 18px rgba(var(--ok-rgb),.16)}100%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),0),inset 0 0 18px rgba(var(--ok-rgb),0)}}
+/* 첫 박 깜빡임: 면 · 번짐은 두 테마 모두 연하게(다크에서 진하고 피로했다). 2 px 테두리는 다크만 연하게 — 라이트는 원래도 바탕과 대비 3.3 이라 줄이면 3 밑으로 내려간다(--flash-edge · --ring-edge, 테마 토큰) */
+@keyframes metroflash{0%{background:rgba(var(--ok-rgb),.15);box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),var(--flash-edge))}60%{background:rgba(var(--ok-rgb),.05);box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),var(--flash-edge))}100%{background:var(--surface);box-shadow:none}}
+@keyframes metroring{0%,15%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),var(--ring-edge)),inset 0 0 18px rgba(var(--ok-rgb),.24)}45%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),var(--ring-edge-mid)),inset 0 0 18px rgba(var(--ok-rgb),.1)}100%{box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),0),inset 0 0 18px rgba(var(--ok-rgb),0)}}
 
 /* 컴팩트 글자 버튼 (36 px) — 누르는 영역은 ::after 로 44 px */
 .compact-btn{position:relative;height:var(--h-compact);padding:0 12px;background:transparent;border:1px solid var(--line-ctl);border-radius:var(--r-sm);color:var(--text-2);font-size:var(--fs-md);font-weight:var(--fw-md);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}

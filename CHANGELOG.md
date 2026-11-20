@@ -2,6 +2,12 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.1] - 2026-11-20
+The −, + and ▶ buttons beside the big tempo keep one width in every browser.
+
+Metronome
+- The line with the big tempo was reserved exactly the width of its widest reading, ♩. = 200. Browsers round that width a little differently, so in some the line overflowed by a fraction of a pixel and the buttons changed width between ♩ = 72 and ♩. = 200. The line now keeps 0.04 em to spare; the buttons are 0.6 to 0.8 px narrower (41.9 px on a 384 px phone, about 11 px narrower than in 2.9.15)
+
 ## [2.10.0] - 2026-11-20
 The metronome reads its tempo as ♩ = 80, its dots show subdivisions better, the first-beat flash reaches the full-size metronome and the no-time-signature mode, and a new setting turns off the edge flash on the larger views.
 

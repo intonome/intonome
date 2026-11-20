@@ -194,7 +194,11 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #metro-card.flash-strong{animation:metroflash var(--flash-dur,.22s) ease-out forwards;} /* 접힘: 띠가 작아 면까지 칠한다 — 멀리서 보는 신호 */
 #metro-card.flash-ring{animation:metroring var(--flash-dur,.42s) linear forwards;} /* 펼침·전용: 카드가 커서 면은 칠하지 않고 테두리와 안쪽 가장자리의 옅은 번짐만. 짧게 진했다가 천천히 옅어진다(접힘의 옅은 면처럼 잔상이 남게) */
 #metro-hdr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);gap:10px;min-height:52px;}
-#metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;padding:8px 10px 8px 0;margin:-8px 0;}
+#metro-hdr-label{position:relative;display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:var(--fs-xl);color:var(--text);font-weight:var(--fw-md);white-space:nowrap;cursor:ns-resize;touch-action:none;user-select:none;justify-content:center;width:calc(11.8px + 12px + .6em + (.5px - .168em) + (-.18px - .113em) + 3ch + 8.2px);padding:8px 8.2px 8px 0;margin:-8px 0 -8px 1.8px;}
+/* 템포 칸은 늘 가장 넓은 ♩. = 200 의 폭(점4분음표 11.8 px + 칸 사이 6 px × 2 + = 상자 .6em 과 그 여백 + 숫자 3ch)이고 글자는 그 안 가운데 —
+   두 자리 ↔ 세 자리 · 4/4 ↔ 6/8 로 바뀌어도 옆 점 줄이 움직이지 않고, 카드 왼쪽 끝 ↔ 글자와 글자 ↔ 첫 점의 여백이 같다.
+   왼쪽 1.8 px · 오른쪽 8.2 px 는 그 둘을 같게 하는 값(카드 테 1 + 안쪽 16 + 1.8 ≈ 숫자 끝의 빈자리 .5 + 8.2 + 칸 사이 10, 픽셀로 잼) — 둘을 더하면 전의 오른쪽 10 px.
+   칸은 6/8 의 ♩. 폭이라 4/4 에서는 전보다 3.7 px 넓고 점 줄이 그만큼 좁다(320 px 폰에서 점 7.9 → 7.5 px) */
 #metro-hdr-label::after{content:'';position:absolute;top:0;bottom:0;left:100%;width:40px;} /* ♩BPM 끌기 자리를 숫자 오른쪽으로 손가락 하나만큼 — 숫자를 손가락으로 가리지 않고 옆을 잡아 끈다. 그보다 오른쪽은 카드 끌기 */
 #metro-hdr-label .note-glyph{width:8.1px;height:20px;vertical-align:0;}
 /* 6/8: 박 단위가 점4분음표라 글리프도 ♩. — 숫자가 무엇을 세는지 보이게 */
@@ -204,7 +208,7 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
    여백은 잉크 틈이 양쪽 6.5 px 가 되게 — = 의 빈자리 .113em(상자 .6em − 잉크 .44em × .85 의 반) · 숫자의 왼쪽 빈자리 .055em · 음표의 오른쪽 빈자리 .68 px · 칸 사이 6 px 를 뺀 값 */
 .bpm-eq{font-weight:300;transform:translateY(.035em) scale(.85);}
 #metro-hdr-label .bpm-eq{display:inline-block;margin:0 calc(.5px - .168em) 0 calc(-.18px - .113em);}
-#metro-hdr-bpm{display:inline-block;width:3ch;} /* 늘 세 자리 폭(DM Mono 는 숫자 폭이 같다, BPM 은 최대 200) — 80 → 120 으로 바뀌어도 옆 LED 줄이 움직이지 않는다 */
+#metro-hdr-bpm{display:inline-block;} /* 숫자는 제 폭 — 자리는 위 템포 칸이 세 자리만큼 잡아 둔다 */
 #metro-hdr-title{display:none;font-size:var(--fs-sm);color:var(--ink);font-weight:var(--fw-b);letter-spacing:var(--ls-caps-wide);align-items:center;} /* #tuner-label 과 같은 글씨 */
 #metro-card.full #metro-hdr-label{display:none;} #metro-card.full #metro-hdr-title{display:flex;}
 /* LED 9칸(metro.ts HDR_LEDS). 폭이 모자라면(세 자리 BPM·좁은 폰·접힘의 재생 버튼) 간격만 줄인다 — 고정 gap 이면 오른쪽 버튼이 카드 밖으로 밀린다.
@@ -230,6 +234,11 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
   #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr-label{opacity:0;visibility:hidden;transition:opacity .25s var(--ease) .15s,visibility 0s linear .4s;}
   /* 양옆 칸은 버튼 하나(36)씩 — ♩80(64)이 빠져 LED 줄이 좁은 폰에서도 원래 간격(320 px 에서 0 → 약 5 px) */
   #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr{grid-template-columns:minmax(var(--h-compact),1fr) minmax(0,calc(9*13px + 8*7px)) minmax(var(--h-compact),1fr);}
+  /* 접힘: 점 줄이 다 펴지고(점 13 px · 간격 7 px) 남는 폭은 양옆 칸이 나눠 가진다 — 템포는 제 칸 가운데라 카드 왼쪽 끝과 첫 점 사이 가운데에 남는다.
+     (전엔 남는 폭이 점 줄 양옆으로 가서 412 · 430 px 폰에서 템포 오른쪽만 3 ~ 8 px 더 비었다.) 좁은 폰은 남는 폭이 없어 전과 같다 */
+  #metro-card:not(.full) #metro-hdr{grid-template-columns:minmax(auto,1fr) minmax(0,calc(9*13px + 8*7px)) minmax(auto,1fr);}
+  #metro-card:not(.full) #metro-hdr-label{justify-self:center;}
+  #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr-label{justify-self:safe center;} /* 펼치는 순간(글자가 사라지기 전 .15 s) 접힘과 같은 자리 — 칸보다 넓으면(좁은 폰) 왼쪽, 접힘도 그때는 칸 = 글자 폭이라 같다 */
 }
 #metro-play-hdr-btn{width:var(--h-compact);height:var(--h-compact);background:var(--accent-fill);border:1px solid transparent;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
 #metro-play-hdr-btn[data-glyph="play"]{background:transparent;border-color:var(--line-ctl);color:var(--text);} /* 접혀 멈춰 있을 때는 테두리만 — 빨강은 '울리는 중' 일 때만(REC 와 같은 규칙). 튜너를 볼 때 시선을 끌지 않게 */
@@ -540,6 +549,7 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
 
 @media (orientation: landscape) and (max-height: 500px){html[lang="en"] body::after{content:'Please rotate to portrait';} html[lang="ja"] body::after{content:'縦向きにしてください';} html[lang="zh-Hans"] body::after{content:'请竖屏使用';} html[lang="zh-Hant"] body::after{content:'請直向使用';} html[lang="es"] body::after{content:'Gira el teléfono en vertical';} body::after{content:'화면을 세로로 돌려주세요';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:15px;color:var(--text-2);z-index:999;pointer-events:all;}}
 @media (min-width: 700px){
+  #metro-hdr-label{justify-content:flex-start;margin-left:0;} /* 넓은 화면은 펼침 헤더에도 ♩ = 80 이 보이고 칸 왼쪽에 붙는다(전처럼) — 칸 폭은 고정이라 점은 그대로 */
   #hdr,#main-body{max-width:680px;}
   #main-body{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);flex:1;min-height:0;width:100%;}
   #main-body.metro-full{grid-template-columns:1fr;} /* 전용 모드에서 튜너가 숨으면 메트로놈이 두 칸을 다 쓴다 */

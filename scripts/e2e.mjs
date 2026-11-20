@@ -644,17 +644,35 @@ for (const w of [820, 1024]) await scenario(`layout: wide screen ${w}px · ♩. 
     return { led: +R(leds[0]).width.toFixed(1), fromLabel: +(L - lab.right).toFixed(1), toBtn: +(btn.left - Rr).toFixed(1) } })
   assert.equal(r.led, 13, '점은 제 크기 ' + JSON.stringify(r))
   assert.ok(r.fromLabel >= 8 && r.toBtn >= 8 && Math.abs(r.fromLabel - r.toBtn) <= 1, '글자와 버튼 사이 가운데, 닿지 않음 ' + JSON.stringify(r))
+  // 넓은 화면의 템포 글자는 칸 왼쪽에 붙는다(폰의 접힘처럼 가운데가 아니다) — 두 자리로 바꿔도 음표가 그 자리, 점도 그 자리
+  const flush = await p.evaluate(() => { const lab = document.getElementById('metro-hdr-label'), n = document.getElementById('metro-hdr-bpm'), note = () => Array.from(lab.querySelectorAll('.note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect().left, led = () => document.querySelector('#beat-vis .led').getBoundingClientRect().left
+    const a = { note: note() - lab.getBoundingClientRect().left, led: led() }; const t = n.textContent; n.textContent = '80'; const b = { note: note() - lab.getBoundingClientRect().left, led: led() }; n.textContent = t; return { a, b } })
+  assert.ok(Math.abs(flush.a.note) <= 0.5 && Math.abs(flush.b.note) <= 0.5 && Math.abs(flush.a.led - flush.b.led) <= 0.1, '넓은 화면: 템포는 칸 왼쪽, 두 자리여도 음표 · 점 그 자리 ' + JSON.stringify(flush))
 }, { viewport: { width: w, height: 900 } })
 
-for (const w of [360, 384, 412]) await scenario(`layout: collapsed at ${w}px — the header LEDs stay put when BPM goes from two to three digits`, 'silence_lowfloor.wav', async p => {
-  const leds = async bpm => {
-    await p.addInitScript(b => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, bpm: b })), bpm)
+// 접힌 헤더: 템포 칸은 늘 가장 넓은 ♩. = 200 의 폭이고 글자는 그 안 가운데 — 두 자리 ↔ 세 자리 · 4/4 ↔ 6/8 로 바뀌어도 점이 그 자리,
+// 카드 왼쪽 끝 ↔ 음표와 숫자 끝 ↔ 첫 점의 여백이 같다(숫자 상자의 오른쪽 빈자리 .023em 을 빼고 잉크로 비교). 넓은 폰(430)은 남는 폭을 양옆 칸이 나눠 가진다
+for (const w of [320, 384, 430]) await scenario(`layout: collapsed at ${w}px — the tempo sits midway between the card's left edge and the first dot, and the dots stay put from ♩ = 40 to ♩. = 200`, 'silence_lowfloor.wav', async p => {
+  const at = async (bpm, ts) => {
+    await p.addInitScript(o => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, bpm: o.bpm, timeSig: o.ts })), { bpm, ts })
     await p.goto(URL_); await sleep(p, 800)
-    assert.equal(await p.evaluate(() => document.getElementById('metro-hdr-bpm').textContent), String(bpm))
-    return p.evaluate(() => Array.from(document.querySelectorAll('#beat-vis .led')).map(e => Math.round(e.getBoundingClientRect().left * 10) / 10))
+    return p.evaluate(() => {
+      const card = document.getElementById('metro-card').getBoundingClientRect(), n = document.getElementById('metro-hdr-bpm'), nr = n.getBoundingClientRect(), fs = parseFloat(getComputedStyle(n).fontSize)
+      const g = Array.from(document.querySelectorAll('#metro-hdr-label .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect(), leds = Array.from(document.querySelectorAll('#beat-vis .led')).map(e => e.getBoundingClientRect())
+      const lab = document.getElementById('metro-hdr-label')
+      // 칸 안에 들어가는지는 보이는 자식으로 잰다(scrollWidth 는 오른쪽 끌기 자리 ::after 까지 센다)
+      const lr = lab.getBoundingClientRect(), pr = parseFloat(getComputedStyle(lab).paddingRight), kids = Array.from(lab.children).filter(e => getComputedStyle(e).display !== 'none').map(e => e.getBoundingClientRect())
+      // 펼치는 순간(글자가 사라지기 전)에도 같은 자리 — 칸 규칙이 바뀌어도 튀지 않는다
+      const wrap = document.getElementById('metro-body-wrap'), noteL = () => Array.from(document.querySelectorAll('#metro-hdr-label .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect().left
+      const c0 = noteL(); wrap.classList.remove('collapsed'); const hop = noteL() - c0; wrap.classList.add('collapsed')
+      return { bpm: n.textContent, leds: leds.map(r => Math.round(r.left * 10) / 10), left: g.left - card.left, right: leds[0].left - (nr.right - 0.023 * fs), fits: Math.min(...kids.map(k => k.left)) >= lr.left - 0.5 && Math.max(...kids.map(k => k.right)) <= lr.right - pr + 0.5, hop: +hop.toFixed(2) }
+    })
   }
-  const two = await leds(99), three = await leds(100), low = await leds(40)
-  assert.deepEqual(three, two, '99 → 100: LED 자리 그대로'); assert.deepEqual(low, two, '40 도 같은 자리')
+  const cases = [[99, 4], [100, 4], [40, 4], [80, 6], [200, 6]], rs = []
+  for (const [bpm, ts] of cases) rs.push(await at(bpm, ts))
+  assert.deepEqual(rs.map(r => r.bpm), cases.map(c => String(c[0])))
+  for (const r of rs.slice(1)) assert.deepEqual(r.leds, rs[0].leds, '점 자리 그대로 (99 · 100 · 40 · ♩. 80 · ♩. 200)')
+  for (const r of rs) assert.ok(r.fits && Math.abs(r.left - r.right) <= 1 && Math.abs(r.hop) <= 0.5, `템포가 카드 왼쪽 끝과 첫 점 사이 가운데, 칸 안에 들어가고, 펼치는 순간 튀지 않는다 ${JSON.stringify({ ...r, leds: undefined })}`)
 }, { viewport: { width: w, height: 800 } })
 
 // 펼침2 → 펼침(∨ 버튼): 튜너가 카드와 함께 다시 커진다 (튜너가 즉시 나타나면 카드가 한 번에 줄어 보인다)

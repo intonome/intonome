@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.8] - 2026-11-22
+The Android build can go to Google Play: the app no longer asks for a portrait-only screen as required hardware. The app itself is unchanged.
+
+Android
+- The manifest marks a portrait screen as optional hardware (`android.hardware.screen.portrait`, not required), as it already does for the microphone. The portrait lock made it a requirement, and Play Console's pre-review check stops an upload that keeps the app off phones, tablets, desktops and XR devices for that reason. The app still opens in portrait
+
+Docs and code
+- `npm run aab` hands gradle the JDK that comes with Android Studio when JAVA_HOME is not set and `java` is not on PATH; gradle used to stop there. It also no longer triggers Node's warning about arguments passed through a shell
+- `npm run cap:assets` works on macOS and Linux: the colour values are quoted, so the shell no longer takes everything after `#` as a comment
+
 ## [2.10.7] - 2026-11-21
 The Android icon keeps a margin on every home screen, the launch screen shows it, the tempo sits in the middle of its space, a smaller phone font size no longer shrinks the text, and the undo notice gets out of the way.
 

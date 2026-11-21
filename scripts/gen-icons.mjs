@@ -16,8 +16,14 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUTDIR = process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : null
 export const LAYERS = { full: 'resources/icon.svg', background: 'resources/icon-background.svg', foreground: 'resources/icon-foreground.svg', mono: 'resources/icon-monochrome.svg', favicon: 'resources/favicon.svg' }
 export const ADAPTIVE_SAFE = 0.66     // 108dp 중 보이는 72dp
-export const ADAPTIVE_FIT = ADAPTIVE_SAFE * 0.87   // 보이는 원 지름의 87 %: iOS 아이콘에서 기호가 차지하는 비율(86 %)과 같게
-export const MASKABLE_CIRCLE = ADAPTIVE_FIT   // 안드로이드 크롬은 maskable 을 적응형 아이콘으로 만든다(가운데 약 67–71 % 만 보인다). 0.74 로 두면 바깥 고리가 가장자리에서 잘린다 → 앱과 같은 맞춤
+// 기호 전체(빛 번짐까지)를 108dp 중 지름 57dp 원 안에. 런처마다 보이는 영역이 달라 브랜드(icon.png)와 똑같아지는 지름도 다르다:
+//   규격대로 72dp 를 보이는 화면(설정 · Pixel · 삼성 기본 홈)에선 62dp, 더 깎는 런처(2026-11-21 실측 ≈ 60dp 보임)에선 52dp.
+//   두 화면에서 브랜드와 어긋나는 비율이 같아지는 √(62 × 52) ≈ 56.8 → 57dp(각각 약 9 % 작게 / 크게). 구글 키라인 원(52dp)에 가까워 옆 앱들과도 어울린다.
+//   2.10.4 까지는 0.66 × 0.87 = 62dp(안전영역 66dp 거의 끝까지)라 더 깎는 런처에서 바깥 고리가 테두리에 붙었다
+export const ADAPTIVE_FIT = 57 / 108
+// 안드로이드 크롬은 maskable 을 적응형 아이콘으로 만든다(가운데 약 67–71 % 만 보인다). 0.74 로 두면 바깥 고리가 가장자리에서 잘린다.
+// 웹앱 아이콘은 실측으로 브랜드와 맞게 보여서(같은 런처에서 61 %) 2.10.4 값 그대로 둔다 — 적응형 값과 묶지 않는다
+export const MASKABLE_CIRCLE = ADAPTIVE_SAFE * 0.87
 export const ADAPTIVE_PX = { mdpi: 108, hdpi: 162, xhdpi: 216, xxhdpi: 324, xxxhdpi: 432 }
 export const WEB_ICON_PX = [144, 180, 192, 512]   // 안드로이드 런처 xxhdpi·xxxhdpi(144·192), 아이폰 홈 화면 60pt×3(180), 스플래시·공유(512)
 export const MASKABLE_PX = [144, 192, 512]

@@ -16,6 +16,6 @@ describe('javaHomeForGradle — the JDK the store build hands to gradle', () => 
   test('nothing found', () => expect(javaHomeForGradle({}, 'win32', () => false, () => false)).toBe(undefined))
   test('macOS and Linux look in their own places', () => {
     expect(studioJdkHomes({}, 'darwin')).toEqual(['/Applications/Android Studio.app/Contents/jbr/Contents/Home'])
-    expect(javaHomeForGradle({}, 'linux', f => f === '/opt/android-studio/jbr/bin/java', () => false)).toBe('/opt/android-studio/jbr')
+    expect(javaHomeForGradle({}, 'linux', f => f === join('/opt/android-studio/jbr', 'bin', 'java'), () => false)).toBe('/opt/android-studio/jbr')
   })
 })

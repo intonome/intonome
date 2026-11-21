@@ -179,8 +179,8 @@ describe('the icon background color is defined in one place', () => {
     const p = PNG.sync.read(readFileSync(bgPng)); const i = (3 * p.width + 3) * 4
     const tile = '#' + [p.data[i], p.data[i + 1], p.data[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('')
     const pkg = readFileSync(new URL('../package.json', import.meta.url), 'utf8')
-    const bg = /--iconBackgroundColor\s+(#[0-9a-fA-F]{6})/.exec(pkg)?.[1]
-    const bgDark = /--iconBackgroundColorDark\s+(#[0-9a-fA-F]{6})/.exec(pkg)?.[1]
+    const bg = /--iconBackgroundColor\s+\\?"?(#[0-9a-fA-F]{6})/.exec(pkg)?.[1]
+    const bgDark = /--iconBackgroundColorDark\s+\\?"?(#[0-9a-fA-F]{6})/.exec(pkg)?.[1]
     expect(bg?.toLowerCase()).toBe(tile.toLowerCase())
     expect(bgDark?.toLowerCase()).toBe(tile.toLowerCase())
   })

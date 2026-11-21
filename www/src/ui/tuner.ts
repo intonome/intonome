@@ -166,7 +166,6 @@ function renderEmpty(): void {
   if (off && micOpener) showOffStart()
   setText('tuner-oct', ''); setText('tuner-cents', ''); setText('tuner-enharmonic', ''); setText('tuner-acc', '')
   setHz('')
-  q('tuner-card').classList.remove('in-tune')
 }
 /** 스크린리더에는 음이 바뀌거나 맞음/안 맞음이 바뀔 때만(그때의 센트를 함께), 1 초에 한 번까지 — 센트가 바뀔 때마다 읽으면 연주 내내 말이 끊이지 않았다 */
 let srKey = '', srAt = 0
@@ -183,7 +182,6 @@ function renderNote(midi: number, readCents: number, inTune: boolean, hz: number
   setText('tuner-acc', acc); q('tuner-acc').classList.toggle('tune', inTune)
   setText('tuner-oct', String(octaveOf(midi)))
   setText('tuner-enharmonic', secondary)
-  q('tuner-card').classList.toggle('in-tune', inTune)
   setText('tuner-cents', (readCents > 0 ? '+' : readCents < 0 ? '−' : '') + Math.abs(readCents) + ' ¢') // 빼기는 U+2212 — 하이픈은 + 보다 짧고 높아 「−8」 과 「+12」 의 부호 모양이 달랐다
   setHz(fmtHz(calmHz(hz, cents, readCents))) // Hz 도 숫자와 같은 값 — 숫자가 바뀔 때만 같이 바뀐다
   announce(`${name}${octaveOf(midi)} ${readCents > 0 ? '+' : ''}${readCents}${inTune ? ' ' + t('tuner.srInTune') : ''}`, `${name}${octaveOf(midi)}|${inTune}`)

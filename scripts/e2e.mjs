@@ -52,7 +52,7 @@ async function scenario(name, wav, fn, { fresh = false, ...ctxOpts } = {}) {
   catch (e) { results.push([name, 'FAIL: ' + (e.message || e).toString().split('\n').slice(0, 3).join(' / ')]) }
   await browser.close()
 }
-const tunerText = p => p.evaluate(() => ({ note: document.getElementById('tuner-note').textContent, acc: document.getElementById('tuner-acc').textContent, oct: document.getElementById('tuner-oct').textContent, cents: document.getElementById('tuner-cents').textContent.replace('\u2212', '-'), inTune: document.getElementById('tuner-card').classList.contains('in-tune') }))
+const tunerText = p => p.evaluate(() => ({ note: document.getElementById('tuner-note').textContent, acc: document.getElementById('tuner-acc').textContent, oct: document.getElementById('tuner-oct').textContent, cents: document.getElementById('tuner-cents').textContent.replace('\u2212', '-'), inTune: document.getElementById('tuner-note').classList.contains('tune') }))
 const waitNote = async (p, pred, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { const t = await tunerText(p); if (pred(t)) return t; await p.waitForTimeout(100) } throw new Error('note not reached: ' + JSON.stringify(await tunerText(p))) }
 const sleep = (p, ms) => p.waitForTimeout(ms)
 /** BPM 숫자 끌기를 천천히(5 px / 100 ms = 0.05 px/ms) — 끌기 감도는 손가락 속도를 따르므로(core/metro/dragRate) 천천히면 1 BPM = 6 px 로 정해진다 */
@@ -106,6 +106,8 @@ const waitToast = (p, text, ms = 3000) => waitUntil(p, t => document.getElementB
 await scenario('tuner: 440 Hz @A=442 → A4 (Korean "라4") −8¢ (in tune at the default ±10)', 'violin_A4.wav', async p => {
   await p.goto(URL_); const t = await waitNote(p, t => t.note === '라' && /^-(7|8|9) ¢$/.test(t.cents))
   assert.equal(t.oct, '4'); assert.equal(t.inTune, true)
+  // 맞아도 카드 테두리는 그대로다 — 초록 테는 메트로놈 카드의 첫 박만
+  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).boxShadow), 'none', 'no green edge on the tuner card')
   await sleep(p, 300); assert.equal((await tunerText(p)).note, '라')
   // Hz 읽기표시: 6칸 고정폭 + ' Hz' = 9글자
   const hz = await p.evaluate(() => document.getElementById('tuner-hz').textContent)

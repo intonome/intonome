@@ -141,9 +141,8 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
 #main-body{display:flex;flex-direction:column;gap:var(--gap);width:100%;max-width:400px;flex:1;min-height:0;}
 
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
-/* 튜너 — 검정 무대. 색은 '맞음' 에만 */
-#tuner-card{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--tuner-bg);border:1px solid var(--tuner-line);border-radius:var(--r-lg);overflow:hidden;transition:box-shadow var(--t-std);} /* 헤어라인: 무대가 bg 위에서 한 단 낮게 읽히도록 윤곽을 남긴다 */
-#tuner-card.in-tune{box-shadow:0 0 0 1.5px rgba(var(--ok-rgb),.6);} /* 맞음: 카드 둘레 가는 테만 — 멀리서 보이는 신호는 초록 음이름이 맡는다 */
+/* 튜너 — 검정 무대. 색은 '맞음' 에만: 초록 음이름 · 허용 띠. 카드 테두리는 물들이지 않는다 — 바로 아래 메트로놈 카드의 초록 테가 첫 박이다 */
+#tuner-card{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--tuner-bg);border:1px solid var(--tuner-line);border-radius:var(--r-lg);overflow:hidden;} /* 헤어라인: 무대가 bg 위에서 한 단 낮게 읽히도록 윤곽을 남긴다 */
 #tuner-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--tuner-line);min-height:52px;} /* 메트로놈 헤더와 같은 높이 — 태블릿에서 두 카드가 나란히 놓일 때 구분선이 한 줄 */
 #tuner-label{font-size:var(--fs-sm);color:var(--tuner-ink);font-weight:var(--fw-b);letter-spacing:var(--ls-caps-wide);display:flex;align-items:center;}
 /* 오디오 상태 점 — 켜짐 = 무채색, 주의 = 앰버 펄스, 꺼짐 = 숨김 */

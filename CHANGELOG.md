@@ -2,6 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.6] - 2026-11-21
+The Android app opens on a dark screen with its icon, and fewer, shorter notices pop up.
+
+App launch (Android)
+- The launch screen is the app's dark background with the app icon, and it stays until the app is drawn. It used to flash white on a phone in light mode and then show a blank dark screen for a moment
+- The web app and iPhone are unchanged
+
+Notices
+- No notice when recording starts (the red button and the running time show it), or when a recording is kept or no longer kept (its line shows it). Starting a recording while the metronome plays still says the click is muted
+- A notice stays as long as it takes to read: 2 to 5 s by its length, instead of 2.5 s for any length and up to 10 s for some. One you can tap (undo, the recording list) stays 5 to 8 s; one that asks you to act before a recording is lost stays 8 s
+- "Recording saved · Tap to see it" says what tapping does: it opens the recording list (it said "Tap to listen")
+
 ## [2.10.5] - 2026-11-21
 The Android app icon keeps a dark margin around its rings on every home screen.
 

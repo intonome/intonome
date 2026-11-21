@@ -118,9 +118,9 @@ npm run cap:assets       # launcher icons and splash screens
 npm run cap:sync         # build:cap + cap sync + scripts/cap-manifest.mjs + scripts/cap-signing.mjs
 npx cap open android     # debug APK: Build › Build APK(s)
 npm run keygen           # once: upload key → intonome-upload.jks + keystore.properties (gitignored)
-npm run aab              # store build: cap:sync + gradle bundleRelease → android/app/build/outputs/bundle/release/app-release.aab
+npm run aab              # store build: cap:sync + gradle bundleRelease → android/app/build/outputs/bundle/release/app-release.aab (uses JAVA_HOME or java on PATH, else the JDK that comes with Android Studio)
 ```
 
-`cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET, VIBRATE for the drag ticks), portrait lock, and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
+`cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET, VIBRATE for the drag ticks), marks the microphone and a portrait screen as optional hardware (the permission and the portrait lock would otherwise make them required, and Play keeps the app off devices without them), portrait lock, and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
 
 `cap-signing.mjs` adds a `signingConfigs.release` to `app/build.gradle` that reads `keystore.properties` from the repo root (file, passwords, alias); without that file the release build type stays unsigned and debug builds are unaffected. `keygen.mjs` makes the upload key with the JDK's `keytool` (found on PATH, `JAVA_HOME`, or Android Studio's `jbr`) and writes `keystore.properties`. Play App Signing holds the app signing key; ours is the upload key — back up the `.jks` and the properties file outside the repo. Listing text, images (`npm run store:assets`) and the console answers: [STORE.md](STORE.md).

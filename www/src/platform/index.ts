@@ -200,7 +200,7 @@ export const isPhoneLayout = (): boolean => window.innerWidth < 700
  *  한 화면짜리 이 앱은 버튼 글자가 넘치고 아래 조작이 화면 밖으로 밀린다. 그래서 WebView 배율은 100 % 로 두고, 시스템 배율을 읽어
  *  앱의 글자 단계(--fs-*)에만 최대 1.3 배까지 반영한다 — 큰 글꼴을 쓰는 사람의 글자는 커지고, 배치는 깨지지 않는다. 앱으로 돌아올 때 다시 읽는다 */
 export const FONT_SCALE_MAX = 1.3
-export const FONT_SCALE_MIN = 0.85 // 작게 쓰는 사람도 그대로(2.9.2 까지 WebView 가 그렇게 했다)
+export const FONT_SCALE_MIN = 1 // 줄이지는 않는다 — 한 화면 앱이라 줄여도 더 담기는 게 없고, 가장 작은 글자(11 px)가 이미 보면대 거리에서 읽히는 최소다. 2.10.6 까지는 0.85 까지 줄여 폰 글자를 한 단계 작게 쓰면 웹앱보다 작았다
 export function fontScaleFor(system: number): number { return Number.isFinite(system) && system > 0 ? Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Math.round(system * 100) / 100)) : 1 }
 export function applyFontScale(): void {
   if (!isNative()) return // 웹앱은 브라우저가 다룬다

@@ -13,6 +13,13 @@ const wobAt = (i: number, hz = 440) => hz * Math.pow(2, (i % 2 ? 10 : -10) / 120
 /** 연주한 음(warmNoteFrames 이어진 음) 하나를 띄웠다가 놓은 트래커 — 연습하다 쉬는 중. 다음 음은 acquireFrames 로 뜬다 */
 const warm = (): Tracker => silence(tone(createTracker(), PLAYED), REL + 1)
 describe('tracker', () => {
+  test('firstStart: on at a new tracker and after reset, off once a played note (about 1 s) shows, on again after coldAfterFrames without one', () => {
+    const t = createTracker(); expect(t.firstStart()).toBe(true)
+    tone(t, PLAYED); expect(t.firstStart()).toBe(false)
+    silence(t, REL + QUIET - 1); expect(t.firstStart(), 'the note held on screen, then quiet').toBe(false)
+    silence(t, 1); expect(t.firstStart()).toBe(true)
+    tone(t, PLAYED); t.reset(); expect(t.firstStart()).toBe(true)
+  })
   test('after playing, a new note acquires after six consistent frames (≈ 0.13 s), holds through short dropouts, releases after releaseFrames', () => {
     const t = warm()
     for (let i = 0; i < WARM - 1; i++) expect(t.push(440, 0.95, true, A).midi).toBe(-1) // 말소리 모음 하나(0.1 s 남짓)로는 안 띄운다

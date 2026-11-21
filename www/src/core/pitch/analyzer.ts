@@ -41,6 +41,7 @@ export interface Frame {
   readCents: number
   /** |readCents| ≤ 허용 오차 — 숫자와 초록이 늘 일치한다 */
   inTune: boolean
+  /** 연주 시간에 셀 프레임 — 감지기가 연주로 보고, 첫 시작이면 화면에 음도 떠 있다 */
   playing: boolean
   /** 트래커가 직전 값을 그대로 내보낸 횟수 (0 = 새로 측정한 값). 트레이스는 이 값이 쌓인 프레임을 그리지 않는다 */
   held: number
@@ -78,6 +79,8 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
   const read = createReadout({ windowFrames: Math.max(1, Math.round(READ_S * sr / (p.hop ?? 1024))), ...DEFAULT_READOUT, ...p.readout })
   const s: AnalyzerSettings = { rmsMin: .014, smoothing: .14, refHz: 442, tolCents: 15 }
   const EMPTY = (rms: number): Frame => ({ rawHz: -1, conf: 0, rms, harmonics: 0, flatness: 1, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, playing: det.on, held: 0 })
+  /** 첫 시작에는 화면이 말소리를 띄우지 않는다(트래커의 첫 시작 조건) — 감지기는 대화 음절도 연주로 보므로, 그동안은 화면에 음이 떠 있을 때만 센다 */
+  const counted = (heard: boolean, t: TrackOut): boolean => heard && (t.hz > 0 || !tracker.firstStart())
 
   return {
     windowSize: N,
@@ -98,7 +101,7 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       let e = 0; for (let i = 0; i < N; i++) e += buf[i]! * buf[i]!
       const rms = Math.sqrt(e / N), rmsOk = rms >= s.rmsMin
       if (!rmsOk) { // 게이트 아래: 트래커/감지기에 무효 프레임을 알린다
-        const t = tracker.push(-1, 0, false, s.smoothing); const playing = det.push({ conf: 0, rmsOk: false, harmonics: 0, flatness: 1 })
+        const t = tracker.push(-1, 0, false, s.smoothing); const playing = counted(det.push({ conf: 0, rmsOk: false, harmonics: 0, flatness: 1 }), t)
         const f = EMPTY(rms); f.playing = playing
         const readAs = settleValue(t, null, muted)
         if (t.hz > 0) { fill(f, t.hz, t.midi, false, readAs); f.held = t.held } else read.reset()
@@ -115,13 +118,14 @@ export function createAnalyzer(p: AnalyzerParams): Analyzer {
       const clickRead = muted && isClickPitch(rawHz, s.refHz)
       // 감지기도 같은 규칙 — 2.5.7 까지는 muted 창을 전부 건너뛰어, 16분 ≥ 73 · 셋잇단 ≥ 98 · 8분 ≥ 146 bpm 이면 모든 창이 건너뛰어져
       // 연주 시간이 메트로놈을 켜기 전 상태(0 % 또는 100 %)로 얼어붙었다
-      const playing = clickRead ? det.on : det.push({ conf: y.conf, rmsOk, harmonics, flatness, cents: rawHz > 0 ? 1200 * Math.log2(rawHz / 440) : NaN })
+      const heard = clickRead ? det.on : det.push({ conf: y.conf, rmsOk, harmonics, flatness, cents: rawHz > 0 ? 1200 * Math.log2(rawHz / 440) : NaN })
       // 표시용 신뢰도: 스펙트럼 정합성 실패면 0 (트래커의 confMin 게이트에서 걸러진다). 옥타브로 튀는 한 프레임은 트래커의 중앙값·전환 확인이 삼킨다 —
       // 여기서 비우면 활 바꿈마다 화면이 끊긴다
       const specOk = rawHz > 0 && spec.harmonicCount(rawHz, 1, SPEC_MIN_DB) > 0
       const dispConf = specOk ? y.conf : 0
       // 트래커의 음이름 격자는 A=440 기준이라 refHz 로 정규화해 넣는다 (안 하면 |오프셋| > 50 ¢ 에서 이웃 반음으로 라벨링)
       const t = tracker.push(rawHz / refK(), clickRead ? 0 : dispConf, true, s.smoothing, muted, weakRival)
+      const playing = counted(heard, t)
       const f: Frame = { rawHz, conf: y.conf, rms, harmonics, flatness, hz: -1, midi: -1, cents: 0, readCents: 0, inTune: false, playing, held: t.held }
       // 음이 바뀐 직후 프레임은 숫자의 평균에 넣지 않는다 (이전 음이 섞였다). 처음 두 프레임의 숫자는 창의 최근 절반에서 잰 값 — 아래 settleValue
       const readAs = settleValue(t, buf, muted)

@@ -349,6 +349,42 @@ describe('nothing is played — the tuner shows nothing', () => {
       expect(shownFrames(vowel(dur, f0, glide)), `f0 ${f0}`).toBe(0)
     }
   })
+  // 연주 시간: 감지기는 이어지는 말소리 음절도 연주로 본다. 첫 시작에는 화면이 그 소리를 띄우지 않으니 타이머도 세지 않는다 — 화면에 음이 떠야 센다
+  const cat = (...xs: Float32Array[]): Float32Array => { const y = new Float32Array(xs.reduce((n, x) => n + x.length, 0)); let o = 0; for (const x of xs) { y.set(x, o); o += x.length } return y }
+  /** 말소리 마디 여럿: 0.3 s 씩 흔들리는(±15 ¢, 6 Hz) 소리, 마디마다 음높이가 다르고(150~240 Hz) 사이 0.6 s. 감지기는 마디마다 연주로 보고, 첫 시작의 화면은 띄우지 않는다 */
+  function talk(n: number): Float32Array {
+    const F0 = [210, 165, 240, 185, 150], x = new Float32Array(Math.round(n * 0.9 * sr)); let seed = 3
+    for (let i = 0; i < x.length; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; x[i] = (seed / 2 ** 32 - 0.5) * 2e-4 }
+    for (let k = 0; k < n; k++) {
+      const s0 = Math.round(k * 0.9 * sr), m = Math.round(0.3 * sr), f0 = F0[k % 5]!; let ph = 0
+      for (let i = 0; i < m; i++) { const t = i / sr; ph += 2 * Math.PI * f0 * 2 ** (15 * Math.sin(2 * Math.PI * 6 * t) / 1200) / sr; let v = 0; for (let h = 1; h <= 8; h++) v += Math.sin(ph * h + h) / h; x[s0 + i] = x[s0 + i]! + 0.08 * v * Math.min(1, i / (0.02 * sr), (m - i) / (0.03 * sr)) }
+    }
+    return x
+  }
+  /** 라4 개방현 1.5 s(연주한 음) 뒤 1 s 쉼 */
+  function bowed(): Float32Array { const x = new Float32Array(Math.round(2.5 * sr)); let ph = 0; for (let i = 0; i < 1.5 * sr; i++) { ph += 2 * Math.PI * 442 / sr; let s = 0; for (let h = 1; h <= 10; h++) s += Math.sin(ph * h + h) / h; x[i] = 0.1 * s * Math.min(1, i / (0.06 * sr), (1.5 * sr - i) / (0.08 * sr)) } return x }
+  function count(x: Float32Array, from = 0) {
+    const a = createAnalyzer({ sampleRate: sr, windowSize: N, hzMin: 40, hzMax: 4200 }); a.setSettings({ rmsMin: .005, smoothing: .2, refHz: 442, tolCents: 15 })
+    let shown = 0, playing = 0, playingBlank = 0, firstShown = -1, firstPlaying = -1
+    for (let end = N; end <= x.length; end += HOP) {
+      const f = a.process(x.subarray(end - N, end)); if (end < from) continue
+      if (f.hz > 0) { shown++; if (firstShown < 0) firstShown = end }
+      if (f.playing) { playing++; if (firstPlaying < 0) firstPlaying = end; if (f.hz <= 0) playingBlank++ }
+    }
+    return { shown, playing, playingBlank, firstShown, firstPlaying }
+  }
+  test('talk near an idle tuner (a first start) adds no playing time; after a played note the same talk shows and counts as before', () => {
+    const cold = count(talk(10))
+    expect(cold.shown, 'frames with a note').toBe(0); expect(cold.playing, 'frames counted as playing').toBe(0)
+    const pre = bowed(), warm = count(cat(pre, talk(10)), pre.length)
+    expect(warm.shown, 'shows while playing').toBeGreaterThan(150); expect(warm.playing, 'counts while playing').toBeGreaterThan(150)
+  })
+  test('at a first start a played note counts from when it shows, and the tuner is never blank while it counts', () => {
+    const x = cat(new Float32Array(sr), bowed()), r = count(x)
+    expect(r.firstPlaying, 'counts from the frame the note shows').toBe(r.firstShown)
+    expect(r.playingBlank, 'counted with a blank screen').toBe(0)
+    expect(r.playing, 'counted frames (1.5 s note ≈ 70)').toBeGreaterThan(60)
+  })
 })
 
 describe('the number and the green are calm; the line stays live', () => {

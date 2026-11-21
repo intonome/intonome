@@ -84,6 +84,8 @@ export interface Tracker {
   rebase(deltaCents: number): void
   /** 지금 표시 중인 값(마지막 출력). 음이 없으면 hz −1. 상태를 바꾸지 않는다 */
   current(): TrackOut
+  /** 지금이 첫 시작인가 — 켠 뒤, 또는 연주한 음(warmNoteFrames) 없이 coldAfterFrames 가 지났다. 다음에 새로 띄우는 음은 첫 시작 조건이다 */
+  firstStart(): boolean
 }
 
 export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
@@ -161,6 +163,7 @@ export function createTracker(p: TrackerParams = DEFAULT_TRACKER): Tracker {
 
   return {
     reset,
+    firstStart: () => sincePlayed >= p.coldAfterFrames,
     current: () => (midi === -1 ? NONE : last),
     rebase(delta) {
       if (!delta) return

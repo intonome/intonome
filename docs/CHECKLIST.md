@@ -112,6 +112,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 
 ## Timer
 - [A] Start/stop/reset; elapsed always counts, playing time only while playing is detected (a drone alone doesn't count)
+- [A] At a first start (as for the tuner above) playing time counts only while a note is on the screen: talk near an idle tuner that the screen keeps blank adds none, a note counts from when it shows, and after a played note the same talk shows and counts as before (unit tests)
 - [A] Header timer: shown only while the timer runs or holds time; played inside the bar, elapsed outside, both the same size and color (text on the fill at least 4.5:1), fill = played ÷ elapsed; tap opens the menu; reset hides it; inner time 12 px down to 338 px (iPhone mini, 360 px Android, Fold cover about 344 px), hidden below that; 105:10 / 185:40 fit and never touch DRONE
 - [A] Reset shows an undo toast that restores the counts and running state
 - [A] 15 minutes without sound → mic turns off with a toast

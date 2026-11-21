@@ -2,6 +2,24 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.7] - 2026-11-21
+The Android icon keeps a margin on every home screen, the launch screen shows it, the tempo sits in the middle of its space, a smaller phone font size no longer shrinks the text, and the undo notice gets out of the way.
+
+App launch (Android)
+- On Android 13 and later the launch screen always shows the app icon on the dark background. It was left to the home screen app opening Intonome, and some open apps without the icon, so the launch screen was a blank dark screen
+
+App icon (Android)
+- The mark, out to its faint outer ring, now fits a 52 dp circle on the 108 dp adaptive-icon layer, the large circle of Google's icon keyline (57 dp in 2.10.5). On standard screens it takes 72 % of the icon, like the round icons around it; on home screens that crop more, its outer ring keeps the same margin as on the brand icon instead of nearly touching the edge. The brand icon (web app, iPhone, store) is unchanged: it is shown whole, never cropped
+
+Metronome
+- Collapsed, ♩ = 80 sits midway between the card's edge line and the first dot, and expanded, the big ♩ = 80 midway between the edge line and the − button. Both were measured from the card's outer edge instead of its 1 px edge line and leaned left by 1 px (collapsed) and up to 2 px (expanded, on wider phones). Collapsed, the space on the left is 1 px wider: the dot and the 0 next to it are round and look farther than a straight line at the same distance
+
+Notices
+- An undo notice ("Deleted · Undo", "Timer reset · Undo") is up for about 3.5 s instead of 5, and can be swiped sideways to clear it at once. Other notices you can tap stay 3.5 to 6 s (were 5 to 8 s)
+
+Text size (Android)
+- A phone font size set smaller than the default no longer shrinks the app's text (it went down to 0.85x). The app is one screen, so smaller text fits nothing more, and its smallest text is already the smallest that reads well from a music stand. A larger font size still grows the text, up to 1.3x, as before
+
 ## [2.10.6] - 2026-11-21
 The Android app opens on a dark screen with its icon, and fewer, shorter notices pop up.
 

@@ -28,7 +28,7 @@
   --r-lg:16px;--r-md:10px;--r-sm:7px;
   --gap:8px;
   /* 타입 스케일 — 11단계. 이 밖의 font-size 리터럴 금지 (워드마크 28 만 예외) */
-  /* --fs-scale: 안드로이드 앱의 시스템 글꼴 크기(최대 1.3, platform applyFontScale). 글자 단계만 키우고 큰 숫자(d1~d3)는 그대로 — 한 화면 앱이라 100~200 % 를 그대로 받으면 버튼 밖으로 넘치고 아래 조작이 화면 밖으로 밀렸다 */
+  /* --fs-scale: 안드로이드 앱의 시스템 글꼴 크기(키울 때만, 최대 1.3, platform applyFontScale). 글자 단계만 키우고 큰 숫자(d1~d3)는 그대로 — 한 화면 앱이라 100~200 % 를 그대로 받으면 버튼 밖으로 넘치고 아래 조작이 화면 밖으로 밀렸다 */
   --fs-xs:calc(11px * var(--fs-scale, 1));--fs-sm:calc(12px * var(--fs-scale, 1));--fs-md:calc(13px * var(--fs-scale, 1));--fs-base:calc(15px * var(--fs-scale, 1));--fs-lg:calc(17px * var(--fs-scale, 1));--fs-xl:calc(22px * var(--fs-scale, 1));--fs-2xl:calc(32px * var(--fs-scale, 1));--fs-d1:44px;--fs-d2:56px;--fs-d3:104px;
   /* 굵기 — 셋. 700 은 주행동·섹션 제목·원거리 캡스에만 */
   --fw:400;--fw-md:500;--fw-b:700;
@@ -237,7 +237,9 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
   /* 접힘: 점 줄이 다 펴지고(점 13 px · 간격 7 px) 남는 폭은 양옆 칸이 나눠 가진다 — 템포는 제 칸 가운데라 카드 왼쪽 끝과 첫 점 사이 가운데에 남는다.
      (전엔 남는 폭이 점 줄 양옆으로 가서 412 · 430 px 폰에서 템포 오른쪽만 3 ~ 8 px 더 비었다.) 좁은 폰은 남는 폭이 없어 전과 같다 */
   #metro-card:not(.full) #metro-hdr{grid-template-columns:minmax(auto,1fr) minmax(0,calc(9*13px + 8*7px)) minmax(auto,1fr);}
-  #metro-card:not(.full) #metro-hdr-label{justify-self:center;}
+  /* 칸 가운데에서 1 px 오른쪽: 칸 왼쪽 끝은 카드 바깥 경계인데 눈에 보이는 경계는 1 px 테두리선 안쪽이고, 오른쪽 경계(첫 점)와 「0」은 둥글어
+     같은 거리라도 곧은 선보다 멀어 보인다 — 그대로면 ♩ = 80 이 왼쪽으로 1 px 쏠려 보였다 */
+  #metro-card:not(.full) #metro-hdr-label{justify-self:center;left:1px;}
   #metro-card:not(.full):has(#metro-body-wrap:not(.collapsed)) #metro-hdr-label{justify-self:safe center;} /* 펼치는 순간(글자가 사라지기 전 .15 s) 접힘과 같은 자리 — 칸보다 넓으면(좁은 폰) 왼쪽, 접힘도 그때는 칸 = 글자 폭이라 같다 */
 }
 #metro-play-hdr-btn{width:var(--h-compact);height:var(--h-compact);background:var(--accent-fill);border:1px solid transparent;border-radius:var(--r-sm);color:var(--on-accent);font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;}
@@ -341,8 +343,8 @@ button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:no
      음표 칸은 음표 폭 그대로 — 음표+숫자 묶음이 칸 가운데에 온다(♩. 폭으로 고정하면 ♩ 일 때 묶음이 오른쪽으로 쏠렸다).
      ♩ = 80: = 는 헤더와 같은 모양(가는 획 · .85 배 · 숫자 가운데보다 .035em 아래), 음표–= · =–숫자 잉크 틈 .22em — 인쇄 악보의 띄어 쓴 「♩ = 80」. = 의 빈자리 .113em · 음표 오른쪽 .031em · 숫자 왼쪽 .055em 을 여백에서 뺀다.
      줄의 최소 폭은 ♩. = 200 — 두 자리·세 자리, 4/4·6/8 을 오가도 버튼 폭이 안 바뀐다(= 와 앞뒤 띄움을 넣어 버튼은 2.9.15 보다 384 px 에서 약 11 px 좁다(52.6 → 41.9 px). 숫자 크기는 그대로 둔다 — 멀리서 읽는 쪽이 먼저).
-     숫자 칸과 −·+·▶ 사이 18 px: 세 자리일 때 숫자 양옆 여백(카드 테 · − 버튼)이 같아진다(10 px 이면 버튼에 붙어 보였다) */
-  #metro-bpm-row{gap:clamp(12px,4.6vw,18px);} /* 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
+     숫자 칸과 −·+·▶ 사이는 카드 안쪽 여백과 같은 16 px: 숫자 양옆 여백(카드 테두리선 · − 버튼)이 같아진다(10 px 이면 버튼에 붙어 보였다) */
+  #metro-bpm-row{gap:clamp(12px,4.6vw,var(--s4));} /* 카드 안쪽 여백(16)과 같게 — 숫자가 카드 테두리선과 − 버튼 사이 가운데. 18 이면 넓은 폰에서 오른쪽이 2 px 더 비어 왼쪽으로 쏠려 보였다. 아주 좁은 폰(320)에선 버튼 폭을 지키려 조금 좁게 */
   /* −·+·▶ 는 정사각형 — 높이 = 폭(줄 폭에서 틈 8 px 둘을 빼고 셋으로 나눈 값, 320 px 폰 31 px ~ 384 px 42 px), 48 px 까지(412 px 이상 폰은 전처럼 폭 49 ~ 53 · 높이 48).
      폭이 좁은 폰에서 48 px 높이 그대로면 세로로 긴 막대처럼 보였다. aspect-ratio 대신 줄 폭(cqw)으로 계산 — 최대 높이가 폭을 줄이는지가 엔진마다 다를 수 있어서.
      누르는 자리는 옆으로 4 px 씩, 위로 48 px 까지(최대 12 px — 위는 본문 여백 16 px). 아래로 늘리면 바로 밑 음량 슬라이더의 누르는 자리를 가져간다(슬라이더는 단추 아래 끝부터 잡힌다) */

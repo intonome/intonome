@@ -686,7 +686,7 @@ for (const w of [320, 384, 430]) await scenario(`layout: collapsed at ${w}px —
       // 펼치는 순간(글자가 사라지기 전)에도 같은 자리 — 칸 규칙이 바뀌어도 튀지 않는다
       const wrap = document.getElementById('metro-body-wrap'), noteL = () => Array.from(document.querySelectorAll('#metro-hdr-label .note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect().left
       const c0 = noteL(); wrap.classList.remove('collapsed'); const hop = noteL() - c0; wrap.classList.add('collapsed')
-      return { bpm: n.textContent, leds: leds.map(r => Math.round(r.left * 10) / 10), left: g.left - card.left, right: leds[0].left - (nr.right - 0.023 * fs), fits: Math.min(...kids.map(k => k.left)) >= lr.left - 0.5 && Math.max(...kids.map(k => k.right)) <= lr.right - pr + 0.5, hop: +hop.toFixed(2) }
+      return { bpm: n.textContent, leds: leds.map(r => Math.round(r.left * 10) / 10), left: g.left - (card.left + document.getElementById('metro-card').clientLeft), right: leds[0].left - (nr.right - 0.023 * fs), fits: Math.min(...kids.map(k => k.left)) >= lr.left - 0.5 && Math.max(...kids.map(k => k.right)) <= lr.right - pr + 0.5, hop: +hop.toFixed(2) }
     })
   }
   const cases = [[99, 4], [100, 4], [40, 4], [80, 6], [200, 6]], rs = []
@@ -698,7 +698,15 @@ for (const w of [320, 384, 430]) await scenario(`layout: collapsed at ${w}px —
     const mid = (r.right + s.left) / 2, m = document.elementFromPoint(mid, y)
     return { playLeft: at(r.left - 4, pb), playRight: at(r.right + 1.5, pb), sizeLeft: at(s.left - 1.5, sb), mid: m === pb || m === sb } })
   assert.deepEqual(hb, { playLeft: true, playRight: true, sizeLeft: true, mid: true }, '접힌 띠 ▶ 의 누르는 폭 44, ∧ 와 틈을 반씩, 틈 한가운데도 둘 중 하나')
-  for (const r of rs) assert.ok(r.fits && Math.abs(r.left - r.right) <= 1 && Math.abs(r.hop) <= 0.5, `템포가 카드 왼쪽 끝과 첫 점 사이 가운데, 칸 안에 들어가고, 펼치는 순간 튀지 않는다 ${JSON.stringify({ ...r, leds: undefined })}`)
+  // 왼쪽은 눈에 보이는 경계(1 px 테두리선 안쪽)부터. 오른쪽 경계(첫 점)와 「0」이 둥글어 같은 거리면 멀어 보이므로 왼쪽을 1 px 더 둔다
+  for (const r of rs) assert.ok(r.fits && Math.abs(r.left - r.right - 1) <= 0.6 && Math.abs(r.hop) <= 0.5, `템포가 카드 테두리선과 첫 점 사이 가운데(눈으로), 칸 안에 들어가고, 펼치는 순간 튀지 않는다 ${JSON.stringify({ ...r, leds: undefined })}`)
+  // 펼침1: 큰 ♩ = 80 도 카드 테두리선과 − 버튼 사이 가운데 — 카드 안쪽 여백과 숫자–버튼 틈이 같다(좁은 320 은 버튼 폭을 지키려 틈이 조금 좁다)
+  if (w >= 384) {
+    await p.click('#metro-size-btn'); await sleep(p, 900)
+    const ex = await p.evaluate(() => { const c = document.getElementById('metro-card'), cr = c.getBoundingClientRect(), wr = document.getElementById('metro-bpm-wrap').getBoundingClientRect(), a = document.getElementById('metro-adj-col').getBoundingClientRect()
+      return { left: +(wr.left - (cr.left + c.clientLeft)).toFixed(2), right: +(a.left - wr.right).toFixed(2) } })
+    assert.ok(Math.abs(ex.left - ex.right) <= 0.5, '펼침1: 숫자 양옆 여백이 같다 ' + JSON.stringify(ex))
+  }
 }, { viewport: { width: w, height: 800 } })
 
 // 펼침2 → 펼침(∨ 버튼): 튜너가 카드와 함께 다시 커진다 (튜너가 즉시 나타나면 카드가 한 번에 줄어 보인다)

@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.3] - 2026-11-21
+Talk near the tuner no longer adds to the playing time while the tuner shows nothing.
+
+Timer
+- At a first start (the app just opened or brought back, or about 30 s without a note held for about a second) playing time now counts only while the tuner shows a note. There the tuner keeps most talk in a room off the screen, but the playing time still counted that talk, so it ran while the screen stayed blank. With recorded speech near an idle tuner (an interview and 60 readers, at two levels) playing time falls from 23 to 26 s a minute to 3 to 5 s. Talk the tuner does show still counts, as it did; in a recorded meeting the tuner showed most of the talk, so little changed there
+- While playing (within 30 s of a held note) nothing changes. At a first start a note counts from the moment it shows: as before for a bowed or plucked open string, a scale, staccato or a long étude; up to about 0.3 s later for a note the tuner waits for (a wide vibrato from its first moment, a harmonic, a soft or distant start); an octave glissando as the very first sound counts only from its last note
+- The tuner itself is unchanged
+
+Docs and code
+- The benchmark's playing columns (F1, fPlay, tErr) now measure what the timer counts. Each file starts fresh, so single notes gain 1 to 2 points of tErr from their first-start wait, the noisiest A4 (0 dB) 17 → 31, the octave glissando 14 → 104; spoken intonation is no longer counted (fPlay 92 → 0 %)
+
 ## [2.10.2] - 2026-11-20
 On the collapsed bar the tempo sits in the middle of its space, the buttons beside the big tempo are square and easier to hit, the first-beat flash is softer, and the Android shell gets a security fix.
 

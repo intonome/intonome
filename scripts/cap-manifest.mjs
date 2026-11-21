@@ -28,7 +28,10 @@ export function setStyleItem(xml, style, name, value) {
  * 시작 화면 뒤 앱 창 바탕도 같은 색 — 웹 화면이 그려지기 전 틈에 다른 색이 비치지 않게. 멱등. 순수
  */
 export function setSplashTheme(xml, color) {
-  return setStyleItem(setStyleItem(xml, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', color), 'AppTheme.NoActionBar', 'android:windowBackground', color)
+  let out = setStyleItem(xml, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', color)
+  // 안드로이드 13+: 아이콘을 늘 보인다. 기본값은 여는 쪽(홈 화면 앱)에 맡겨서, 아이콘 없이 여는 홈 화면 앱에선 빈 바탕만 보였다. 12 이하는 이 항목을 무시한다
+  out = setStyleItem(out, 'AppTheme.NoActionBarLaunch', 'android:windowSplashScreenBehavior', 'icon_preferred')
+  return setStyleItem(out, 'AppTheme.NoActionBar', 'android:windowBackground', color)
 }
 
 /** dist 가 GitHub Pages 용 빌드(base=/<레포명>/)인지 — 그대로 APK 에 넣으면 자산 경로가 어긋나 흰 화면이 된다. 레포명을 박지 않는다 */

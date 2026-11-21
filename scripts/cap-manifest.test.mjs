@@ -50,12 +50,13 @@ describe('setSplashTheme — the launch screen is the app background, not a whit
   const out = setSplashTheme(STYLES, '#181b21')
   const block = (xml, name) => xml.match(new RegExp(`<style name="${name}"[^>]*>[\\s\\S]*?</style>`))[0]
   test('the launch screen gets the background color', () => expect(block(out, 'AppTheme\\.NoActionBarLaunch')).toContain('<item name="windowSplashScreenBackground">#181b21</item>'))
+  test('the icon is always shown (Android 13+), whatever the home screen app asks', () => expect(block(out, 'AppTheme\\.NoActionBarLaunch')).toContain('<item name="android:windowSplashScreenBehavior">icon_preferred</item>'))
   test('the app window under it gets the same color', () => expect(block(out, 'AppTheme\\.NoActionBar')).toContain('<item name="android:windowBackground">#181b21</item>'))
   test('NoActionBar and NoActionBarLaunch are told apart', () => {
     expect(block(out, 'AppTheme\\.NoActionBar')).not.toContain('windowSplashScreenBackground')
     expect(block(out, 'AppTheme\\.NoActionBarLaunch')).not.toContain('android:windowBackground')
   })
-  test('the rest is untouched', () => expect(out.replace(/\n {8}<item name="(windowSplashScreenBackground|android:windowBackground)">#181b21<\/item>/g, '')).toBe(STYLES))
+  test('the rest is untouched', () => expect(out.replace(/\n {8}<item name="(windowSplashScreenBackground|android:windowBackground|android:windowSplashScreenBehavior)">(#181b21|icon_preferred)<\/item>/g, '')).toBe(STYLES))
   test('idempotent', () => expect(setSplashTheme(out, '#181b21')).toBe(out))
   test('a changed color replaces the old one', () => {
     const again = setSplashTheme(out, '#000000')

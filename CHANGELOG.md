@@ -2,6 +2,12 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [2.10.4] - 2026-11-21
+The tuner card no longer turns its edge green when a note is in tune.
+
+Tuner
+- In tune, the note name turns green as before, but the card's edge stays as it is. It used to get a thin green edge (1.5 px), right above the metronome card, whose green edge flashes on the first beat of a bar. With the metronome running, two green card edges that meant different things came and went next to each other. Now a green card edge means the first beat only; in tune is the green note name, together with the line inside the tolerance band and the cents number
+
 ## [2.10.3] - 2026-11-21
 Talk near the tuner no longer adds to the playing time while the tuner shows nothing.
 

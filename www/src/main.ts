@@ -12,7 +12,7 @@ import { openMic, closeMic, onMic, A, resumeIfRunning, setIdleCheck, onContextSt
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag, onPlaybackChange } from './audio/playback.ts'
 import { restoreRecordings, recoverInProgress, backdateRecFile } from './audio/recorder.ts'
-import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, applyFontScale } from './platform/index.ts'
+import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, applyFontScale, hideNativeSplash } from './platform/index.ts'
 import { q, qsa, on, setOn } from './ui/dom.ts'
 import { toast } from './ui/toast.ts'
 import { mountTuner, showTapHint, hideTapHint, setHistSec, histDiag, retheme, setMicOpener, showMicOff } from './ui/tuner.ts'
@@ -42,6 +42,8 @@ import { sessionStore } from './state/index.ts'
 import { registerSW } from 'virtual:pwa-register'
 
 initStatusBar(); fitStandaloneHeight(); applyFontScale()
+// 앱 시작 화면은 hideLaunch 가 걷는다. 그 전에 무엇이 던져져도 시작 화면에 갇히지 않게 늦어도 이때는 걷는다
+setTimeout(hideNativeSplash, 3000)
 
 const newInstall = isNewInstall() // 처음 안내용
 

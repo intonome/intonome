@@ -13,6 +13,10 @@
   "plugins": {
     "SystemBars": {
       "style": "DARK"
+    },
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "launchFadeOutDuration": 200
     }
   }
 }

@@ -13,6 +13,24 @@ export function setAllowBackup(xml) {
   return xml.replace(/<application(\s)/, '<application android:allowBackup="false"$1')
 }
 
+/** styles.xml 의 한 스타일 안 항목을 값으로(없으면 넣는다). 이름이 정확히 같은 스타일만 — NoActionBar 가 NoActionBarLaunch 를 건드리지 않게. 멱등. 순수 */
+export function setStyleItem(xml, style, name, value) {
+  const re = new RegExp(`(<style name="${style.replace(/\./g, '\\.')}"[^>]*>)([\\s\\S]*?)(\\n?[ \\t]*</style>)`)
+  return xml.replace(re, (m, open, body, close) => {
+    const item = new RegExp(`<item name="${name}">[^<]*</item>`)
+    if (item.test(body)) return open + body.replace(item, `<item name="${name}">${value}</item>`) + close
+    return open + body + `\n        <item name="${name}">${value}</item>` + close
+  })
+}
+
+/**
+ * 앱 시작 화면 색. 안드로이드 12+ 시작 화면(그 아래는 호환 라이브러리)은 이 값이 없으면 폰 테마를 따라 라이트에선 하얗게 번쩍였다.
+ * 시작 화면 뒤 앱 창 바탕도 같은 색 — 웹 화면이 그려지기 전 틈에 다른 색이 비치지 않게. 멱등. 순수
+ */
+export function setSplashTheme(xml, color) {
+  return setStyleItem(setStyleItem(xml, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', color), 'AppTheme.NoActionBar', 'android:windowBackground', color)
+}
+
 /** dist 가 GitHub Pages 용 빌드(base=/<레포명>/)인지 — 그대로 APK 에 넣으면 자산 경로가 어긋나 흰 화면이 된다. 레포명을 박지 않는다 */
 export function isWebBuildHtml(html) { return /(?:src|href)="\/[^"/]+\/assets\//.test(html) }
 
@@ -43,6 +61,14 @@ export function main(log = console.log) {
   if (!xml.includes('android:screenOrientation')) {
     const x2 = xml.replace(/<activity(\s[^>]*?)android:name="\.MainActivity"/, (m, pre) => `<activity${pre}android:screenOrientation="portrait" android:name=".MainActivity"`)
     if (x2 !== xml) { xml = x2; writeFileSync(path, xml); log('AndroidManifest.xml: screenOrientation=portrait') }
+  }
+
+  // 시작 화면 색 — 바탕색은 capacitor.config 의 backgroundColor 하나에서
+  const styles = join(ROOT, 'android', 'app', 'src', 'main', 'res', 'values', 'styles.xml')
+  if (existsSync(styles)) {
+    const { backgroundColor } = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8'))
+    const st = readFileSync(styles, 'utf8'), st2 = setSplashTheme(st, backgroundColor)
+    if (st2 !== st) { writeFileSync(styles, st2); log(`styles.xml: 시작 화면 바탕 ${backgroundColor}`) } else log('styles.xml 시작 화면 OK')
   }
 
   // 버전 동기화 — android/ 는 생성물이라 build.gradle 의 versionName/versionCode 가 매번 1.0/1 로 돌아온다

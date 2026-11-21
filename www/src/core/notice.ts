@@ -6,7 +6,9 @@ type Listener = (msg: string, ms?: number) => void
 let listener: Listener | null = null
 
 export function onNotice(fn: Listener): void { listener = fn }
-/** @param ms 보이는 시간 — 생략하면 화면의 기본값 */
+/** 무언가 해야 하는 안내(저장이 안 돼 녹음이 사라질 수 있다 등)의 시간 — 읽고 행동할 틈. 나머지는 글 길이로 정한다 */
+export const NOTICE_IMPORTANT_MS = 8000
+/** @param ms 보이는 시간 — 생략하면 글 길이로(ui/toast) */
 export function notice(msg: string, ms?: number): void { listener?.(msg, ms) }
 /** 듣는 쪽이 있는가 — '한 번만 알린다' 를 실제로 보여 준 뒤에만 기록하려는 곳(wake lock 안내)이 쓴다 */
 export const noticeListening = (): boolean => listener !== null

@@ -41,7 +41,7 @@ export function mountTimer(): void {
   on(q('timer-reset-btn'), 'click', () => {
     const { elapsedSec, detectedSec, timerRunning } = sessionStore.get()
     stopTimer(); sessionStore.set({ elapsedSec: 0, detectedSec: 0 })
-    if (elapsedSec > 0) toast(t('menu.resetDone') + t('common.undoSuffix'), 5000, () => { sessionStore.set({ elapsedSec, detectedSec }); if (timerRunning) startTimer() })
+    if (elapsedSec > 0) toast(t('menu.resetDone') + t('common.undoSuffix'), undefined, () => { sessionStore.set({ elapsedSec, detectedSec }); if (timerRunning) startTimer() })
   })
   sessionStore.select(s => [s.elapsedSec, s.detectedSec, s.timerRunning].join(), render, { immediate: true })
   onLangChange(render)

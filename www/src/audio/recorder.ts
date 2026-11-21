@@ -5,7 +5,7 @@ import { computePeaks, peakOf } from '../core/peaks.ts'
 import { containerOf, extFromMime, type RecContainer } from '../core/container.ts'
 import { afterUnmute, recDurSec, CUT_MS } from '../core/recCut.ts'
 import { t, type TKey } from '../core/i18n/index.ts'
-import { notice } from '../core/notice.ts'
+import { notice, NOTICE_IMPORTANT_MS } from '../core/notice.ts'
 import { isIOS, isSafari } from '../platform/index.ts'
 import { A, onMic } from './engine.ts'
 
@@ -64,7 +64,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
   let chunkWarned = false
   let mutedAt = 0, peaksAtMute = 0, pausedMs = 0 // 마이크가 막힌 시각(0 = 안 막힘) · 그때의 피크 수 · 이어 녹음한 짧은 막힘의 합
   let liveFrom = 0 // 조각마다 그 사이의 실시간 피크를 같이 저장한다 — 복구 때 파형과 재생 보정 피크가 된다
-  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const upto = mutedAt ? peaksAtMute : myPeaks.length, live = myPeaks.slice(liveFrom, upto); liveFrom = upto; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }).then(ok => { if (!ok && !chunkWarned) { chunkWarned = true; notice(t('rec.chunkFailed'), 10000) } }) } } // 조각이 안 써지면(대개 저장 공간) 앱이 죽을 때 복구할 것도 없다 — 한 번 알린다
+  rec.ondataavailable = e => { if (e.data.size > 0) { parts.push(e.data); const upto = mutedAt ? peaksAtMute : myPeaks.length, live = myPeaks.slice(liveFrom, upto); liveFrom = upto; void dbChunkAdd({ session: t0, t: Date.now(), mime: rec.mimeType, blob: e.data, live }).then(ok => { if (!ok && !chunkWarned) { chunkWarned = true; notice(t('rec.chunkFailed'), NOTICE_IMPORTANT_MS) } }) } } // 조각이 안 써지면(대개 저장 공간) 앱이 죽을 때 복구할 것도 없다 — 한 번 알린다
   rec.onerror = () => { endNotice = 'rec.errSaved'; if (recorder === rec) stopRec() }
   // 파형·피크·확장자는 부가 정보 — 실패해도 녹음은 저장한다. blob 을 못 만들 때만 포기
   rec.onstop = async () => {
@@ -72,7 +72,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     if (mutedAt) myPeaks.length = Math.min(myPeaks.length, peaksAtMute) // 막힌 동안 쌓인 피크는 버린다 — 파형이 소리와 맞게
     let blob: Blob
     try { blob = new Blob(parts, { type: rec.mimeType || 'audio/mp4' }) }
-    catch { parts.length = 0; notice(t('rec.saveFailed'), 10000); return }
+    catch { parts.length = 0; notice(t('rec.saveFailed'), NOTICE_IMPORTANT_MS); return }
     parts.length = 0 // 60분 녹음 ≈ 115 MB 가 두 벌 남지 않게
     const name = part > 1 ? `${base}_${part}` : uniqueName(base)
     // 파형용 peaks 는 정규화돼 절대 레벨이 사라진다 → 재생 보정용 원시 피크를 따로 남긴다
@@ -89,7 +89,7 @@ function startFile(t0: number, base: string, part = 1): RecResult {
     // 목록에는 먼저 넣고 id 는 저장이 끝난 뒤 붙인다 — 큰 파일은 저장에 1~3 s 걸려 "녹음 완료" 뒤 메뉴를 열면 항목이 없었다
     const st = recListStore.get(); recListStore.set({ items: [item, ...st.items], rev: st.rev + 1 })
     const id = await dbSave({ name: item.name, dur: item.dur, blob: item.blob, mime: item.mime, ts: item.ts }, { bookmarks: [], ab: null, peaks, ext, peak }).catch(() => null)
-    if (id == null) notice(t('rec.sessionOnly'), 10000) // 용량 부족·프라이빗 모드 등 — 앱을 닫으면 사라진다. 다운로드할 시간을 준다
+    if (id == null) notice(t('rec.sessionOnly'), NOTICE_IMPORTANT_MS) // 용량 부족·프라이빗 모드 등 — 앱을 닫으면 사라진다. 다운로드할 시간을 준다
     else { void dbChunksClear(t0); if (endNotice) notice(t(endNotice)) }
     attachId(item, id)
   }
@@ -134,7 +134,7 @@ function rollover(): void {
   if (A.micStream?.getAudioTracks()[0]?.muted) { setEndNotice?.('rec.savedOnCut'); stopRec(); return } // 막힌 채로 새 파일을 열면 빈 파일 — 지금 파일을 막힌 시점까지 저장하고 끝낸다
   setEndNotice?.(null); recorder.stop(); stopPeakCapture()
   const r = startFile(Date.now(), fileBase, filePart + 1)
-  if (r.ok) notice(t('rec.rolledOver'), 6000)
+  if (r.ok) notice(t('rec.rolledOver'))
   else { setEndNotice?.('rec.done'); notice(r.error); stopRec() } // 다음 파일을 못 열었다 — 지금까지의 파일은 저장된다고 말한다(setEndNotice 는 아직 앞 파일을 가리킨다)
 }
 /** @param why 'hidden' = 앱이 뒤로 가서(안드로이드 앱) — 저장된 뒤의 안내가 그 이유를 말한다 */
@@ -181,7 +181,7 @@ export async function restoreDeleted(item: RecItem, at: number): Promise<void> {
   items.splice(Math.min(at, items.length), 0, back)
   recListStore.set({ items, rev: st.rev + 1 })
   const id = await dbSave({ name: back.name, dur: back.dur, blob: back.blob, mime: back.mime, ts: back.ts }, { bookmarks: back.bookmarks, ab: back.ab, peaks: back.peaks, ext: back.ext, peak: back.peak, keep: back.keep }).catch(() => null)
-  if (id == null) notice(t('rec.sessionOnly'), 10000) // 화면엔 되살아났지만 저장은 안 됐다 — 다음 실행에 없다
+  if (id == null) notice(t('rec.sessionOnly'), NOTICE_IMPORTANT_MS) // 화면엔 되살아났지만 저장은 안 됐다 — 다음 실행에 없다
   // 그 사이 patchRec 이 객체를 바꿨을 수 있다 → blob 동일성으로 찾는다. 저장되는 동안 다시 지웠으면(id 가 없어 목록에서만 빠졌다) DB 에서도 지운다 — 안 그러면 다음 실행에 유령 행
   attachId(back, id)
 }

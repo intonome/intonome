@@ -99,10 +99,9 @@ export const KO = {
   'menu.rec': '녹음',
 
   // 녹음
-  'rec.started': '녹음 시작',
   'rec.startedMetroSilent': '녹음 시작 · 녹음에 섞이지 않게 메트로놈 소리를 껐어요',
   'rec.done': '녹음 완료',
-  'rec.doneTap': '녹음 완료 · 눌러서 듣기',
+  'rec.doneTap': '녹음 완료 · 눌러서 목록 보기',
   'rec.position': '재생 위치',
   'rec.empty': '아직 녹음이 없어요',
   'rec.showOlder': '이전 녹음 {n}개 보기',
@@ -116,9 +115,7 @@ export const KO = {
   'rec.deletesToday': '오늘 삭제',
   'rec.deletesIn': '{n}일 후 삭제',
   'rec.keep': '남기기',
-  'rec.keptToast': '이 녹음은 자동으로 지워지지 않아요',
   'rec.pastDue': '30일이 지나 다음에 앱을 열 때 지워져요 · 실행 취소',
-  'rec.unkept': '이 녹음은 30일이 지나면 자동으로 지워져요',
   'rec.readyTap': '준비됐어요 · 눌러서 저장',
   'rec.preparingShare': '파일을 준비하는 중…',
   'rec.tooLongConvert': '이 녹음은 너무 길어 변환할 수 없어요. 컴퓨터에서 열어 주세요',

@@ -46,8 +46,22 @@ if (typeof document !== 'undefined') document.addEventListener('visibilitychange
   for (const h of xs) toast(h.msg, h.ms, h.action)
 })
 
-/** 토스트. action 이 있으면 토스트를 탭할 때 실행된다 (예: 삭제 실행 취소) */
-export function toast(msg: string, ms = 2500, action?: () => void): void {
+/** 한·중·일 글자는 한 자가 라틴 글자 몇 개만큼의 뜻을 담아 더 천천히 읽힌다 */
+const WIDE = /[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/
+/**
+ * 보이는 시간 — 읽는 데 걸리는 만큼만. 눈이 가는 1 초 + 글자마다(한·중·일 110 ms ≈ 초당 9 자, 그 밖 45 ms ≈ 분당 250 단어).
+ * 안내는 2~5 초(짧은 '녹음 완료' 를 2.5 초 고정으로 붙잡지도, 긴 안내를 읽기 전에 거두지도 않는다).
+ * 누를 수 있는 것(실행 취소 · 바로 가기)은 손이 갈 틈 2 초를 더해 5~8 초. 순수
+ */
+export function toastMs(msg: string, actionable: boolean): number {
+  let ms = 1000
+  for (const ch of msg) ms += WIDE.test(ch) ? 110 : 45
+  return actionable ? Math.min(8000, Math.max(5000, ms + 2000)) : Math.min(5000, Math.max(2000, ms))
+}
+
+/** 토스트. action 이 있으면 토스트를 탭할 때 실행된다 (예: 삭제 실행 취소). ms 를 생략하면 toastMs */
+export function toast(msg: string, ms?: number, action?: () => void): void {
+  ms ??= toastMs(msg, !!action)
   if (document.visibilityState === 'hidden') { held = holdNotice(held, action ? { msg, ms, action } : { msg, ms }); return }
   // 같은 안내가 연달아 오면 시간만 연장. 액션 토스트는 각각 다른 항목을 되살리므로 제외
   if (!action) {
@@ -55,8 +69,8 @@ export function toast(msg: string, ms = 2500, action?: () => void): void {
     if (same) { clearTimeout(same.timer); same.timer = setTimeout(() => drop(same), ms); return }
   }
   const host = q('toast-host')
-  // 누를 수 있는 안내(실행 취소·눌러서 듣기)는 진짜 버튼 — 화면 읽기·키보드로 닿고, 키보드 포커스·마우스가 올라가 있는 동안은 사라지지 않는다.
-  // 시간은 부른 쪽이 정한 그대로(실행 취소 5 초). 2.9.3 의 '최소 7 초' 는 폰에서 너무 오래 떠 있었다
+  // 누를 수 있는 안내(실행 취소·녹음 목록 바로 가기)는 진짜 버튼 — 화면 읽기·키보드로 닿고, 키보드 포커스·마우스가 올라가 있는 동안은 사라지지 않는다.
+  // 시간은 toastMs(실행 취소 5 초 남짓). 2.9.3 의 '최소 7 초' 는 폰에서 너무 오래 떠 있었다
   const el = document.createElement(action ? 'button' : 'div')
   el.className = 'toast'; el.textContent = msg
   if (action) el.classList.add('actionable')

@@ -157,15 +157,14 @@ function renderMeta(el: Element, item: RecItem, idx: number): void {
   }
 }
 
-/** 남기기 토글. 풀 때 이미 기한이 지났다면 다음 실행에서 사라지므로 미리 알린다 */
+/** 남기기 토글. 그 줄의 글('자동 삭제 안 함' / 'N일 뒤 삭제 · 남기기')이 바로 바뀌므로 따로 알리지 않는다. 풀 때 이미 기한이 지났다면 다음 실행에서 사라지므로 그때만 알린다 */
 function toggleKeep(item: RecItem): void {
   const next = !item.keep
   const applied = patchRec(item, { keep: next })
   if (!applied) return
-  if (next) { toast(tr('rec.keptToast')); return }
-  if (expires(applied.ts, false, settingsStore.get().autoDelete, Date.now())) {
-    toast(tr('rec.pastDue'), 5000, () => { patchRec(applied, { keep: true }) })
-  } else toast(tr('rec.unkept'))
+  if (!next && expires(applied.ts, false, settingsStore.get().autoDelete, Date.now())) {
+    toast(tr('rec.pastDue'), undefined, () => { patchRec(applied, { keep: true }) })
+  }
 }
 
 function renderItem(item: RecItem, idx: number, defaultOpen: boolean): HTMLElement {
@@ -234,7 +233,7 @@ export function mountRecList(openEditor: (item: RecItem) => void, beforeDelete: 
         if (!item) break
         beforeDelete(item); stopPlayer(idx)
         void deleteRec(item).then(r => {
-          if (r === 'ok') toast(tr('rec.deleted') + tr('common.undoSuffix'), 5000, () => { void restoreDeleted(item, idx) })
+          if (r === 'ok') toast(tr('rec.deleted') + tr('common.undoSuffix'), undefined, () => { void restoreDeleted(item, idx) })
           else if (r === 'failed') toast(tr('rec.deleteFailed'))
         })
         break

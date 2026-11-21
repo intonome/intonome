@@ -20,7 +20,7 @@ import { mountTheme, onThemeChange } from './ui/theme.ts'
 import { mountLang } from './ui/lang.ts'
 import { t } from './core/i18n/index.ts'
 import { release, onHide, type Release } from './core/micLease.ts'
-import { onNotice, notice } from './core/notice.ts'
+import { onNotice, notice, NOTICE_IMPORTANT_MS } from './core/notice.ts'
 import { mountRefDrum } from './ui/refDrum.ts'
 import { mountMetro } from './ui/metro.ts'
 import { mountRefPanel } from './ui/refPanel.ts'
@@ -83,12 +83,12 @@ const tryOpenMic = async (popupOnDenied = false): Promise<boolean> => {
 const micPermission = async (): Promise<PermissionState | null> => {
   try { return (await navigator.permissions?.query({ name: 'microphone' as PermissionName }))?.state ?? null } catch { return null }
 }
-mountMicPopup(tryOpenMic); onMicRetryFailed(() => toast(t('mic.retryFailed'), 5000))
+mountMicPopup(tryOpenMic); onMicRetryFailed(() => toast(t('mic.retryFailed')))
 mountRecHeader(() => tryOpenMic(true)) // REC 가 마이크를 켠다 — 직접 누른 것이므로 차단이면 안내
 setMicOpener(() => startInGesture()) // 꺼진 채 남은 튜너의 시작 버튼 (정의는 아래 — 누를 때 부른다)
 const droneOn = (): boolean => droneStore.get().pitchClass !== null
 // audio·persist·platform 이 알리는 한 줄은 모두 토스트로. 녹음 완료만은 눌러서 바로 목록으로 — 「완료」 뿐이면 어디서 듣는지 몰랐다
-onNotice((msg, ms) => { if (msg === t('rec.done')) toast(t('rec.doneTap'), 5000, openMenu); else toast(msg, ms) })
+onNotice((msg, ms) => { if (msg === t('rec.done')) toast(t('rec.doneTap'), undefined, openMenu); else toast(msg, ms) })
 // 녹음 재생도 유휴가 아니다 — 재생이 보정 게인 그래프를 타면 컨텍스트가 잠들 때 무음이 된다
 setIdleCheck(() => !metroStore.get().playing && !refToneStore.get().active && !droneOn() && !playbackActive())
 startAnalysis()
@@ -226,7 +226,7 @@ void (async () => {
 
 // 녹음 복원. 브라우저 탭(비설치 PWA)은 디스크가 차면 IndexedDB 를 비울 수 있다 — 영속 저장을 한 번 요청해 둔다(거절돼도 동작은 같다)
 if (!isNative()) void navigator.storage?.persist?.().catch(() => {})
-openRecDb().then(restoreRecordings).then(expired => { if (expired) toast(t('rec.expiredDeleted', { n: expired }), 6000) }).then(recoverInProgress).then(n => { if (n) toast(t('rec.recovered', { n })) }).catch(() => toast(t('rec.dbFailed'), 10000))
+openRecDb().then(restoreRecordings).then(expired => { if (expired) toast(t('rec.expiredDeleted', { n: expired })) }).then(recoverInProgress).then(n => { if (n) toast(t('rec.recovered', { n })) }).catch(() => toast(t('rec.dbFailed'), NOTICE_IMPORTANT_MS))
 
 // Service Worker (웹 PWA 만): 새 버전은 앱이 유휴일 때 적용해 리로드
 if (!isNative() && 'serviceWorker' in navigator) {
@@ -235,7 +235,7 @@ if (!isNative() && 'serviceWorker' in navigator) {
   const updateSW = registerSW({
     onNeedRefresh() {
       if (idle()) { void updateSW(true); return }
-      toast(t('app.updateReady'), 10000, () => void updateSW(true))
+      toast(t('app.updateReady'), undefined, () => void updateSW(true))
       const tryApply = () => { if (idle()) void updateSW(true); else setTimeout(tryApply, 60 * 1000) }; setTimeout(tryApply, 60 * 1000)
     },
     // 브라우저는 SW 갱신을 탐색할 때만 확인한다 — 홈 화면 PWA 는 탐색이 없어 1시간마다 직접 확인

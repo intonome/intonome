@@ -78,7 +78,7 @@ export function createEditorPlayer(url: string, peak: number | undefined, dur: n
   /** 배속 재생기 없이 <audio> 의 배속으로. 10 분 넘는 녹음이면 아이폰에서 고르지 않을 수 있다고 한 번 알린다 */
   function useFallback(tooLong: boolean): void {
     fallback = true
-    if (tooLong && isIOS()) notice(t('ed.speedFallback'), 5000)
+    if (tooLong && isIOS()) notice(t('ed.speedFallback'))
     if (pending) playEl()
   }
   /** 기다리던 재생을 <audio> 로. 손짓 밖이라 거절되면(아이폰) 멈춤으로 알린다 — 편집기 글리프가 '재생 중' 으로 남지 않게 */

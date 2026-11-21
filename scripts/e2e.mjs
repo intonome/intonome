@@ -250,9 +250,10 @@ await scenario('rec: recording with the metronome on says the click is muted, an
   await p.click('#metro-play-hdr-btn'); await sleep(p, 400)
   assert.ok((await toasts()).includes('녹음 중이라 메트로놈 소리는 꺼져 있어요'), await toasts())
   await p.click('#rec-hdr-btn'); await sleep(p, 800); await p.click('#metro-play-hdr-btn'); await sleep(p, 2800)
-  // 메트로놈 없이 녹음하면 평소 문구
+  // 메트로놈 없이 녹음하면 알리지 않는다 — 빨간 버튼과 흐르는 시간이 보여 준다
   await p.click('#rec-hdr-btn'); await sleep(p, 1200)
-  const t = await toasts(); assert.ok(t.includes('녹음 시작') && !t.includes('메트로놈'), t)
+  assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '녹음 중')
+  const t = await toasts(); assert.ok(!t.includes('녹음 시작'), t)
   await p.click('#rec-hdr-btn'); await sleep(p, 800)
 })
 await scenario('metro: changing the time signature while playing starts the first beat on the left', 'silence_lowfloor.wav', async p => {
@@ -2008,9 +2009,9 @@ await scenario('lifecycle: a notice that arrives while hidden is shown on return
   await p.evaluate(() => window.__tt.notice('숨김 중 안내', 2500)); await sleep(p, 3000) // 띄웠다면 이미 사라졌을 시간
   assert.equal(await p.evaluate(() => document.getElementById('toast-host').textContent.includes('숨김 중 안내')), false, '숨김 중엔 띄우지 않는다')
   await setVisibility(p, 'visible'); await waitToast(p, '숨김 중 안내')
-  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 시작')
+  await p.click('#rec-hdr-btn'); await waitUntil(p, () => document.getElementById('rec-hdr-btn').classList.contains('rec-on'), 3000, 'recording on')
   await sleep(p, 1200); await p.click('#rec-hdr-btn')
-  await waitToast(p, '녹음 완료 · 눌러서 듣기'); assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1)
+  await waitToast(p, '녹음 완료 · 눌러서 목록 보기'); assert.equal(await p.evaluate(() => document.querySelectorAll('.rec-item').length), 1)
 })
 await scenario('lifecycle: back after a call stopped the audio while hidden, and it will not resume → the tuner says to tap (it sat silent)', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
@@ -2029,7 +2030,7 @@ await scenario('rec: the system muting the mic pauses the recording — a blip c
   await p.click('#rec-hdr-btn'); await sleep(p, 2000)
   await mute('mute'); await sleep(p, 400); await mute('unmute'); await sleep(p, 1600)
   assert.equal(await p.evaluate(() => document.getElementById('rec-hdr-btn').classList.contains('rec-on')), true, '짧은 막힘은 녹음을 끝내지 않는다')
-  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
+  await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 목록 보기')
   assert.deepEqual(await items(), ['00:04'], '이어 녹음한 막힘은 길이에서 빠진다')
   // 긴 막힘(화면을 끄거나 전화): 숨김 중에 막히고 3 s 뒤 돌아오면 막힌 시점까지 저장하고 끝, 돌아와서 알린다
   await p.click('#rec-hdr-btn'); await sleep(p, 2200)
@@ -2217,7 +2218,7 @@ await scenario('recording: non-iOS keeps webm (Android unchanged) and the extens
 await scenario('editor: after A is set while playing, dragging the knob seeks (A stays; A moves by its label); list playback stops when the editor opens; B text resets; rename is in-app', 'violin_scale_Amaj.wav', async p => {
   p.on('dialog', d => { throw new Error('a browser dialog opened: ' + d.message()) })
   await p.goto(URL_); await waitNote(p, t => t.note !== '--', 6000)
-  await p.click('#rec-hdr-btn'); await sleep(p, 7000); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
+  await p.click('#rec-hdr-btn'); await sleep(p, 7000); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 목록 보기')
   await p.click('#menu-btn'); await sleep(p, 400)
   await p.click('#rec-pb-0'); await sleep(p, 600)
   await p.click('[data-action="edit"][data-idx="0"]')
@@ -2265,7 +2266,7 @@ await scenario('editor: after A is set while playing, dragging the knob seeks (A
 })
 await scenario('playback: the list player keeps going when the audio route is stuck, and a position set before play is where it starts', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
-  await p.click('#rec-hdr-btn'); await sleep(p, 4000); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
+  await p.click('#rec-hdr-btn'); await sleep(p, 4000); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 목록 보기')
   await p.click('#menu-btn'); await sleep(p, 500)
   const st = () => p.evaluate(() => ({ v: +document.getElementById('rec-seek-0').value, t: document.getElementById('rec-time-0').textContent, g: document.getElementById('rec-pb-0').dataset.glyph }))
   // 1) 컨텍스트를 멈추고 다시 켜지지 않게 → ▶
@@ -2286,7 +2287,7 @@ await scenario('playback: a webm whose media duration is garbage (Android Chrome
   // 안드로이드 크롬이 MediaRecorder webm 의 길이를 엉뚱한 유한값으로 보고하는 것을 흉내 낸다 (실기기: 47 초 → 4500:20 · 8652:07)
   await p.addInitScript(() => { const d = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'duration'); Object.defineProperty(HTMLMediaElement.prototype, 'duration', { configurable: true, get() { const v = d.get.call(this); return String(this.currentSrc || this.src).startsWith('blob:') ? 270020 : v } }) })
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
-  await p.click('#rec-hdr-btn'); await sleep(p, 3200); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 듣기')
+  await p.click('#rec-hdr-btn'); await sleep(p, 3200); await p.click('#rec-hdr-btn'); await waitToast(p, '녹음 완료 · 눌러서 목록 보기')
   await p.click('#menu-btn'); await sleep(p, 300)
   const dur = await p.evaluate(() => document.querySelector('.rec-item-dur').textContent); assert.match(dur, /^00:0[34]$/, '목록의 길이: ' + dur)
   await p.click('#rec-pb-0'); await sleep(p, 800)

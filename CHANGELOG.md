@@ -3,12 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
 ## [2.10.5] - 2026-11-21
-The Android app icon draws its rings a little smaller, so they keep a dark margin on home screens that crop the icon more than usual.
+The Android app icon keeps a dark margin around its rings on every home screen.
 
 App icon (Android)
-- The mark, glow included, now fits a 57 dp circle on the 108 dp adaptive-icon layer; it used to reach 62 dp, nearly the edge of the 66 dp safe zone. Launchers show different parts of the layer: Settings, the Pixel launcher and the stock Galaxy home show the standard 72 dp, where 62 dp matched the brand icon (README, GitHub, web app); a third-party home screen measured on 2026-11-21 showed about 60 dp, where the outer ring touched the icon's edge and 52 dp would match the brand. 57 dp is between the two (√(62 × 52)), off the brand by about the same small amount on both: a little smaller on standard screens, a little larger on that home screen, with the outer ring clear of the edge. It is also close to the 52 dp circle keyline most Android icons follow, so it sits with the icons around it
-- The themed (monochrome) icon on Android 13 and later and the Android 12+ launch screen, which uses the launcher icon, shrink the same way
-- The web app's icons, the iPhone home-screen icon, the store icon, the splash logo and the icon on Android 7 are unchanged
+- The mark is drawn a little smaller (57 dp of the 108 dp adaptive-icon layer, was 62 dp). Some home screens crop the icon more than the standard 72 dp, and there the outer ring touched the icon's edge; it now stays clear of it, while on standard screens the icon stays close to the brand icon
+- The themed icon (Android 13+) and the launch screen (Android 12+) follow the same size
+- Web app, iPhone, store and Android 7 icons are unchanged
 
 ## [2.10.4] - 2026-11-21
 The tuner card no longer turns its edge green when a note is in tune.

@@ -13,6 +13,15 @@ export function setAllowBackup(xml) {
   return xml.replace(/<application(\s)/, '<application android:allowBackup="false"$1')
 }
 
+/**
+ * 하드웨어 기능을 '있으면 쓰고 없어도 설치된다' 로 선언한다. 권한(RECORD_AUDIO)과 세로 고정은 각각 마이크 · 세로 화면을 필수 기능으로 끌고 와서,
+ * 선언하지 않으면 Play 가 그 기능이 없는 기기(데스크톱 · XR · 일부 태블릿)에 앱을 내주지 않는다. 멱등. 순수
+ */
+export function setOptionalFeature(xml, name) {
+  if (xml.includes(`"${name}"`)) return xml
+  return xml.replace('</manifest>', `    <uses-feature android:name="${name}" android:required="false" />\n</manifest>`)
+}
+
 /** styles.xml 의 한 스타일 안 항목을 값으로(없으면 넣는다). 이름이 정확히 같은 스타일만 — NoActionBar 가 NoActionBarLaunch 를 건드리지 않게. 멱등. 순수 */
 export function setStyleItem(xml, style, name, value) {
   const re = new RegExp(`(<style name="${style.replace(/\./g, '\\.')}"[^>]*>)([\\s\\S]*?)(\\n?[ \\t]*</style>)`)
@@ -53,8 +62,11 @@ export function main(log = console.log) {
   for (const perm of NEEDED) {
     if (!xml.includes(`"${perm}"`)) { xml = xml.replace('</manifest>', `    <uses-permission android:name="${perm}" />\n</manifest>`); changed = true; log('추가: ' + perm) }
   }
-  // 마이크는 있어도 되고 없어도 되는 기기 허용
-  if (!xml.includes('android.hardware.microphone')) { xml = xml.replace('</manifest>', '    <uses-feature android:name="android.hardware.microphone" android:required="false" />\n</manifest>'); changed = true }
+  // 마이크 · 세로 화면이 없는 기기에도 설치는 되게 — 세로 고정(아래)은 그대로다
+  for (const feat of ['android.hardware.microphone', 'android.hardware.screen.portrait']) {
+    const xf = setOptionalFeature(xml, feat)
+    if (xf !== xml) { xml = xf; changed = true; log(`선택 기능: ${feat}`) }
+  }
   // 녹음이 클라우드로 새어 나가지 않게 자동 백업을 끈다
   const xb = setAllowBackup(xml)
   if (xb !== xml) { xml = xb; changed = true; log('allowBackup=false (자동 백업 끔)') }

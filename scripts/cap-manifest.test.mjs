@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { setAllowBackup, isWebBuildHtml, setSplashTheme } from './cap-manifest.mjs'
+import { setAllowBackup, isWebBuildHtml, setSplashTheme, setOptionalFeature } from './cap-manifest.mjs'
 
 // Capacitor 8 템플릿이 실제로 내보내는 형태
 const TEMPLATE = `<application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="@string/app_name">`
@@ -61,5 +61,17 @@ describe('setSplashTheme — the launch screen is the app background, not a whit
   test('a changed color replaces the old one', () => {
     const again = setSplashTheme(out, '#000000')
     expect(again).toContain('<item name="windowSplashScreenBackground">#000000</item>'); expect(again).not.toContain('#181b21')
+  })
+})
+
+describe('setOptionalFeature — hardware the app can do without does not keep it off a device', () => {
+  const XML = '<manifest>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n</manifest>'
+  const out = setOptionalFeature(XML, 'android.hardware.screen.portrait')
+  test('declared as not required', () => expect(out).toContain('<uses-feature android:name="android.hardware.screen.portrait" android:required="false" />'))
+  test('the rest is untouched', () => expect(out.replace('    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />\n', '')).toBe(XML))
+  test('idempotent', () => expect(setOptionalFeature(out, 'android.hardware.screen.portrait')).toBe(out))
+  test('a second feature is added next to the first', () => {
+    const both = setOptionalFeature(out, 'android.hardware.microphone')
+    expect(both).toContain('"android.hardware.microphone" android:required="false"'); expect(both).toContain('"android.hardware.screen.portrait" android:required="false"')
   })
 })

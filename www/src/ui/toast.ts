@@ -51,12 +51,38 @@ const WIDE = /[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u9fff\uac00-\ud7af
 /**
  * 보이는 시간 — 읽는 데 걸리는 만큼만. 눈이 가는 1 초 + 글자마다(한·중·일 110 ms ≈ 초당 9 자, 그 밖 45 ms ≈ 분당 250 단어).
  * 안내는 2~5 초(짧은 '녹음 완료' 를 2.5 초 고정으로 붙잡지도, 긴 안내를 읽기 전에 거두지도 않는다).
- * 누를 수 있는 것(실행 취소 · 바로 가기)은 손이 갈 틈 2 초를 더해 5~8 초. 순수
+ * 누를 수 있는 것(실행 취소 · 바로 가기)은 손이 갈 틈 1.5 초를 더해 3.5~6 초 — 지우기는 대개 일부러 누르므로 '삭제됨 · 실행 취소' 가
+ * 5 초씩 아래를 가리면 거슬렸다(2.10.6 까지 5~8 초). 옆으로 밀어 바로 치울 수도 있다(toast). 순수
  */
 export function toastMs(msg: string, actionable: boolean): number {
   let ms = 1000
   for (const ch of msg) ms += WIDE.test(ch) ? 110 : 45
-  return actionable ? Math.min(8000, Math.max(5000, ms + 2000)) : Math.min(5000, Math.max(2000, ms))
+  return actionable ? Math.min(6000, Math.max(3500, ms + 1500)) : Math.min(5000, Math.max(2000, ms))
+}
+
+/** 옆으로 이만큼 밀면 치운다(누른 것으로 치지 않는다) */
+const SWIPE_PX = 48
+/**
+ * 누를 수 있는 안내는 옆으로 밀어 치운다 — 누르면 실행 취소라 '그냥 닫기' 가 따로 있어야 한다(안드로이드 스낵바와 같은 손짓).
+ * 덜 밀면 제자리로. 민 뒤 손을 떼며 오는 click 은 삼킨다
+ */
+function swipeAway(el: HTMLElement, away: () => void): void {
+  let x0: number | null = null, dx = 0, swiped = false
+  el.style.touchAction = 'pan-y' // 가로 끌기는 여기서, 세로 스크롤은 브라우저가
+  el.addEventListener('pointerdown', e => { x0 = e.clientX; dx = 0; swiped = false })
+  el.addEventListener('pointermove', e => {
+    if (x0 === null) return
+    dx = e.clientX - x0
+    if (Math.abs(dx) > 8) { swiped = true; el.style.transition = 'none'; el.style.transform = `translateX(${dx}px)`; el.style.opacity = String(Math.max(0.2, 1 - Math.abs(dx) / 160)) }
+  })
+  const end = (): void => {
+    if (x0 === null) return
+    x0 = null; el.style.transition = ''
+    if (Math.abs(dx) >= SWIPE_PX) away()
+    else { el.style.transform = ''; el.style.opacity = '' }
+  }
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end)
+  el.addEventListener('click', e => { if (swiped) { e.stopImmediatePropagation(); swiped = false } }, true)
 }
 
 /** 토스트. action 이 있으면 토스트를 탭할 때 실행된다 (예: 삭제 실행 취소). ms 를 생략하면 toastMs */
@@ -77,6 +103,7 @@ export function toast(msg: string, ms?: number, action?: () => void): void {
   const slot: Slot = { el, timer: setTimeout(() => drop(slot), ms), msg, actionable: !!action }
   el.onclick = action ? () => { action(); drop(slot) } : null
   if (action) {
+    swipeAway(el, () => drop(slot))
     const hold = (): void => clearTimeout(slot.timer), resume = (): void => { clearTimeout(slot.timer); slot.timer = setTimeout(() => drop(slot), 3000) }
     el.addEventListener('focus', hold); el.addEventListener('blur', resume)
     // 마우스만 — 폰에서는 손가락이 스치기만 해도 pointerenter 가 오고 leave 가 늦거나 안 와서 안내가 멈춰 있을 수 있다

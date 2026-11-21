@@ -34,8 +34,8 @@ describe('toastMs — on screen as long as it takes to read', () => {
     expect(toastMs('가나다라마바사아자차', false)).toBeGreaterThan(toastMs('abcdefghij', false))
   })
   test('a plain notice is gone within 5 s however long it is', () => expect(toastMs('가'.repeat(200), false)).toBe(5000))
-  test('a notice with an action leaves 5 to 8 s to reach it', () => {
-    expect(toastMs('삭제됨 · 실행 취소', true)).toBe(5000)
-    expect(toastMs('가'.repeat(200), true)).toBe(8000)
+  test('a notice with an action leaves 3.5 to 6 s to reach it — an undo is not held for long', () => {
+    expect(toastMs('삭제됨 · 실행 취소', true)).toBe(3500)
+    expect(toastMs('가'.repeat(200), true)).toBe(6000)
   })
 })

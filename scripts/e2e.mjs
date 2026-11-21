@@ -1355,6 +1355,19 @@ await scenario('rec: start/stop → list item, persists reload, rename persists,
   await waitToast(p, '어디서나 열 수 있게 WAV로 변환 중…', 500)
   await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 5600); assert.equal((await names()).length, 0)
 })
+await scenario('rec: an undo toast swiped sideways goes away without undoing; a short drag does not', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitNote(p, t => t.note === '라')
+  await p.click('#rec-hdr-btn'); await sleep(p, 1200); await p.click('#rec-hdr-btn'); await sleep(p, 800)
+  await p.click('#menu-btn'); await p.click('[data-action="delete"][data-idx="0"]'); await sleep(p, 300)
+  const undo = () => p.evaluate(() => [...document.querySelectorAll('#toast-host .toast.show.actionable')].filter(t => t.textContent.includes('실행 취소')).length)
+  const drag = async dx => { const b = await p.locator('#toast').boundingBox(), y = b.y + b.height / 2, x = b.x + b.width / 2; await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 5; i++) await p.mouse.move(x + dx * i / 5, y); await p.mouse.up(); await sleep(p, 350) }
+  await drag(20)
+  assert.equal(await undo(), 1, '조금 끌면 제자리 — 실행 취소는 그대로')
+  assert.equal(await p.evaluate(() => document.querySelectorAll('#rec-list .rec-item').length), 0, '조금 끈 것은 누른 것이 아니다')
+  await drag(90)
+  assert.equal(await undo(), 0, '옆으로 밀면 사라진다')
+  assert.equal(await p.evaluate(() => document.querySelectorAll('#rec-list .rec-item').length), 0, '민 것은 실행 취소가 아니다')
+})
 await scenario('rec: two deletes in a row → each undo toast stays alive', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitNote(p, t => t.note === '라')
   const names = () => p.evaluate(() => Array.from(document.querySelectorAll('#rec-list .rec-item-name')).map(e => e.textContent))

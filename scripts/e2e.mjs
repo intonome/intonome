@@ -1039,6 +1039,16 @@ await scenario('launch: iPhone home-screen app starts on a copy of the splash, t
   await p.goto(URL_); assert.equal(await p.evaluate(() => !!document.getElementById('launch')), false, '브라우저 탭에는 없다')
 })
 
+// 튜너 · 메트로놈 카드의 글자는 선택되지 않는다 — 꾹 누르면 글자 선택이 시작돼 폰이 반응했다(버튼은 전부터 막혀 있었다)
+await scenario('main: a double tap or long press on the tuner and metronome cards selects no text', 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await p.waitForSelector('#tuner-label')
+  for (const sel of ['#tuner-label', '#tuner-note', '#metro-hdr-label']) {
+    await p.locator(sel).dblclick({ force: true }); await p.waitForTimeout(100)
+    assert.equal(await p.evaluate(() => String(window.getSelection())), '', sel)
+    assert.equal(await p.evaluate(s => getComputedStyle(document.querySelector(s)).userSelect, sel), 'none', sel)
+  }
+})
+
 // 안드로이드 앱: 시스템 시작 화면(로고) 밑에서 웹 화면은 바탕색 덮개로 앱을 가리고 있다. 로고가 흐려질 시간이 지난 뒤에야 덮개를 걷는다 — 로고와 앱이 겹쳐 비치지 않는다
 await scenario('launch: Android app keeps the app under a plain cover while the system logo fades, then shows it', 'silence_lowfloor.wav', async (p, ctx) => {
   const { PNG } = await import('pngjs')

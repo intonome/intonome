@@ -74,6 +74,7 @@ html.i18n-pending body{visibility:hidden;} /* 영어로 저장돼 있으면 한�
    lvh 만 화면 전체 높이. 배치는 실행 시점의 meta 로 정해져 테마를 바꿔도 그대로라 테마가 아니라 실제 inset 으로 가른다 — .sb-under 는 platform/fitStandaloneHeight */
 @supports (height:100lvh){@media (display-mode:standalone){html.sb-under,html.sb-under body{height:100lvh;}}}
 button{font-family:inherit;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;} /* 버튼을 꾹 누르면 글자가 선택되며 복사·번역 막대가 떴다(안드로이드) */
+#main-body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;} /* 튜너 · 메트로놈 카드의 글자(음이름 · 템포)도 — 카드를 꾹 누르면 글자 선택이 시작돼 폰이 진동했다. 이 안에 글자를 넣는 칸은 없다 */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 /* 첫 박 깜빡임: 면 · 번짐은 두 테마 모두 연하게(다크에서 진하고 피로했다). 2 px 테두리는 다크만 연하게 — 라이트는 원래도 바탕과 대비 3.3 이라 줄이면 3 밑으로 내려간다(--flash-edge · --ring-edge, 테마 토큰) */
 @keyframes metroflash{0%{background:rgba(var(--ok-rgb),.15);box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),var(--flash-edge))}60%{background:rgba(var(--ok-rgb),.05);box-shadow:inset 0 0 0 2px rgba(var(--ok-rgb),var(--flash-edge))}100%{background:var(--surface);box-shadow:none}}

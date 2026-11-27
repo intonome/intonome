@@ -17,7 +17,7 @@ www/src/
   core/        Pure logic, no browser APIs, unit-tested (except fft, links):
                pitch/(fft, yinFast, spectrum, tracker, readout, analyzer) · playing/detector · metro/(sequencer, arrival, sweep, dial, clickPitch, card)
                i18n/(ko, en, es, ja, zh, zhHant), drone, note, wav, peaks, format, recPolicy, hist, trace, hzReadout, softclip, playbackGain, container,
-               notice, micLease, editRange, tourPlace, stretch, mono, recCut, links, metro/dragRate, yin (reference only, not bundled)
+               notice, micLease, editRange, tourPlace, stretch, mono, recCut, links, metro/dragRate, fit, yin (reference only, not bundled)
 ```
 
 Dependency rules (`scripts/check-deps.mjs`, part of `npm run check`):
@@ -92,7 +92,10 @@ Only `platform/index.ts` looks at `window.Capacitor`.
 | Keep screen on | Wake Lock. iOS web needs a DOM tap for the first request, so it shows a start button first | Same |
 | Status bar | `theme-color` meta | `@capacitor/status-bar` |
 | Back button | Browser default | backButton: editor → privacy/licenses page → settings → menu → mic popup → drone picker → first-run guide → metronome-only view; `minimizeApp` on the main screen |
+| Large screens | `fitViewport` declares a viewport narrower than the window (width and scale together), and the browser magnifies the whole page by that ratio — popups, toasts and pointer coordinates included. Sizes come from `core/fit`. Desktop browsers ignore the declaration and show the column unscaled | Same; the WebView follows the declaration only with `setUseWideViewPort(true)`, set in MainActivity by `cap-manifest.mjs` |
 | Service worker | Precache. A new version is applied when idle; otherwise a toast offers it | Not registered |
+
+Layout: one column everywhere, 400 px wide on phones and up to 560 px where there is room. A window larger than a phone in both directions is magnified (`core/fit`: up to 2×, keeping at least 480×780 of layout) instead of being laid out differently, so every screen shows the layout that is tested on phones. A landscape window (at least 760 px wide, 640 px high and 1.2 times as wide as high, `PANE_QUERY`) shows two panes: the tuner and the metronome's full view. `ui/metro` puts the card into the full stage while the panes are up and restores the earlier stage afterwards. The window is measured as visual viewport size × scale, which stays right while a new declaration is taking effect; a change under 3 dp is ignored, because re-measuring the same window differs by rounding and would otherwise re-declare for ever; a height change while a text field has focus is the keyboard and is ignored too.
 
 Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base `/`, Capacitor).
 
@@ -103,7 +106,7 @@ Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base 
 | Pure logic | Vitest `*.test.ts`, `scripts/*.test.mjs` |
 | Tuner benchmark | `npm run bench`: synthetic signals: bias, p90, octave errors, lock latency, F1. Changes to the tuner or detector must not regress. `test-assets/bench/latest.md` changes only when a result changes (timing goes to the console), so `git diff` of it is the comparison |
 | Browser integration | `npm run e2e`: headless Chromium with WAV files as a fake mic. `--only <regex>` |
-| Visual regression | `npm run shots`: 42 screens (dark and light Korean + en, es, ja, zh, zht; 6 scenes each) compared with `test-assets/screens/baseline/` via pixelmatch |
+| Visual regression | `npm run shots`: 42 phone screens (dark and light Korean + en, es, ja, zh, zht; 6 scenes each) and 7 large-screen ones (unfolded foldable, portrait and landscape tablet) compared with `test-assets/screens/baseline/` via pixelmatch |
 | Module boundaries | `scripts/check-deps.mjs` |
 | Which checks a change needs | `npm run affected` (table in `scripts/lib/affected.mjs`: changed files → unit tests via `vitest related`, e2e scenarios by name, benchmark, screenshots); `--run` runs them |
 
@@ -121,6 +124,6 @@ npm run keygen           # once: upload key → intonome-upload.jks + keystore.p
 npm run aab              # store build: cap:sync + gradle bundleRelease → android/app/build/outputs/bundle/release/app-release.aab (uses JAVA_HOME or java on PATH, else the JDK that comes with Android Studio)
 ```
 
-`cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET, VIBRATE for the drag ticks), marks the microphone and a portrait screen as optional hardware (the permission and the portrait lock would otherwise make them required, and Play keeps the app off devices without them), portrait lock, the launch screen (its near-black background from `plugins.SplashScreen.backgroundColor` and the app window's from `backgroundColor` in capacitor.config, and the rings-with-wordmark image copied to `drawable-*/splash_logo.png` in place of the launcher icon), and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
+`cap-manifest.mjs` sets permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, INTERNET, VIBRATE for the drag ticks), marks the microphone and a portrait screen as optional hardware (the permission and the portrait lock would otherwise make them required, and Play keeps the app off devices without them), portrait lock, the launch screen (its near-black background from `plugins.SplashScreen.backgroundColor` and the app window's from `backgroundColor` in capacitor.config, and the rings-with-wordmark image copied to `drawable-*/splash_logo.png` in place of the launcher icon), `setUseWideViewPort(true)` in MainActivity (only when the file is still Capacitor's empty template; otherwise it prints what to add), and `versionName`/`versionCode` (major·10000 + minor·100 + patch) from package.json. Only bump `version` in package.json. Run `npm run cap:sync` right before a signed build.
 
 `cap-signing.mjs` adds a `signingConfigs.release` to `app/build.gradle` that reads `keystore.properties` from the repo root (file, passwords, alias); without that file the release build type stays unsigned and debug builds are unaffected. `keygen.mjs` makes the upload key with the JDK's `keytool` (found on PATH, `JAVA_HOME`, or Android Studio's `jbr`) and writes `keystore.properties`. Play App Signing holds the app signing key; ours is the upload key — back up the `.jks` and the properties file outside the repo. Listing text, images (`npm run store:assets`) and the console answers: [STORE.md](STORE.md).

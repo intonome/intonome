@@ -3,12 +3,28 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
 ## [Unreleased]
-The Android launch screen shows the rings of the icon with the Intonome name on a near-black background, and no longer shows through the tuner as it goes away.
 
-Android
+## [2.11.0] - 2026-11-28
+Foldables and tablets show the app at their own size: the phone screen magnified to fit, and in landscape the tuner and the metronome side by side. Phones look as before. The Android launch screen shows the rings of the icon with the Intonome name on a near-black background, and no longer shows through the tuner as it goes away.
+
+Large screens
+- An unfolded foldable or a tablet shows the same single column as a phone, magnified as far as the window allows (up to 2×). It used to switch to a two-column layout from 700 px of width, with the phone-sized metronome card in the right column and the space under it empty. Popups, notices and touch positions are magnified with the rest, and the tuner trace is drawn at the magnified resolution, so it stays sharp
+- A landscape window (at least 760 px wide and 640 px high, and 1.2 times as wide as it is high) shows two panes: the tuner on the left and the metronome's full view, with the dial, on the right. The card has no stages there, and its size buttons are hidden. Turning back to portrait brings back one column and the stage the card was in
+- Phones are untouched: up to 464 px of width the screen is the same pixel for pixel, and from there to 480 px the column grows by at most 16 px
+- The first-run guide follows: on a magnified screen its steps are those of a phone, and with two panes the metronome step points at the dial
+- Android: the app's WebView now follows the page's viewport declaration (`setUseWideViewPort(true)`), which the magnification relies on. On a phone the declaration is the device width, the value the WebView used anyway
+- On tablets running Android 15 or earlier the app stays in portrait, as before; Android 16 and later let large screens rotate, and the two panes appear there
+
+Android launch screen
 - The launch screen is the rings of the icon with the Intonome wordmark under them, on a near-black background that makes their colours clearest. It was the launcher icon alone on the app's dark grey. Android clips the launch image with the device's icon shape, so the pair is drawn inside the area every shape keeps
 - The logo fades out on the plain background first, and the app appears after it. The two used to cross-fade, and for a moment the logo sat on top of the tuner's centre band
+
+Fixes
 - A long press on the tuner or the metronome card no longer starts a text selection
+
+Docs and code
+- The layout no longer has a wide-screen variant: the 700 px rules, the tempo pad they showed and the width parameter of the card's stage functions are gone
+- New e2e: four large portrait sizes (magnification, no overflow, canvas resolution, card stages, drone picker position), four phone sizes (no magnification, declaration untouched), two landscape tablets (two panes, turning to portrait and back, the fit settling), a short landscape window, and the guide on a magnified tablet and with two panes. They replace the five wide-screen scenarios. Seven large-screen screenshots join the baselines
 
 ## [2.10.8] - 2026-11-22
 The Android build can go to Google Play: the app no longer asks for a portrait-only screen as required hardware. The app itself is unchanged.

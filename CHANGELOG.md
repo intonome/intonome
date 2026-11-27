@@ -2,6 +2,14 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+The Android launch screen shows the rings of the icon with the Intonome name on a near-black background, and no longer shows through the tuner as it goes away.
+
+Android
+- The launch screen is the rings of the icon with the Intonome wordmark under them, on a near-black background that makes their colours clearest. It was the launcher icon alone on the app's dark grey. Android clips the launch image with the device's icon shape, so the pair is drawn inside the area every shape keeps
+- The logo fades out on the plain background first, and the app appears after it. The two used to cross-fade, and for a moment the logo sat on top of the tuner's centre band
+- A long press on the tuner or the metronome card no longer starts a text selection
+
 ## [2.10.8] - 2026-11-22
 The Android build can go to Google Play: the app no longer asks for a portrait-only screen as required hardware. The app itself is unchanged.
 

@@ -12,7 +12,7 @@ import { openMic, closeMic, onMic, A, resumeIfRunning, setIdleCheck, onContextSt
 import { startAnalysis, lastFrameMs, metroCalibMs } from './audio/analysis.ts'
 import { playbackActive, playbackDiag, onPlaybackChange } from './audio/playback.ts'
 import { restoreRecordings, recoverInProgress, backdateRecFile } from './audio/recorder.ts'
-import { initStatusBar, fitStandaloneHeight, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, applyFontScale, hideNativeSplash } from './platform/index.ts'
+import { initStatusBar, fitStandaloneHeight, fitViewport, isTwoPane, isNative, isIOS, acquireWakeLock, releaseWakeLock, isFullscreen, setFullscreen, onFullscreenChange, onBackButton, applyFontScale, hideNativeSplash } from './platform/index.ts'
 import { q, qsa, on, setOn } from './ui/dom.ts'
 import { toast } from './ui/toast.ts'
 import { mountTuner, showTapHint, hideTapHint, setHistSec, histDiag, retheme, setMicOpener, showMicOff } from './ui/tuner.ts'
@@ -41,7 +41,7 @@ import { stopRec } from './audio/recorder.ts'
 import { sessionStore } from './state/index.ts'
 import { registerSW } from 'virtual:pwa-register'
 
-initStatusBar(); fitStandaloneHeight(); applyFontScale()
+fitViewport(); initStatusBar(); fitStandaloneHeight(); applyFontScale()
 // 앱 시작 화면은 hideLaunch 가 걷는다. 그 전에 무엇이 던져져도 시작 화면에 갇히지 않게 늦어도 이때는 걷는다
 setTimeout(hideNativeSplash, 3000)
 
@@ -187,7 +187,7 @@ onBackButton(() => {
   if (q('mic-popup-bg').classList.contains('show')) { closeMicPopup(); return true }
   if (dronePopOpen()) { closeDronePop(); return true }
   if (tourActive()) { endTour(); return true } // 위의 창이 다 닫혀 있을 때 — 처음 안내를 그만둔다
-  if (metroStore.get().full) { metroStore.set({ full: false }); return true } // 메트로놈만 크게 보는 화면 → 튜너로 (앱이 내려가지 않게)
+  if (metroStore.get().full && !isTwoPane()) { metroStore.set({ full: false }); return true } // 메트로놈만 크게 보는 화면 → 튜너로 (앱이 내려가지 않게)
   return false
 })
 // 설치 앱·홈 화면 웹앱은 이미 전체화면이라 행을 숨긴다

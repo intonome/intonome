@@ -78,10 +78,10 @@ const swipeUp = async (p, sel = '#metro-hdr') => {
   for (let i = 1; i <= 10; i++) await p.mouse.move(x, y - (SWIPE_PX * i) / 10)
   await p.waitForTimeout(150); await p.mouse.up(); await settled(p)
 }
-/** 펼침2 로: 폰은 (접혀 있으면 버튼으로 펼치고) 위로 밀기, 넓은 화면은 버튼 한 번 */
+/** 펼침2 로: (접혀 있으면 버튼으로 펼치고) 위로 밀기 */
 const toFull = async (p) => {
-  if (await p.evaluate(() => innerWidth >= 700)) await sizeTap(p)
-  else { if (await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed'))) await sizeTap(p); await swipeUp(p) }
+  if (await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed'))) await sizeTap(p)
+  await swipeUp(p)
   assert.equal(await p.evaluate(() => document.getElementById('metro-card').classList.contains('full')), true, '펼침2 진입')
 }
 /** 메트로놈 크기 전환(접힘/펼침/펼침2)이 끝날 때까지 — 고정 sleep 대신 상태를 본다 */
@@ -657,19 +657,41 @@ for (const w of [412, 375, 360, 320]) await scenario(`layout: expanded at ${w}px
   assert.ok(r.off <= 0.6, 'LED 줄 가운데 ' + JSON.stringify(r)); assert.ok(r.gapL >= 6 && r.gapR >= 6, '양옆과 안 겹침 ' + JSON.stringify(r))
 }, { viewport: { width: w, height: 800 } })
 
-// 넓은 화면의 펼침: 왼쪽 칸에 ♩. = 200 이 보인다 — 점 줄은 그 글자와 오른쪽 버튼 사이 가운데, 제 크기, 어느 쪽에도 닿지 않는다
-for (const w of [820, 1024]) await scenario(`layout: wide screen ${w}px · ♩. = 200 — the header LEDs sit between the tempo and the button, full size, touching neither`, 'silence_lowfloor.wav', async p => {
-  await p.addInitScript(() => localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, lang: 'ko', theme: 'dark', bpm: 200, timeSig: 6 })))
+// 큰 화면(펼친 폴드 · 세로 태블릿): 폰과 같은 한 칸을 화면째 키운다 — 배치는 폰 그대로, 배율은 창이 허락하는 만큼
+for (const [name, W, H] of [['an unfolded foldable', 750, 832], ['a small tablet', 600, 1000], ['a tablet', 800, 1280], ['a large tablet', 1024, 1366]]) await scenario(`layout: ${name} (${W}x${H}) shows the phone layout magnified - one column, nothing off screen, sharp canvas, popups in place`, 'violin_A4.wav', async p => {
+  await p.goto(URL_); await sleep(p, 1500)
+  const want = Math.min(2, W / 480, H / 780)
+  const m = await p.evaluate(() => { const R = id => document.getElementById(id).getBoundingClientRect(), b = R('main-body'), cv = document.getElementById('tuner-history-cv')
+    return { z: visualViewport.scale, iw: innerWidth, ih: innerHeight, sx: document.documentElement.scrollWidth - innerWidth, sy: document.documentElement.scrollHeight - innerHeight, two: document.getElementById('main-body').classList.contains('two'),
+      left: b.left, right: innerWidth - b.right, col: b.width, tunerBelow: R('metro-card').top - R('tuner-card').bottom, metroBottom: innerHeight - R('metro-card').bottom,
+      collapsed: document.getElementById('metro-body-wrap').classList.contains('collapsed'), cvRatio: cv.width / cv.getBoundingClientRect().width, dpr: devicePixelRatio } })
+  assert.ok(Math.abs(m.z - want) < 0.01, `배율 ${m.z} ≈ ${want}`)
+  assert.ok(Math.abs(m.iw * m.z - W) < 1.5 && Math.abs(m.ih * m.z - H) < 2.5, '키운 배치가 창을 꼭 채운다 ' + JSON.stringify(m))
+  assert.ok(m.sx <= 0 && m.sy <= 1, '옆 · 아래로 넘치지 않는다(높이는 반올림 1 px 까지 — 문서는 스크롤되지 않는다) ' + JSON.stringify(m))
+  assert.equal(m.two, false, '한 칸'); assert.equal(m.collapsed, true, '폰처럼 접힌 채 시작')
+  assert.ok(Math.abs(m.left - m.right) <= 1 && m.col >= 400 - 34 && m.col <= 560, '한 칸이 가운데, 폰 폭 ~ 560 ' + JSON.stringify(m))
+  assert.ok(m.tunerBelow > 0 && m.metroBottom >= 0, '튜너 아래 메트로놈, 화면 안 ' + JSON.stringify(m))
+  assert.ok(Math.abs(m.cvRatio - m.dpr * m.z) / (m.dpr * m.z) < 0.03, '캔버스 화소 = 기기 배율 × 확대 배율(흐려지지 않는다) ' + JSON.stringify(m))
+  // 단계는 폰과 같다: 버튼으로 펼치고, 위로 밀면 메트로놈만 크게 — 그 화면도 넘치지 않는다
+  await sizeTap(p); assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), false, '펼침')
+  await swipeUp(p)
+  const f = await p.evaluate(() => { const c = document.getElementById('metro-card').getBoundingClientRect(), last = document.getElementById('sd-grid').getBoundingClientRect(), clip = document.getElementById('metro-body-clip'); return { full: document.getElementById('metro-card').classList.contains('full'), inside: last.bottom <= c.bottom + 0.5 && c.bottom <= innerHeight + 0.5, over: clip.scrollHeight - clip.clientHeight } })
+  assert.ok(f.full && f.inside && f.over <= 0, '메트로놈만 크게: 마지막 줄까지 화면 안 ' + JSON.stringify(f))
+  await swipeDown(p)
+  // 창(드론)은 키운 좌표에서도 카드에 맞춰 뜬다
+  await p.click('#drone-btn'); await sleep(p, 500)
+  const d = await p.evaluate(() => { const pop = document.getElementById('drone-pop').getBoundingClientRect(), card = document.getElementById('tuner-card').getBoundingClientRect(); return { dl: pop.left - card.left, dr: pop.right - card.right, in: pop.bottom <= innerHeight && pop.width > 0 } })
+  assert.ok(Math.abs(d.dl) <= 1 && Math.abs(d.dr) <= 1 && d.in, '드론 창이 튜너 카드 폭에 맞는다 ' + JSON.stringify(d))
+}, { viewport: { width: W, height: H }, deviceScaleFactor: 2 })
+
+// 폰은 그대로다 — 가장 넓은 폰 폭에서도 키우지 않고, viewport 선언도 손대지 않는다
+for (const [W, H] of [[360, 780], [412, 915], [448, 997], [480, 1040]]) await scenario(`layout: a ${W}x${H} phone is not magnified and keeps its viewport declaration`, 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 900)
-  const r = await p.evaluate(() => { const R = e => e.getBoundingClientRect(), leds = [...document.querySelectorAll('#beat-vis .led')], lab = R(document.getElementById('metro-hdr-label')), btn = R(document.getElementById('metro-hdr-right')), L = R(leds[0]).left, Rr = R(leds.at(-1)).right
-    return { led: +R(leds[0]).width.toFixed(1), fromLabel: +(L - lab.right).toFixed(1), toBtn: +(btn.left - Rr).toFixed(1) } })
-  assert.equal(r.led, 13, '점은 제 크기 ' + JSON.stringify(r))
-  assert.ok(r.fromLabel >= 8 && r.toBtn >= 8 && Math.abs(r.fromLabel - r.toBtn) <= 1, '글자와 버튼 사이 가운데, 닿지 않음 ' + JSON.stringify(r))
-  // 넓은 화면의 템포 글자는 칸 왼쪽에 붙는다(폰의 접힘처럼 가운데가 아니다) — 두 자리로 바꿔도 음표가 그 자리, 점도 그 자리
-  const flush = await p.evaluate(() => { const lab = document.getElementById('metro-hdr-label'), n = document.getElementById('metro-hdr-bpm'), note = () => Array.from(lab.querySelectorAll('.note-glyph')).find(e => getComputedStyle(e).display !== 'none').getBoundingClientRect().left, led = () => document.querySelector('#beat-vis .led').getBoundingClientRect().left
-    const a = { note: note() - lab.getBoundingClientRect().left, led: led() }; const t = n.textContent; n.textContent = '80'; const b = { note: note() - lab.getBoundingClientRect().left, led: led() }; n.textContent = t; return { a, b } })
-  assert.ok(Math.abs(flush.a.note) <= 0.5 && Math.abs(flush.b.note) <= 0.5 && Math.abs(flush.a.led - flush.b.led) <= 0.1, '넓은 화면: 템포는 칸 왼쪽, 두 자리여도 음표 · 점 그 자리 ' + JSON.stringify(flush))
-}, { viewport: { width: w, height: 900 } })
+  const m = await p.evaluate(() => ({ z: visualViewport.scale, iw: innerWidth, meta: document.querySelector('meta[name="viewport"]').content, col: document.getElementById('main-body').getBoundingClientRect().width, two: document.getElementById('main-body').classList.contains('two') }))
+  assert.equal(m.z, 1); assert.equal(m.iw, W); assert.equal(m.two, false)
+  assert.equal(m.meta, 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover')
+  assert.equal(m.col, Math.min(W - 24, Math.max(400, Math.min(W - 64, 560))), '한 칸의 폭 ' + JSON.stringify(m))
+}, { viewport: { width: W, height: H } })
 
 // 접힌 헤더: 템포 칸은 늘 가장 넓은 ♩. = 200 의 폭이고 글자는 그 안 가운데 — 두 자리 ↔ 세 자리 · 4/4 ↔ 6/8 로 바뀌어도 점이 그 자리,
 // 카드 왼쪽 끝 ↔ 음표와 숫자 끝 ↔ 첫 점의 여백이 같다(숫자 상자의 오른쪽 빈자리 .023em 을 빼고 잉크로 비교). 넓은 폰(430)은 남는 폭을 양옆 칸이 나눠 가진다
@@ -754,20 +776,42 @@ await scenario('metro: with reduced motion, pushing the card 40 px moves one ste
   await swipeDown(p); assert.equal(await st(), 'e', '아래로 밀어 펼침')
   await swipeDown(p); assert.equal(await st(), 'c', '아래로 밀어 접힘')
 }, { reducedMotion: 'reduce' })
-// 넓은 화면에는 접힘이 없다 — 버튼은 펼침 ⇄ 펼침2, 처음 누를 때부터
-await scenario('metro: on a wide screen the size button goes expanded ⇄ full from the first tap', 'silence_lowfloor.wav', async p => {
+// 가로로 넓은 창: 튜너 | 메트로놈만 크게 보는 화면 두 칸. 카드의 단계가 없다 — 좁아지면 전의 단계로 돌아간다
+for (const [name, W, H] of [['a landscape tablet', 1280, 800], ['a large landscape tablet', 1366, 1024]]) await scenario(`layout: ${name} (${W}x${H}) puts the tuner and the full-size metronome side by side, and going back to portrait restores the card`, 'violin_A4.wav', async p => {
+  await p.goto(URL_); await sleep(p, 1500)
+  const look = () => p.evaluate(() => { const R = id => document.getElementById(id).getBoundingClientRect(), t = R('tuner-card'), m = R('metro-card'), last = R('sd-grid'), clip = document.getElementById('metro-body-clip'), vis = id => getComputedStyle(document.getElementById(id)).visibility
+    return { z: visualViewport.scale, iw: innerWidth, ih: innerHeight, sx: document.documentElement.scrollWidth - innerWidth, two: document.getElementById('main-body').classList.contains('two'), full: document.getElementById('metro-card').classList.contains('full'),
+      collapsed: document.getElementById('metro-body-wrap').classList.contains('collapsed'), tw: t.width, mw: m.width, side: m.left - t.right, sameTop: Math.abs(t.top - m.top), sameBottom: Math.abs(t.bottom - m.bottom), bottom: innerHeight - m.bottom,
+      lastInside: last.bottom <= m.bottom + 0.5, over: clip.scrollHeight - clip.clientHeight, dial: R('dial').width, sizeBtn: vis('metro-size-btn'), fullBtn: vis('metro-full-btn'), hdrPlay: getComputedStyle(document.getElementById('metro-play-hdr-btn')).display, rotate: getComputedStyle(document.body, '::after').content } })
+  const a = await look(), want = Math.max(1, Math.min(2, W / 1000, H / 640))
+  assert.ok(Math.abs(a.z - want) < 0.01, `배율 ${a.z} ≈ ${want}`)
+  assert.ok(a.two && a.full && !a.collapsed, '두 칸: 메트로놈은 크게 보는 화면 ' + JSON.stringify(a))
+  assert.ok(a.tw > 300 && Math.abs(a.tw - a.mw) <= 1 && a.side > 0 && a.sameTop <= 0.5 && a.sameBottom <= 0.5, '같은 폭 · 같은 높이로 나란히 ' + JSON.stringify(a))
+  assert.ok(a.sx <= 0 && a.bottom >= 0 && a.lastInside && a.over <= 0, '넘치거나 잘리는 줄이 없다 ' + JSON.stringify(a))
+  assert.ok(a.dial >= 120, '다이얼이 보인다 ' + JSON.stringify(a))
+  assert.equal(a.sizeBtn, 'hidden'); assert.equal(a.fullBtn, 'hidden'); assert.equal(a.hdrPlay, 'none'); assert.equal(a.rotate, 'none', '세로로 돌리라는 안내는 없다')
+  // 카드를 밀어도 단계가 바뀌지 않는다
+  await swipeDown(p); const b = await look(); assert.ok(b.two && b.full, '아래로 밀어도 그대로')
+  // 튜너는 옆에서 그대로 듣는다
+  assert.equal((await tunerText(p)).note, '라')
+  // 세로로 돌리면 한 칸: 전의 단계(접힘)로. 다시 가로면 두 칸
+  await p.setViewportSize({ width: H, height: W }); await sleep(p, 900)
+  const c = await look(); assert.ok(!c.two && !c.full && c.collapsed && c.sx <= 0, '세로: 한 칸 · 접힘 ' + JSON.stringify(c)); assert.equal(c.hdrPlay, 'flex'); assert.equal(c.sizeBtn, 'visible')
+  await p.setViewportSize({ width: W, height: H }); await sleep(p, 900)
+  const d = await look(); assert.ok(d.two && d.full && Math.abs(d.z - want) < 0.01 && d.sx <= 0, '다시 가로: 두 칸 ' + JSON.stringify(d))
+  // 자리를 잡은 뒤에는 가만히 있다 — 다시 잰 값의 반올림 차이로 선언을 바꾸면 화면이 끝없이 다시 맞춰졌다
+  for (const [w, h] of [[H, W], [W, H]]) {
+    await p.setViewportSize({ width: w, height: h }); await sleep(p, 900)
+    const n = await p.evaluate(() => new Promise(r => { let k = 0; const f = () => k++; addEventListener('resize', f); visualViewport.addEventListener('resize', f); setTimeout(() => r(k), 700) }))
+    assert.equal(n, 0, `${w}x${h}: 맞춤이 끝난 뒤 다시 맞추지 않는다`)
+  }
+}, { viewport: { width: W, height: H }, deviceScaleFactor: 2 })
+
+// 낮은 가로 창은 두 칸이 아니다 — 옆 칸의 메트로놈이 잘린다
+await scenario('layout: a landscape window too short for the metronome pane stays one column', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 900)
-  const full = () => p.evaluate(() => document.getElementById('metro-card').classList.contains('full'))
-  const btn = () => p.evaluate(() => { const b = document.getElementById('metro-size-btn'); return [b.classList.contains('to-full'), b.getAttribute('aria-label')] })
-  assert.deepEqual(await btn(), [true, '메트로놈만 크게 보기'], '펼침: ∧ 메트로놈만 크게')
-  await sizeTap(p); assert.equal(await full(), true, '첫 누름에 펼침2')
-  assert.deepEqual(await btn(), [false, '튜너와 함께 보기'], '펼침2: ∨ 는 튜너와 함께(펼침)로')
-  await sizeTap(p); assert.equal(await full(), false, '∨ → 펼침')
-  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('tuner-card')).display), 'flex')
-  await swipeDown(p); assert.deepEqual(await btn(), [true, '메트로놈만 크게 보기'], '아래로 밀어도 접힘 상태로 가지 않는다')
-  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('metro-full-btn')).display), 'none', '넓은 화면엔 크게 버튼이 없다 — ∧ 가 그 일을 한다')
-  assert.equal(await p.evaluate(() => getComputedStyle(document.getElementById('metro-hdr-label')).visibility), 'visible', '넓은 화면 펼침의 헤더 ♩80 은 그대로(처음 안내가 거기를 가리킨다)')
-}, { viewport: { width: 900, height: 900 } })
+  assert.deepEqual(await p.evaluate(() => [document.getElementById('main-body').classList.contains('two'), document.getElementById('metro-card').classList.contains('full'), visualViewport.scale]), [false, false, 1])
+}, { viewport: { width: 1000, height: 600 } })
 
 // 화면 크기 행렬 — 펼침2 는 어떤 화면에서도 스크롤·넘침이 없고 글자가 읽혀야 한다.
 // 기기별 땜빵이 아니라 규칙(다이얼이 남는 높이를 흡수, 글자는 렌더 크기 고정)으로 닫고, 이 행렬이 회귀를 잡는다.
@@ -789,9 +833,9 @@ for (const [name, w, h, top, bot] of LAYOUT_MATRIX) await scenario(`layout: full
     const names = Array.from(document.querySelectorAll('#dial-svg .dial-name')).filter(n => getComputedStyle(n).display !== 'none').length
     const last = document.getElementById('sd-grid').getBoundingClientRect()
     const body = document.getElementById('metro-body'), bcs = getComputedStyle(body), bb = body.getBoundingClientRect()
-    const btns = Array.from(document.querySelectorAll('#metro-btn-row > button, #metro-adj-pad > button')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').map(b => b.getBoundingClientRect())
+    const btns = Array.from(document.querySelectorAll('#metro-btn-row > button')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').map(b => b.getBoundingClientRect())
     const btnOverflow = Math.max(0, ...btns.map(v => Math.max(bb.left + parseFloat(bcs.paddingLeft) - v.left, v.right - (bb.right - parseFloat(bcs.paddingRight)))))
-    const adj5 = Array.from(document.querySelectorAll('#metro-card.full .m-adj5, #metro-card.full .m-adj5-pad')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').length
+    const adj5 = Array.from(document.querySelectorAll('#metro-card.full .m-adj5')).filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').length
     return { btnOverflow, adj5, overflowY: clip.scrollHeight - clip.clientHeight, segOverflow: Math.max(0, ...segs.map(s => s.right - card.right)), glyphOverflow: Math.max(0, ...glyphs),
       dial: dial.width, numBoxH: num.height, names, lastRowInside: last.bottom <= card.bottom + 0.5 && last.bottom <= window.innerHeight,
       hdr: getComputedStyle(document.getElementById('hdr')).display, logo: document.getElementById('logo') }
@@ -1289,17 +1333,25 @@ await scenario('first-run guide: the metronome step also goes round with buttons
   assert.equal(await p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed')), true, 'still folded')
   assert.equal((await tour(p)).title, '좋아요')
 }, { fresh: true, locale: 'ko-KR' })
-await scenario('first-run guide (wide screen): the bubble does not cover the metronome; ∧ goes to the full view and back', 'violin_A4.wav', async p => {
+await scenario('first-run guide (two panes): the metronome step points at the dial pane, asks for nothing, and the bubble does not cover it', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)
   for (let k = 0; k < 5; k++) await tourNext(p)
-  assert.equal((await tour(p)).body, '메트로놈만 크게 볼 수 있어요. ∧를 눌러도 돼요')
-  // 2.9.3: 넓은 화면의 메트로놈 카드는 내용 높이만큼(늘이지 않는다) → 말풍선은 옆이든 아래든 카드와 겹치지만 않으면 된다
-  const r = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(), m = document.getElementById('metro-card').getBoundingClientRect(); return { c: [c.left, c.top, c.right, c.bottom], m: [m.left, m.top, m.right, m.bottom] } })
+  const t = await tour(p); assert.equal(t.title, '다이얼을 돌려 보세요'); assert.equal(t.body, '메트로놈의 빠르기가 바뀌어요. 박자는 그 아래에서 골라요')
+  const r = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(), m = document.getElementById('metro-card').getBoundingClientRect(); return { c: [c.left, c.top, c.right, c.bottom], m: [m.left, m.top, m.right, m.bottom], vw: innerWidth, vh: innerHeight, soft: document.querySelector('#tour .tour-next').classList.contains('soft') } })
   const apart = r.c[2] <= r.m[0] || r.c[0] >= r.m[2] || r.c[3] <= r.m[1] || r.c[1] >= r.m[3]
   assert.ok(apart, '말풍선이 메트로놈을 가리지 않는다: ' + JSON.stringify(r))
-  await sizeTap(p); assert.equal((await tour(p)).title, '이제 아래로 내려 보세요')
-  await sizeTap(p); assert.equal((await tour(p)).title, '좋아요')
-}, { fresh: true, locale: 'ko-KR', viewport: { width: 900, height: 1000 }, isMobile: false })
+  assert.ok(r.c[0] >= 0 && r.c[1] >= 0 && r.c[2] <= r.vw && r.c[3] <= r.vh, '말풍선이 화면 안: ' + JSON.stringify(r))
+  assert.equal(r.soft, false, '해 볼 것이 없어 다음이 바로 열려 있다')
+  await tourNext(p); assert.notEqual((await tour(p)).title, t.title, '다음 단계로')
+}, { fresh: true, locale: 'ko-KR', viewport: { width: 1280, height: 800 } })
+await scenario('first-run guide (magnified tablet): the same steps as on a phone, bubble inside the screen', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p)
+  for (let k = 0; k < 5; k++) await tourNext(p)
+  assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
+  const r = await p.evaluate(() => { const c = document.querySelector('#tour .tour-card').getBoundingClientRect(); return { c: [c.left, c.top, c.right, c.bottom], vw: innerWidth, vh: innerHeight, z: visualViewport.scale } })
+  assert.ok(r.z > 1.5 && r.c[0] >= 0 && r.c[1] >= 0 && r.c[2] <= r.vw && r.c[3] <= r.vh, '말풍선이 화면 안: ' + JSON.stringify(r))
+  await sizeTap(p); assert.equal((await tour(p)).title, '한 번 더 올려 보세요')
+}, { fresh: true, locale: 'ko-KR', viewport: { width: 800, height: 1280 } })
 
 await scenario('first-run guide: going to the background mid-step puts the step back before settings are saved', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)
@@ -1625,7 +1677,7 @@ await scenario('keys: closed menu and settings are out of the Tab order', 'violi
   assert.equal(reached, true, '열린 메뉴는 포커스를 받는다')
 })
 
-await scenario('metro: the header play button disappears when the screen gets wide while playing', 'silence_lowfloor.wav', async p => {
+await scenario('metro: the collapsed card keeps its header play button when the window grows; two panes hide it and going back restores it', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 1200)
   const hdr = () => p.evaluate(() => getComputedStyle(document.getElementById('metro-play-hdr-btn')).display)
   const collapsed = () => p.evaluate(() => document.getElementById('metro-body-wrap').classList.contains('collapsed'))
@@ -1635,9 +1687,11 @@ await scenario('metro: the header play button disappears when the screen gets wi
   await swipeDown(p)
   assert.equal(await collapsed(), true, '재생 중 스와이프로 접기')
   assert.equal(await hdr(), 'flex', '폰: 접힌 채 재생 중 헤더 버튼')
-  await p.setViewportSize({ width: 900, height: 844 }); await sleep(p, 600)
-  assert.equal(await hdr(), 'none', '넓은 화면: 헤더 버튼 없음')
-  await p.setViewportSize({ width: 390, height: 844 }); await sleep(p, 600)
+  await p.setViewportSize({ width: 900, height: 844 }); await sleep(p, 900)
+  assert.equal(await hdr(), 'flex', '넓어져도 한 칸이면 접힌 그대로'); assert.equal(await collapsed(), true)
+  await p.setViewportSize({ width: 1280, height: 800 }); await sleep(p, 900)
+  assert.equal(await hdr(), 'none', '가로 두 칸: 헤더 버튼 없음(옆 칸에 큰 재생 버튼)')
+  await p.setViewportSize({ width: 390, height: 844 }); await sleep(p, 900)
   assert.equal(await hdr(), 'flex', '다시 폰: 헤더 버튼 복귀')
   assert.equal(await collapsed(), true, '폭이 바뀌어도 접힘은 사용자가 정한 그대로')
   // 폰에서 재생 중에 일부러 펼친 카드는, 높이만 바뀌는 resize(안드로이드 주소창 숨김·키보드)에 다시 접히면 안 된다

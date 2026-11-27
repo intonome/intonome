@@ -18,7 +18,7 @@ import { DECODE_MAX_SEC } from '../core/recPolicy.ts'
 import { uniqueName } from '../core/recName.ts'
 import { toast } from './toast.ts'
 import { t as tr } from '../core/i18n/index.ts'
-import { isNative } from '../platform/index.ts'
+import { isNative, pixelRatio } from '../platform/index.ts'
 import { hideMenu, showMenuInstant } from './menu.ts'
 import { attachSwipeBack } from './swipeBack.ts'
 
@@ -131,7 +131,7 @@ function drawWave(): void {
   const canvas = q<HTMLCanvasElement>('ed-wave'), rail = q('ed-track-rail'), prog = q('ed-progress')
   if (!peaks) { canvas.style.display = 'none'; rail.style.display = ''; prog.style.display = ''; return }
   canvas.style.display = 'block'; rail.style.display = 'none'; prog.style.display = 'none'
-  const W = canvas.offsetWidth, H = canvas.offsetHeight, dpr = devicePixelRatio || 1
+  const W = canvas.offsetWidth, H = canvas.offsetHeight, dpr = pixelRatio()
   if (!W || !H) return
   if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr) }
   const c = canvas.getContext('2d')!; c.save(); c.scale(dpr, dpr); c.clearRect(0, 0, W, H)

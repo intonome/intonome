@@ -2,6 +2,7 @@
  * 튜너 카드 UI — 음이름/옥타브/cents/Hz, 히스토리 캔버스, "탭하여 시작" 안내.
  * tunerStore 를 구독해 그린다. 오디오 모듈을 직접 읽지 않는다.
  */
+import { pixelRatio } from '../platform/index.ts'
 import { octaveOf, noteLabel } from '../core/note.ts'
 import { calmHz, fmtHz } from '../core/hzReadout.ts'
 import { histLenFor, rowsShown } from '../core/hist.ts'
@@ -107,7 +108,7 @@ function clearBitmap(canvas: HTMLCanvasElement, c: CanvasRenderingContext2D): vo
 let emptyDrawn = ''
 function drawHistory(inTune: boolean): void {
   const s = viewSize(); if (!s.W) return
-  const W = s.W, H = Math.max(80, s.H || 100), dpr = devicePixelRatio || 1
+  const W = s.W, H = Math.max(80, s.H || 100), dpr = pixelRatio()
   const canvas = q<HTMLCanvasElement>('tuner-history-cv'), c = canvas.getContext('2d')!
   fitBitmap(canvas, c, W, H, dpr)
   lastInTune = inTune

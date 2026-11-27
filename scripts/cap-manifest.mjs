@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Android 매니페스트 보정 — 마이크 권한·세로 고정·버전·백업 설정. cap:sync 가 매번 실행한다
+// Android 매니페스트 보정 — 마이크 권한·세로 고정·버전·백업 설정·WebView 설정. cap:sync 가 매번 실행한다
 // RECORD_AUDIO 가 없으면 WebView getUserMedia 가 NotAllowedError 로 실패하고, 앱 설정에 마이크 권한 항목도 보이지 않는다
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -56,6 +56,25 @@ export function copySplashLogo(res, src) {
   return true
 }
 
+/**
+ * WebView 가 페이지의 viewport 선언(폭 · 배율)을 따르게 한다 — 큰 화면 맞춤(www/src/platform fitViewport)이 폭을 창보다 좁게 선언해 화면 전체를 키운다.
+ * 기본값(false)에서는 배치 폭이 늘 WebView 폭이라 선언이 무시된다. 폰은 선언이 '기기 폭 그대로' 라 켜도 같은 폭이다.
+ * Capacitor 템플릿의 빈 MainActivity 만 고친다 — 손으로 고쳐 둔 파일이면 null(건드리지 않는다). 멱등. 순수
+ */
+export const WIDE_VIEWPORT_CALL = 'getSettings().setUseWideViewPort(true)'
+export function setWideViewport(java) {
+  if (java.includes(WIDE_VIEWPORT_CALL)) return java
+  const re = /(public class MainActivity extends BridgeActivity\s*)\{\s*\}/
+  if (!re.test(java)) return null
+  return java.replace(re, `$1{
+    @Override
+    protected void onCreate(android.os.Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getBridge() != null) getBridge().getWebView().${WIDE_VIEWPORT_CALL};
+    }
+}`)
+}
+
 /** dist 가 GitHub Pages 용 빌드(base=/<레포명>/)인지 — 그대로 APK 에 넣으면 자산 경로가 어긋나 흰 화면이 된다. 레포명을 박지 않는다 */
 export function isWebBuildHtml(html) { return /(?:src|href)="\/[^"/]+\/assets\//.test(html) }
 
@@ -100,6 +119,15 @@ export function main(log = console.log) {
     const st = readFileSync(styles, 'utf8'), themed = setSplashTheme(st, backgroundColor, splashColor), st2 = logo ? setSplashLogo(themed) : themed
     if (st2 !== st) { writeFileSync(styles, st2); log(`styles.xml: 시작 화면 바탕 ${splashColor}${logo ? ' · 고리 + 워드마크' : ''} · 앱 창 바탕 ${backgroundColor}`) } else log('styles.xml 시작 화면 OK')
   }
+
+  // WebView 가 viewport 선언을 따르게 — 큰 화면(폴드 · 태블릿)에서 화면 전체를 키우는 데 쓴다
+  const { appId } = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8'))
+  const activity = join(ROOT, 'android', 'app', 'src', 'main', 'java', ...appId.split('.'), 'MainActivity.java')
+  if (existsSync(activity)) {
+    const j = readFileSync(activity, 'utf8'), j2 = setWideViewport(j)
+    if (j2 === null) console.error('\x1b[31mMainActivity.java 가 템플릿과 달라 WebView 설정을 넣지 못했습니다 — 큰 화면에서 화면이 커지지 않습니다. onCreate 에 ' + WIDE_VIEWPORT_CALL + ' 를 넣어 주세요.\x1b[0m')
+    else if (j2 !== j) { writeFileSync(activity, j2); log('MainActivity.java: WebView 가 viewport 선언을 따른다 (큰 화면 맞춤)') } else log('MainActivity.java WebView 설정 OK')
+  } else log('없음: ' + activity + ' — 큰 화면 맞춤이 앱에서 꺼진 채다')
 
   // 버전 동기화 — android/ 는 생성물이라 build.gradle 의 versionName/versionCode 가 매번 1.0/1 로 돌아온다
   const gradle = join(ROOT, 'android', 'app', 'build.gradle')

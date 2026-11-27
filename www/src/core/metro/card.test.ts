@@ -2,15 +2,14 @@ import { describe, test, expect } from 'vitest'
 import { stageOf, stageChange, sizeBtnTarget, dragTarget, dragProgress, dragCommits, stepCommits } from './card.ts'
 
 describe('metronome card stages', () => {
-  test('wide screens never show the collapsed stage', () => {
-    expect(stageOf(true, false, true)).toBe('c')
-    expect(stageOf(true, false, false)).toBe('e')
-    expect(stageOf(true, true, true)).toBe('f')
+  test('the stage shown comes from the stored values - full wins over collapsed', () => {
+    expect(stageOf(true, false)).toBe('c')
+    expect(stageOf(false, false)).toBe('e')
+    expect(stageOf(true, true)).toBe('f')
   })
-  test('size button: full → expanded; phone toggles collapsed ⇄ expanded; wide goes expanded → full', () => {
-    expect(sizeBtnTarget('f', true)).toBe('e'); expect(sizeBtnTarget('f', false)).toBe('e')
-    expect(sizeBtnTarget('c', true)).toBe('e'); expect(sizeBtnTarget('e', true)).toBe('c')
-    expect(sizeBtnTarget('e', false)).toBe('f')
+  test('size button: full → expanded; otherwise it toggles collapsed ⇄ expanded', () => {
+    expect(sizeBtnTarget('f')).toBe('e')
+    expect(sizeBtnTarget('c')).toBe('e'); expect(sizeBtnTarget('e')).toBe('c')
   })
   test('stored values for each stage', () => {
     expect(stageChange('f')).toEqual({ full: true })
@@ -20,10 +19,9 @@ describe('metronome card stages', () => {
 })
 
 describe('dragging the card', () => {
-  test('up goes c → e → f, down the reverse; no collapse on wide screens; nothing past the ends', () => {
-    expect(dragTarget('c', -1, true)).toBe('e'); expect(dragTarget('e', -1, true)).toBe('f'); expect(dragTarget('f', -1, true)).toBe(null)
-    expect(dragTarget('f', 1, true)).toBe('e'); expect(dragTarget('e', 1, true)).toBe('c'); expect(dragTarget('c', 1, true)).toBe(null)
-    expect(dragTarget('e', 1, false)).toBe(null)
+  test('up goes c → e → f, down the reverse; nothing past the ends', () => {
+    expect(dragTarget('c', -1)).toBe('e'); expect(dragTarget('e', -1)).toBe('f'); expect(dragTarget('f', -1)).toBe(null)
+    expect(dragTarget('f', 1)).toBe('e'); expect(dragTarget('e', 1)).toBe('c'); expect(dragTarget('c', 1)).toBe(null)
   })
   test('height follows the finger between the two stage heights', () => {
     expect(dragProgress(100, 300, -50)).toEqual({ h: 150, p: 0.25 })

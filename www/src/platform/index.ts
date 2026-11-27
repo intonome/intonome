@@ -1,4 +1,5 @@
 /** 플랫폼 분기 (웹 / iOS 웹 / Capacitor Android). 나머지 코드는 이 모듈의 함수만 호출한다 */
+import { fitScale, fitWidth, PANE_QUERY } from '../core/fit.ts'
 import { t } from '../core/i18n/index.ts'
 import { notice, noticeListening } from '../core/notice.ts'
 declare global { interface Window { Capacitor?: unknown } }
@@ -193,8 +194,46 @@ export async function saveFile(blob: Blob, name: string): Promise<{ ok: true } |
   }
 }
 
-/** 폰 레이아웃 여부 */
-export const isPhoneLayout = (): boolean => window.innerWidth < 700
+/** 지금 창이 튜너 | 메트로놈 두 칸인가(가로로 넓은 창). 그 밖에는 어느 화면이든 폰과 같은 한 칸이고, 큰 화면은 fitViewport 가 전체를 키운다 */
+export const isTwoPane = (): boolean => matchMedia(PANE_QUERY).matches
+
+const FIT_SLACK = 3 // dp — 이보다 적게 달라진 창은 같은 창으로 본다
+const VIEWPORT_PHONE = 'width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover' // index.html 과 같은 값
+/** 브라우저가 화면을 키운 배율(배치 폭을 창보다 좁게 선언하면 그만큼 확대한다). 손가락 확대는 막혀 있어 이 값이 곧 화면 맞춤 배율 */
+export const pageScale = (): number => (typeof visualViewport !== 'undefined' && visualViewport && visualViewport.scale > 0 ? visualViewport.scale : 1)
+/** 캔버스 비트맵에 쓸 화소 배율 — 키운 화면에서는 기기 배율 × 확대 배율이어야 선이 흐려지지 않는다 */
+export const pixelRatio = (): number => (devicePixelRatio || 1) * pageScale()
+/**
+ * 큰 화면 맞춤: 창 크기(dp)를 재서 배치 폭을 선언한다 — 폭을 창보다 좁게 선언하면 브라우저가 화면 전체(팝업 · 토스트 · 좌표 포함)를 그 비율로 키운다.
+ * 창이 바뀔 때마다(회전 · 접고 펴기 · 화면 분할) 다시 잰다. 선언을 무시하는 환경에서는 아무 일도 없다(한 칸이 가운데에 그대로)
+ */
+export function fitViewport(): void {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]'); if (!meta) return
+  let declared = 0, lastW = 0, lastH = 0 // 지금 선언한 배치 폭(0 = 기기 폭 그대로) · 그때 잰 창 크기
+  const apply = (): void => {
+    // 확대를 푼 창 크기. 보이는 영역(visualViewport)의 크기 × 배율로 잰다 — 둘은 늘 함께 바뀌어 선언을 바꾼 직후에도 곱이 창 크기다(배치 폭 innerWidth 는 한 박자 늦을 수 있다)
+    const vv = typeof visualViewport !== 'undefined' ? visualViewport : null
+    const w = vv ? vv.width * vv.scale : window.innerWidth, h = vv ? vv.height * vv.scale : window.innerHeight
+    // 글자를 치는 동안 키보드가 창을 낮춘 것은 창이 바뀐 게 아니다 — 그때 배율을 다시 잡으면 치던 화면이 통째로 줄어든다
+    const el = document.activeElement, typing = el instanceof HTMLInputElement && el.type === 'text'
+    if (typing && Math.abs(w - lastW) < FIT_SLACK && h < lastH) return
+    // 같은 창을 다시 잰 값은 반올림만큼(1 dp 안팎) 다르다 — 그 차이로 선언을 바꾸면 바꾼 선언이 다시 재는 값을 바꿔 끝없이 오간다
+    if (Math.abs(w - lastW) < FIT_SLACK && Math.abs(h - lastH) < FIT_SLACK) return
+    lastW = w; lastH = h
+    const want = fitScale(w, h) > 1.001 ? fitWidth(w, h) : 0
+    if (want === declared) return
+    declared = want
+    // 폭과 배율을 함께 적는다 — 폭만 적으면 안드로이드 WebView 는 배율을 1 로 되돌린다(배율을 적지 않은 페이지에만 있는 호환 규칙). 배율은 내림: 올리면 보이는 폭이 배치 폭보다 좁아져 옆으로 밀린다.
+    // 손가락 확대는 최소 = 최대 배율로 막는다(폰 화면의 user-scalable=no 와 같은 일)
+    const s = Math.floor(w / want * 1e4) / 1e4
+    meta.setAttribute('content', want ? `width=${want}, initial-scale=${s}, minimum-scale=${s}, maximum-scale=${s}, viewport-fit=cover` : VIEWPORT_PHONE)
+  }
+  apply()
+  let t: ReturnType<typeof setTimeout> | null = null
+  const later = (): void => { if (t) clearTimeout(t); t = setTimeout(apply, 60) }
+  window.addEventListener('resize', later); window.addEventListener('orientationchange', later)
+  if (typeof visualViewport !== 'undefined' && visualViewport) visualViewport.addEventListener('resize', later) // 키보드가 내려갈 때 · 배율이 자리 잡을 때
+}
 
 /** 시스템 글꼴 크기(안드로이드 앱). WebView 는 기본으로 시스템 배율만큼 '글자만' 키운다(상자는 그대로) — 100~200 % 가 그대로 들어오면
  *  한 화면짜리 이 앱은 버튼 글자가 넘치고 아래 조작이 화면 밖으로 밀린다. 그래서 WebView 배율은 100 % 로 두고, 시스템 배율을 읽어

@@ -9,7 +9,7 @@ import { settingsStore, tunerStore, metroStore, refToneStore, droneStore, type S
 import { q, on } from './dom.ts'
 import { t, type TKey } from '../core/i18n/index.ts'
 import { onLangChange } from './lang.ts'
-import { isPhoneLayout, setStatusBarTheme, isNative } from '../platform/index.ts'
+import { isTwoPane, setStatusBarTheme, isNative } from '../platform/index.ts'
 import { stageOf, type Stage } from '../core/metro/card.ts'
 import { placeBubble } from '../core/tourPlace.ts'
 import { overlayOpen, closeSettings } from './menu.ts'
@@ -34,7 +34,7 @@ interface Step {
 }
 
 const reduced = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches
-const metroState = (): Stage => { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full, isPhoneLayout()) }
+const metroState = (): Stage => { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full) }
 /** 안내가 건드릴 수 있는 설정 — 떠날 때 들어올 때 값으로 */
 const KEEP = ['refHz', 'bpm', 'timeSig', 'subDiv', 'metroVol'] as const
 type Kept = Pick<Settings, typeof KEEP[number]>
@@ -70,18 +70,19 @@ const STEPS: Step[] = [
     view: () => ({ title: 'tour.playA', body: 'tour.playABody', gesture: 'tap', pulseAt: () => q('ref-a-btn') }) },
   { key: 'drone', target: () => [q('drone-btn')], pad: 6, radius: 10, open: true,
     view: () => ({ title: 'tour.drone', body: 'tour.droneBody', gesture: 'tap', pulseAt: () => q('drone-btn') }) },
-  // 카드를 끝까지 한 바퀴: 폰은 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 헤더 왼쪽 버튼으로도) → 아래로 → 한 번 더 아래로(접힘).
-  // 넓은 화면은 펼침 → 위로(크게) → 아래로. 밀기 표시는 헤더 가운데(박 점들) — 왼쪽 ♩80 을 밀면 카드가 아니라 빠르기가 바뀐다
+  // 카드를 끝까지 한 바퀴: 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 헤더 왼쪽 버튼으로도) → 아래로 → 한 번 더 아래로(접힘).
+  // 가로 두 칸에는 카드의 단계가 없다 — 옆에 늘 크게 보이는 메트로놈(다이얼)을 알려 주기만 한다. 밀기 표시는 헤더 가운데(박 점들) — 왼쪽 ♩80 을 밀면 카드가 아니라 빠르기가 바뀐다
   // 다 돌고 접힌 뒤(done)에는 ♩ 숫자만 밝힌다 — 카드 전체가 열려 있으면 숫자 대신 카드를 밀어 다시 펼칠 수 있었고, 말풍선은 '숫자를 밀어 보세요' 그대로였다
-  { key: 'metro', target: () => [q(done ? 'metro-hdr-label' : 'metro-card')], pad: 4, radius: 18, open: true, task: true,
+  { key: 'metro', target: () => [q(done && !isTwoPane() ? 'metro-hdr-label' : 'metro-card')], pad: 4, radius: 18, open: true, task: true,
     view: () => {
-      const wide = !isPhoneLayout(), st = metroState(), hdr = (): HTMLElement => q('metro-hdr')
+      const st = metroState(), hdr = (): HTMLElement => q('metro-hdr')
+      if (isTwoPane()) return { title: 'tour.metroPane', body: 'tour.metroPaneBody', gesture: 'none' }
       if (done) return snap && settingsStore.get().bpm !== snap.set.bpm // 접은 뒤엔 ♩ 숫자를 밀어 보게 — 밀었으면 되돌아간다고 알린다(기준음과 같은 말)
         ? { title: 'tour.bpmDone', body: 'tour.bpmDoneBody', gesture: 'none', vars: { bpm: snap.set.bpm } }
         : { title: 'tour.metroDone', body: 'tour.metroDoneBody', gesture: 'drag', pulseAt: () => q('metro-hdr-label') }
       if (st === 'f') return { title: 'tour.metroFull', body: 'tour.metroFullBody', gesture: 'swipeDown', pulseAt: hdr }
       if (sawFull) return { title: 'tour.metroDown', body: 'tour.metroDownBody', gesture: 'swipeDown', pulseAt: hdr } // 폰: 펼침까지 내려왔다
-      if (st === 'c' || wide) return { title: 'tour.metro', body: wide ? 'tour.metroBodyWide' : 'tour.metroBody', gesture: 'swipeUp', pulseAt: hdr }
+      if (st === 'c') return { title: 'tour.metro', body: 'tour.metroBody', gesture: 'swipeUp', pulseAt: hdr }
       return { title: 'tour.metroMore', body: 'tour.metroMoreBody', gesture: 'swipeUp', pulseAt: hdr }
     } },
   { key: 'rec', target: () => [q('rec-hdr-btn')], pad: 6, radius: 10,
@@ -170,7 +171,7 @@ function go(n: number): void {
   render(true)
 }
 function enter(): void {
-  done = false; sawFull = false; noteRun = 0
+  done = STEPS[i]!.key === 'metro' && isTwoPane(); sawFull = false; noteRun = 0 // 가로 두 칸의 메트로놈 단계는 해 볼 것이 없다
   if (STEPS[i]!.key === 'drone') skipDroneHint() // 드론 창의 첫 안내 토스트와 같은 말 — 겹쳐 뜨지 않게
   const s = settingsStore.get()
   const m = metroStore.get()
@@ -206,8 +207,9 @@ function check(): void {
   if (k === 'ref' && !done && snap && settingsStore.get().refHz !== snap.set.refHz) done = true
   if (k === 'metro' && !done) {
     const st = metroState()
-    if (st === 'f') sawFull = true
-    else if (sawFull && st === (isPhoneLayout() ? 'c' : 'e')) done = true // 크게 본 뒤 처음 모습으로 돌아왔다
+    if (isTwoPane()) done = true // 단계 도중에 창이 두 칸이 됐다
+    else if (st === 'f') sawFull = true
+    else if (sawFull && st === 'c') done = true // 크게 본 뒤 처음 모습으로 돌아왔다
   }
   const v = STEPS[i]!.view()
   if (`${v.title}|${v.body}` !== shown) render(true) // 설명이 바뀔 때만 (폰의 펼침 → 펼침2 처럼 단계 안에서도)

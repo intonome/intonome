@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { setAllowBackup, isWebBuildHtml, setSplashTheme, setSplashLogo, copySplashLogo, SPLASH_LOGO_DENSITIES, setOptionalFeature } from './cap-manifest.mjs'
+import { setAllowBackup, isWebBuildHtml, setSplashTheme, setSplashLogo, copySplashLogo, SPLASH_LOGO_DENSITIES, setOptionalFeature, setWideViewport, WIDE_VIEWPORT_CALL } from './cap-manifest.mjs'
 
 // Capacitor 8 템플릿이 실제로 내보내는 형태
 const TEMPLATE = `<application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="@string/app_name">`
@@ -18,6 +18,26 @@ describe('setAllowBackup', () => {
     expect(out).toBe('<application android:allowBackup="false" android:label="x">')
   })
   test('no true is left', () => expect(setAllowBackup(TEMPLATE)).not.toContain('allowBackup="true"'))
+})
+
+// Capacitor 8 템플릿의 MainActivity.java 그대로
+const ACTIVITY = `package com.intonome.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}
+`
+describe('setWideViewport', () => {
+  test('the template activity gets an onCreate that turns the setting on after the bridge exists', () => {
+    const out = setWideViewport(ACTIVITY)
+    expect(out).toContain(WIDE_VIEWPORT_CALL)
+    expect(out.indexOf('super.onCreate(savedInstanceState);')).toBeLessThan(out.indexOf(WIDE_VIEWPORT_CALL))
+    expect(out.startsWith('package com.intonome.app;')).toBe(true)
+    expect((out.match(/\{/g) ?? []).length).toBe((out.match(/\}/g) ?? []).length)
+  })
+  test('idempotent', () => { const once = setWideViewport(ACTIVITY); expect(setWideViewport(once)).toBe(once) })
+  test('a body on its own lines is still the empty template', () => expect(setWideViewport(ACTIVITY.replace('{}', '{\n}'))).toContain(WIDE_VIEWPORT_CALL))
+  test('an activity someone edited is left alone', () => expect(setWideViewport(ACTIVITY.replace('{}', '{ int x; }'))).toBe(null))
 })
 
 describe('isWebBuildHtml', () => {

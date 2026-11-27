@@ -1,10 +1,10 @@
 /**
  * 메트로놈 카드 UI — BPM 표시/드래그, 박자·세분 버튼, LED 줄, 강박 flash, 접기/펼치기.
- * 접힘은 CSS grid(0fr/1fr) 트랜지션. 폰 레이아웃은 시작 250 ms 뒤 접히고, 넓은 화면·전용 모드는 늘 펼쳐져 있다.
+ * 접힘은 CSS grid(0fr/1fr) 트랜지션. 시작 250 ms 뒤 접히고, 전용 모드(가로 두 칸 포함)는 늘 펼쳐져 있다.
  */
 import { CFG, metroStore, settingsStore, type SubDiv, type TimeSig } from '../state/index.ts'
 import { setBPM, adjBPM, setTimeSig, setSubDiv, setMetroVol, toggleMetro } from '../audio/metronome.ts'
-import { isPhoneLayout } from '../platform/index.ts'
+import { isTwoPane } from '../platform/index.ts'
 import { buildDial, setDialBpm, onDialChange } from './dial.ts'
 import { attachVDrag } from './swipeStep.ts'
 import { t } from '../core/i18n/index.ts'
@@ -81,8 +81,8 @@ function clearFlash(): void {
 function applyFull(): void {
   const { full } = metroStore.get()
   const card = q('metro-card'), tuner = q('tuner-card'), wrap = q('metro-body-wrap')
-  // 튜너 카드의 display:none 은 애니메이션이 안 되므로 전환 전후 두 카드 높이를 재서 픽셀로 함께 움직인다. 폰 세로 배치에서만
-  const anim = isPhoneLayout() && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  // 튜너 카드의 display:none 은 애니메이션이 안 되므로 전환 전후 두 카드 높이를 재서 픽셀로 함께 움직인다. 위아래로 놓인 배치에서만(두 칸은 튜너가 숨지 않는다)
+  const anim = !isTwoPane() && !matchMedia('(prefers-reduced-motion: reduce)').matches
   // 570 ms 안에 또 누르면 이전 인라인 높이가 남아 있다: before 는 지금 보이는 높이, 인라인을 걷어낸 뒤 최종을 잰다
   const hand = handoff; handoff = null // 카드를 끌다 놓았으면 손을 뗀 그 높이에서 이어 간다
   const before = anim ? { t: hand?.t ?? tuner.offsetHeight, m: hand?.m ?? card.offsetHeight, mb: hand?.mb, collapsed: wrap.classList.contains('collapsed') } : null
@@ -146,7 +146,7 @@ function attachDrag(el: HTMLElement): void {
   on(window, 'touchend', () => { d = null }); on(window, 'touchcancel', () => { d = null }) // OS 가 터치를 끊어도 다음 터치가 옛 기준점으로 튀지 않게
 }
 
-/** 지금 실제로 접혀 보이는가 — 넓은 화면·전용 모드에서는 collapsed 값과 무관하게 펼쳐져 있다 */
+/** 지금 실제로 접혀 보이는가 — 전용 모드에서는 collapsed 값과 무관하게 펼쳐져 있다 */
 function isCollapsedNow(): boolean { return stateNow() === 'c' }
 function applyCollapse(): void {
   const effective = isCollapsedNow()
@@ -155,7 +155,7 @@ function applyCollapse(): void {
   if (effective) clearDots()
 }
 
-// 폭에 따라 달라지는 것들. 헤더 재생 버튼은 접혀 있을 때만(재생·정지 둘 다) — 펼쳐져 있으면 본체 버튼과 겹친다
+// 헤더 재생 버튼은 접혀 있을 때만(재생·정지 둘 다) — 펼쳐져 있으면 본체 버튼과 겹친다
 function syncLayout(): void {
   q('metro-play-hdr-btn').style.display = isCollapsedNow() ? 'flex' : 'none'
   applyCollapse()
@@ -165,9 +165,9 @@ export function mountMetro(): void {
   attachDrag(q('metro-bpm-wrap')); attachDrag(q('metro-hdr-label'))
   on(q('metro-play-hdr-btn'), 'click', () => { const r = toggleMetro(); if (!r.ok) toast(r.error) })
   on(q('metro-play-btn'), 'click', () => { const r = toggleMetro(); if (!r.ok) toast(r.error) })
-  // 크기 버튼은 접힘 ⇄ 펼침, 펼침2 에서는 펼침으로. 펼침2 로는 카드를 위로 끌거나(손을 따라온다) 폰의 펼침에서 헤더 왼쪽 '메트로놈만 크게' 버튼으로 간다
-  // (넓은 화면은 크기 버튼이 펼침 → 펼침2). 키보드로 눌렀으면 포커스를 다음 자리의 버튼으로 옮긴다 — 누른 버튼이 사라지므로
-  on(q('metro-size-btn'), 'click', () => { const kb = keyboardFocused('metro-size-btn'), to = sizeBtnTo(); go(to); if (kb && stateNow() === 'e' && isPhoneLayout()) focusSoon('metro-full-btn') })
+  // 크기 버튼은 접힘 ⇄ 펼침, 펼침2 에서는 펼침으로. 펼침2 로는 카드를 위로 끌거나(손을 따라온다) 펼침에서 헤더 왼쪽 '메트로놈만 크게' 버튼으로 간다.
+  // 키보드로 눌렀으면 포커스를 다음 자리의 버튼으로 옮긴다 — 누른 버튼이 사라지므로
+  on(q('metro-size-btn'), 'click', () => { const kb = keyboardFocused('metro-size-btn'), to = sizeBtnTo(); go(to); if (kb && stateNow() === 'e') focusSoon('metro-full-btn') })
   on(q('metro-full-btn'), 'click', () => { const kb = keyboardFocused('metro-full-btn'); go('f'); if (kb) focusSoon('metro-size-btn') })
   // BPM ↕ 드래그 영역도 제외 — 없으면 BPM 내리기가 접힘이 된다. 크게 버튼은 빼지 않는다: 거기서 시작해 끌면 카드가 움직이고(손을 떼면 클릭은 헤더로 가 버튼은 안 눌린다), 그냥 누르면 버튼
   const ignore = '#metro-hdr-label, #metro-bpm-wrap, #dial, input[type=range], button:not(#metro-full-btn), .m-seg'
@@ -220,26 +220,30 @@ export function mountMetro(): void {
     if (playing) buildBeatVis(); else sweepStop()
     applyCollapse()
   })
-  // 폭 등급(폰/넓음)이 바뀔 때만 — 안드로이드는 주소창 숨김·키보드에도 resize 를 낸다. 150 ms 디바운스는 회전 중 연속 resize 때문
-  let resizeT: ReturnType<typeof setTimeout> | null = null, lastPhone = isPhoneLayout()
-  on(window, 'resize', () => {
-    if (resizeT) clearTimeout(resizeT)
-    resizeT = setTimeout(() => { const phone = isPhoneLayout(); if (phone !== lastPhone) { lastPhone = phone; syncLayout(); syncSizeBtn() } }, 150) // 버튼 목적지도 폭에 달려 있다
-  })
   // full 구독을 collapsed 보다 먼저 — go('e') 가 { full:false, collapsed:false } 를 한 번에 놓고, 구독은 등록 순서대로 돈다
   metroStore.select(s => s.full, () => { applyFull(); syncSizeBtn() })
   metroStore.select(s => s.collapsed, () => { syncSizeBtn(); syncLayout() }) // 헤더 재생 버튼이 접힘에 달려 있다
   metroStore.select(s => s.lastTick, ({ tick }) => { if (!metroStore.get().playing) return; litBeat(tick); flashBeat(tick) })
 
-  // 초기: 본체는 펼친 채 그려지고, 폰이면 250 ms 후 접힘 애니메이션
-  if (isPhoneLayout()) setTimeout(() => { syncLayout(); syncSizeBtn() }, 250) // 접히면서 헤더 재생 버튼도 나온다
+  // 가로로 넓은 창: 튜너 옆에 메트로놈만 크게 보는 화면(다이얼)을 둔다 — 그동안은 크기 단계가 없다. 창이 좁아지면 전의 단계로 돌아간다
+  let paneWas: { collapsed: boolean; full: boolean } | null = null, paneT: ReturnType<typeof setTimeout> | null = null
+  const syncPane = (): void => {
+    const two = isTwoPane(); q('main-body').classList.toggle('two', two)
+    if (two && !paneWas) { const { collapsed, full } = metroStore.get(); paneWas = { collapsed, full }; metroStore.set({ full: true, collapsed: false }) }
+    else if (!two && paneWas) { metroStore.set(paneWas); paneWas = null }
+  }
+  // 안드로이드는 주소창 숨김 · 키보드에도 resize 를 낸다 — 두 칸 ⇄ 한 칸이 바뀔 때만 손댄다. 200 ms 는 회전 중 연속 resize 와 화면 맞춤(fitViewport)이 끝나기를 기다린다
+  on(window, 'resize', () => { if (paneT) clearTimeout(paneT); paneT = setTimeout(syncPane, 200) })
+  syncPane(); setTimeout(syncPane, 400)
+  // 초기: 본체는 펼친 채 그려지고 250 ms 후 접힘 애니메이션
+  setTimeout(() => { syncLayout(); syncSizeBtn() }, 250) // 접히면서 헤더 재생 버튼도 나온다
   syncSizeBtn(); onLangChange(syncSizeBtn)
   // 토스트는 메트로놈 카드 위에 띄운다 — 카드 아래쪽(화면 바닥)에 두면 접힌 헤더의 ▶·LED 줄을 덮고, 탭하는 토스트(새 버전 적용)가 ▶ 탭을 가로챘다.
-  // 폰 배치에서만: 넓은 배치는 카드가 옆 열이고, 메트로놈만 크게 보는 화면은 카드가 화면 전부라 기본 자리(바닥)
+  // 메트로놈만 크게 보는 화면(가로 두 칸도 이 화면이다)은 카드가 바닥까지라 기본 자리(바닥)
   const anchorToast = (): void => {
     // 토스트 자리에만 둔다 — 문서 뿌리(:root)에 두면 카드가 움직이는 매 프레임 문서 전체의 스타일을 다시 계산했다
     const { full } = metroStore.get(), host = q('toast-host').style
-    if (!isPhoneLayout() || full) { host.removeProperty('--toast-bottom'); return }
+    if (full) { host.removeProperty('--toast-bottom'); return }
     const top = q('metro-card').getBoundingClientRect().top
     host.setProperty('--toast-bottom', `${Math.max(16, Math.round(window.innerHeight - top + 8))}px`)
   }
@@ -249,17 +253,17 @@ export function mountMetro(): void {
 }
 
 // ── 카드 끌기: 손가락을 따라 카드 높이가 바뀌고, 놓으면 다음 단계로 넘어가거나 제자리로 돌아간다 (폰 세로 배치) ──
-// 단계·목적지·넘어가는 조건은 core/metro/card.ts. 넓은 화면·동작 줄이기에서는 40 px 밀면 한 단계(손을 따라오지 않는다)
+// 단계·목적지·넘어가는 조건은 core/metro/card.ts. 동작 줄이기에서는 40 px 밀면 한 단계(손을 따라오지 않는다)
 type St = Stage
 type Drag = { live: boolean; dir: -1 | 1; from: St; to: St; h0: number; h1: number; t0: number; gap: number; p: number }
 let drag: Drag | null = null
 let handoff: { t: number; m: number; mb: string } | null = null
 let wrapTimer: ReturnType<typeof setTimeout> | null = null
 
-function stateNow(): St { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full, isPhoneLayout()) }
+function stateNow(): St { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full) }
 function go(st: St): void { metroStore.set(stageChange(st)) }
-const sizeBtnTo = (): St => sizeBtnTarget(stateNow(), isPhoneLayout())
-const liveDrag = (): boolean => isPhoneLayout() && !matchMedia('(prefers-reduced-motion: reduce)').matches
+const sizeBtnTo = (): St => sizeBtnTarget(stateNow())
+const liveDrag = (): boolean => !matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** 상태 st 일 때의 카드 높이 — 클래스를 잠깐 바꿔 재고 되돌린다(그리기 전이라 화면에 안 나온다) */
 function measureCard(st: St): number {
@@ -281,7 +285,8 @@ function clearWrap(): void {
 }
 
 function dragStart(dir: -1 | 1): boolean {
-  const from = stateNow(), to = dragTarget(from, dir, isPhoneLayout())
+  if (isTwoPane()) return false
+  const from = stateNow(), to = dragTarget(from, dir)
   if (!to) return false
   if (!liveDrag()) { drag = { live: false, dir, from, to, h0: 0, h1: 0, t0: 0, gap: 0, p: 0 }; return true }
   const card = q('metro-card'), tuner = q('tuner-card')
@@ -332,11 +337,10 @@ function dragEnd(dy: number, vy: number): void {
 }
 /** 버튼 글리프·라벨 = 다음 목적지 (올라가면 ∧, 내려가면 ∨). 펼침2 의 ∨ 는 펼침(튜너와 함께)으로 간다 */
 function syncSizeBtn(): void {
-  const btn = q('metro-size-btn'), from = stateNow(), to = sizeBtnTo()
-  const toExpand = from === 'c', toFull = to === 'f'
+  const btn = q('metro-size-btn'), from = stateNow()
+  const toExpand = from === 'c'
   btn.classList.toggle('to-expand', toExpand)
-  btn.classList.toggle('to-full', toFull)
-  btn.setAttribute('aria-label', t(toExpand ? 'metro.expand' : toFull ? 'metro.toFull' : from === 'f' ? 'metro.withTuner' : 'metro.collapse'))
+  btn.setAttribute('aria-label', t(toExpand ? 'metro.expand' : from === 'f' ? 'metro.withTuner' : 'metro.collapse'))
 }
 /** 키보드로 포커스된 버튼인가 — 손가락·마우스로 누른 뒤에는 포커스를 옮기지 않는다(포커스 테가 엉뚱한 데 뜬다) */
 function keyboardFocused(id: string): boolean { const el = q(id); return document.activeElement === el && el.matches(':focus-visible') }

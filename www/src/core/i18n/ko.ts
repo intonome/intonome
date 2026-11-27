@@ -228,7 +228,8 @@ export const KO = {
   'tour.metro': '메트로놈은 위로 밀어 보세요',
   // ∧·∨ 뒤의 \u2060(단어 잇기): 좁은 폰에서 '∨' 만 줄 끝에 남고 '를' 이 다음 줄로 가지 않게
   'tour.metroBody': '박자와 빠르기를 고르는 화면이 열려요. ∧\u2060를 눌러도 돼요. ♩ 옆 숫자를 위아래로 밀면 빠르기가 바뀌어요',
-  'tour.metroBodyWide': '메트로놈만 크게 볼 수 있어요. ∧\u2060를 눌러도 돼요',
+  'tour.metroPane': '다이얼을 돌려 보세요',
+  'tour.metroPaneBody': '메트로놈의 빠르기가 바뀌어요. 박자는 그 아래에서 골라요',
   'tour.metroMore': '한 번 더 올려 보세요',
   'tour.metroMoreBody': '메트로놈만 크게 볼 수 있어요. 카드 왼쪽 위 버튼을 눌러도 돼요',
   'tour.metroFull': '이제 아래로 내려 보세요',

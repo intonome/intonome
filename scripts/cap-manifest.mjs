@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Android 매니페스트 보정 — 마이크 권한·세로 고정·버전·백업 설정. cap:sync 가 매번 실행한다
 // RECORD_AUDIO 가 없으면 WebView getUserMedia 가 NotAllowedError 로 실패하고, 앱 설정에 마이크 권한 항목도 보이지 않는다
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -36,11 +36,24 @@ export function setStyleItem(xml, style, name, value) {
  * 앱 시작 화면 색. 안드로이드 12+ 시작 화면(그 아래는 호환 라이브러리)은 이 값이 없으면 폰 테마를 따라 라이트에선 하얗게 번쩍였다.
  * 시작 화면 뒤 앱 창 바탕도 같은 색 — 웹 화면이 그려지기 전 틈에 다른 색이 비치지 않게. 멱등. 순수
  */
-export function setSplashTheme(xml, color) {
-  let out = setStyleItem(xml, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', color)
+export function setSplashTheme(xml, color, splashColor = color) {
+  let out = setStyleItem(xml, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenBackground', splashColor)
   // 안드로이드 13+: 아이콘을 늘 보인다. 기본값은 여는 쪽(홈 화면 앱)에 맡겨서, 아이콘 없이 여는 홈 화면 앱에선 빈 바탕만 보였다. 12 이하는 이 항목을 무시한다
   out = setStyleItem(out, 'AppTheme.NoActionBarLaunch', 'android:windowSplashScreenBehavior', 'icon_preferred')
   return setStyleItem(out, 'AppTheme.NoActionBar', 'android:windowBackground', color)
+}
+
+export const SPLASH_LOGO_DENSITIES = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']
+/** 시작 화면 가운데 그림을 런처 아이콘 대신 아이콘 + 워드마크 한 장(drawable/splash_logo)으로. 멱등. 순수 */
+export function setSplashLogo(xml) {
+  return setStyleItem(xml, 'AppTheme.NoActionBarLaunch', 'windowSplashScreenAnimatedIcon', '@drawable/splash_logo')
+}
+/** resources/android/splash_logo-<밀도>.png 를 res/drawable-<밀도>/splash_logo.png 로. 전부 옮겼을 때만 true — 하나라도 없으면 테마가 없는 그림을 가리켜 빌드가 깨진다 */
+export function copySplashLogo(res, src) {
+  const from = d => join(src, `splash_logo-${d}.png`)
+  if (!SPLASH_LOGO_DENSITIES.every(d => existsSync(from(d)))) return false
+  for (const d of SPLASH_LOGO_DENSITIES) { mkdirSync(join(res, `drawable-${d}`), { recursive: true }); copyFileSync(from(d), join(res, `drawable-${d}`, 'splash_logo.png')) }
+  return true
 }
 
 /** dist 가 GitHub Pages 용 빌드(base=/<레포명>/)인지 — 그대로 APK 에 넣으면 자산 경로가 어긋나 흰 화면이 된다. 레포명을 박지 않는다 */
@@ -78,12 +91,14 @@ export function main(log = console.log) {
     if (x2 !== xml) { xml = x2; writeFileSync(path, xml); log('AndroidManifest.xml: screenOrientation=portrait') }
   }
 
-  // 시작 화면 색 — 바탕색은 capacitor.config 의 backgroundColor 하나에서
+  // 시작 화면 색 · 가운데 그림 — 앱 창 바탕은 capacitor.config 의 backgroundColor, 시작 화면 바탕은 plugins.SplashScreen.backgroundColor(없으면 앱 창과 같게)
   const styles = join(ROOT, 'android', 'app', 'src', 'main', 'res', 'values', 'styles.xml')
   if (existsSync(styles)) {
-    const { backgroundColor } = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8'))
-    const st = readFileSync(styles, 'utf8'), st2 = setSplashTheme(st, backgroundColor)
-    if (st2 !== st) { writeFileSync(styles, st2); log(`styles.xml: 시작 화면 바탕 ${backgroundColor}`) } else log('styles.xml 시작 화면 OK')
+    const { backgroundColor, plugins } = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')), splashColor = plugins?.SplashScreen?.backgroundColor ?? backgroundColor
+    const logo = copySplashLogo(join(ROOT, 'android', 'app', 'src', 'main', 'res'), join(ROOT, 'resources', 'android'))
+    if (!logo) log('없음: resources/android/splash_logo-*.png — `npm run icons` 먼저. 시작 화면은 앱 아이콘으로 둔다')
+    const st = readFileSync(styles, 'utf8'), themed = setSplashTheme(st, backgroundColor, splashColor), st2 = logo ? setSplashLogo(themed) : themed
+    if (st2 !== st) { writeFileSync(styles, st2); log(`styles.xml: 시작 화면 바탕 ${splashColor}${logo ? ' · 고리 + 워드마크' : ''} · 앱 창 바탕 ${backgroundColor}`) } else log('styles.xml 시작 화면 OK')
   }
 
   // 버전 동기화 — android/ 는 생성물이라 build.gradle 의 versionName/versionCode 가 매번 1.0/1 로 돌아온다

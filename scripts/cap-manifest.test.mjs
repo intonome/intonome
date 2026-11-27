@@ -1,5 +1,8 @@
 import { describe, test, expect } from 'vitest'
-import { setAllowBackup, isWebBuildHtml, setSplashTheme, setOptionalFeature } from './cap-manifest.mjs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { setAllowBackup, isWebBuildHtml, setSplashTheme, setSplashLogo, copySplashLogo, SPLASH_LOGO_DENSITIES, setOptionalFeature } from './cap-manifest.mjs'
 
 // Capacitor 8 템플릿이 실제로 내보내는 형태
 const TEMPLATE = `<application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="@string/app_name">`
@@ -61,6 +64,45 @@ describe('setSplashTheme — the launch screen is the app background, not a whit
   test('a changed color replaces the old one', () => {
     const again = setSplashTheme(out, '#000000')
     expect(again).toContain('<item name="windowSplashScreenBackground">#000000</item>'); expect(again).not.toContain('#181b21')
+  })
+})
+
+describe('setSplashTheme with a launch screen color of its own', () => {
+  const out = setSplashTheme(STYLES, '#181b21', '#0b0c0f')
+  test('the launch screen gets its color, the app window keeps the app color', () => {
+    expect(out).toContain('<item name="windowSplashScreenBackground">#0b0c0f</item>')
+    expect(out).toContain('<item name="android:windowBackground">#181b21</item>')
+  })
+  test('idempotent, and replaces a color set before', () => {
+    expect(setSplashTheme(out, '#181b21', '#0b0c0f')).toBe(out)
+    expect(setSplashTheme(setSplashTheme(STYLES, '#181b21'), '#181b21', '#0b0c0f')).toBe(out)
+  })
+})
+
+describe('setSplashLogo / copySplashLogo — the launch screen shows the rings with the wordmark', () => {
+  const out = setSplashLogo(setSplashTheme(STYLES, '#181b21'))
+  test('the launch theme points at the logo drawable; the app theme does not', () => {
+    expect(out.match(/<style name="AppTheme\.NoActionBarLaunch"[^>]*>[\s\S]*?<\/style>/)[0]).toContain('<item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>')
+    expect(out.match(/windowSplashScreenAnimatedIcon/g).length).toBe(1)
+  })
+  test('idempotent, in either order with the color', () => {
+    expect(setSplashLogo(out)).toBe(out); expect(setSplashTheme(out, '#181b21')).toBe(out)
+  })
+  test('copies one image per density into drawable-<density>/splash_logo.png', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splash-')), src = join(dir, 'src'), res = join(dir, 'res'); mkdirSync(src); mkdirSync(res)
+    try {
+      for (const d of SPLASH_LOGO_DENSITIES) writeFileSync(join(src, `splash_logo-${d}.png`), d)
+      expect(copySplashLogo(res, src)).toBe(true)
+      for (const d of SPLASH_LOGO_DENSITIES) expect(readFileSync(join(res, `drawable-${d}`, 'splash_logo.png'), 'utf8')).toBe(d)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+  test('copies nothing when an image is missing, so the theme never points at a drawable that is not there', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splash-')), src = join(dir, 'src'), res = join(dir, 'res'); mkdirSync(src); mkdirSync(res)
+    try {
+      for (const d of SPLASH_LOGO_DENSITIES.slice(1)) writeFileSync(join(src, `splash_logo-${d}.png`), d)
+      expect(copySplashLogo(res, src)).toBe(false)
+      for (const d of SPLASH_LOGO_DENSITIES) expect(existsSync(join(res, `drawable-${d}`))).toBe(false)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 })
 

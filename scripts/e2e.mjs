@@ -1039,6 +1039,36 @@ await scenario('launch: iPhone home-screen app starts on a copy of the splash, t
   await p.goto(URL_); assert.equal(await p.evaluate(() => !!document.getElementById('launch')), false, '브라우저 탭에는 없다')
 })
 
+// 안드로이드 앱: 시스템 시작 화면(로고) 밑에서 웹 화면은 바탕색 덮개로 앱을 가리고 있다. 로고가 흐려질 시간이 지난 뒤에야 덮개를 걷는다 — 로고와 앱이 겹쳐 비치지 않는다
+await scenario('launch: Android app keeps the app under a plain cover while the system logo fades, then shows it', 'silence_lowfloor.wav', async (p, ctx) => {
+  const { PNG } = await import('pngjs')
+  const cfg = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')), splash = cfg.plugins.SplashScreen.backgroundColor, bg = [1, 3, 5].map(i => parseInt(splash.slice(i, i + 2), 16))
+  const native = () => { // 앱 안이라는 표식 + 덮개가 걷히기 시작하는 순간을 알린다
+    window.Capacitor = {}
+    new MutationObserver(() => { if (document.getElementById('launch')?.classList.contains('out')) window.__coverOut?.() })
+      .observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] })
+  }
+  const phone = { viewport: { width: 360, height: 780 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+  const c = await ctx.browser().newContext(phone); await c.addInitScript(native)
+  const bare = await c.newPage(); await bare.route('**/assets/*.js', r => r.abort()); await bare.goto(URL_); await bare.waitForTimeout(300)
+  assert.equal(await bare.evaluate(() => document.getElementById('launch')?.className), 'show cover')
+  const shot = PNG.sync.read(await bare.screenshot()); let other = 0
+  for (let i = 0; i < shot.data.length; i += 4) if (shot.data[i] !== bg[0] || shot.data[i + 1] !== bg[1] || shot.data[i + 2] !== bg[2]) other++
+  assert.equal(other, 0, '덮개는 화면 전체가 시작 화면 바탕색 하나(로고도 앱도 안 보인다)')
+  await bare.close()
+  // 시스템 시작 화면을 걷으라고 하는 때 = 그 플러그인의 웹 구현 조각을 처음 받아 오는 때. 덮개는 그보다 로고가 흐려지는 시간만큼은 뒤에 걷히기 시작해야 한다
+  const chunk = readdirSync(join(DIST, 'assets')).filter(f => /^web-.*\.js$/.test(f) && readFileSync(join(DIST, 'assets', f), 'utf8').includes('SplashScreen'))
+  assert.equal(chunk.length, 1, '시작 화면 플러그인 조각')
+  const app = await c.newPage(), errors = [], t = {}; app.on('pageerror', e => errors.push(String(e)))
+  app.on('requestfinished', r => { if (r.url().endsWith(chunk[0])) t.hide ??= Date.now() })
+  await app.exposeFunction('__coverOut', () => { t.out ??= Date.now() })
+  await app.goto(URL_); await app.waitForFunction(() => !document.getElementById('launch'), null, { timeout: 3000 })
+  assert.ok(t.hide && t.out, '걷으라고 했고 덮개가 걷혔다')
+  assert.ok(t.out - t.hide >= cfg.plugins.SplashScreen.launchFadeOutDuration, `로고가 흐려질 시간 뒤에 걷는다: ${t.out - t.hide} ms`)
+  const now = await app.evaluate(() => performance.now()); assert.ok(now < 2000, `안전장치(2.5 초) 전에 걷힌다: ${Math.round(now)} ms`)
+  assert.deepEqual(errors, []); await c.close()
+})
+
 // 첫 실행(저장 없음)은 기기의 다크 모드를 따른다: 앱 스크립트 없이 첫 그리기부터, 설정 표시도 다크
 // 첫 실행(저장 없음) 기본값: 영어 폰이면 영어 · 다크. 폰이 라이트 모드여도. 앱 스크립트 없이 첫 그리기부터 다크 · 한국어 원문은 가려져 있다
 await scenario('first launch: English and dark, even with the phone in light mode', 'silence_lowfloor.wav', async (p, ctx) => {

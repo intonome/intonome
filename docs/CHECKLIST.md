@@ -149,6 +149,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] Readable from 60–90 cm; REC, size and drum usable while holding a bow
 - [D] Larger system font sizes on the tuner card layout
 - [D] Android 15 edge-to-edge: header clear of the status bar; adaptive launcher icon, and the home-screen web app icon the same size with the outer ring clear of the edges; app name "Intonome"
+- [A] Android app: the launch logo images fit the safe zone that every device icon shape keeps, one per screen density; under the system launch screen the page is a plain cover in the launch background colour, lifted only after the logo has had time to fade
+- [D] Android app opens on the rings of the icon with Intonome under them on a near-black background (Android 12 and later; from a third-party home screen too on Android 13 and later), nothing cut off by the device's icon shape (check a Samsung phone); the logo fades out before the app appears, with no trace of it over the tuner
 - [D] iPhone home-screen app: no gap at the bottom (iOS 26), nothing cut off in either theme
 - [D] iPhone home-screen app opens on the splash (round icon and Intonome on the app background), dark when the phone is in dark mode; re-add the app to pick up a new splash
 - [A] iPhone home-screen app: the first frame matches the splash image pixel for pixel and fades into the app before the 2.5 s safety removal; no such frame in a browser tab

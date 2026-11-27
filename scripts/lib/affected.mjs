@@ -20,7 +20,7 @@ const AREAS = [
   { e2e: ['ux: edge swipe', 'keys', 'settings', 'rec:'], shots: true, files: [/^www\/src\/ui\/(menu|settings|swipeBack|about|licensesText)\.ts$/] },
   { e2e: ['timer'], files: [/^www\/src\/ui\/timer\.ts$/] },
   { e2e: ['permission', 'i18n: English mic popup', 'metro: works without mic'], files: [/^www\/src\/ui\/micPopup\.ts$/] },
-  { e2e: ['launch'], files: [/^www\/src\/ui\/launch\.ts$/] },
+  { e2e: ['launch'], files: [/^www\/src\/ui\/launch\.ts$/, /^capacitor\.config\.json$/] },
   { e2e: ['ref drum', 'drag ticks'], files: [/^www\/src\/ui\/refDrum\.ts$/] },
   { e2e: ['lifecycle', 'mic off', 'ios'], files: [/^www\/src\/core\/micLease\.ts$/] },
   { e2e: ['layout', 'theme', 'i18n', 'metro', 'timer', 'ux'], shots: true, files: [/^www\/index\.html$/, /^www\/src\/style\.css$/, /^www\/src\/fonts/] },

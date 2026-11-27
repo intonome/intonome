@@ -32,12 +32,12 @@ export function initStatusBar(): void {
   document.body.classList.add('capacitor')
 }
 /**
- * 앱(안드로이드): 시스템 시작 화면(어두운 바탕 + 앱 아이콘)을 걷는다. capacitor.config 의 launchAutoHide:false 로
+ * 앱(안드로이드): 시스템 시작 화면(어두운 바탕 + 아이콘 · 워드마크)을 걷는다. 걷으라는 말이 전해지면 끝나는 약속을 준다(흐려지는 건 그 뒤). capacitor.config 의 launchAutoHide:false 로
  * 첫 화면이 다 그려질 때까지 붙잡아 둔다 — 저절로 걷히면 웹 화면이 그려지기 전의 빈 화면이 잠깐 보였다. 여러 번 불러도 된다
  */
-export function hideNativeSplash(): void {
-  if (!isNative()) return
-  import('@capacitor/splash-screen').then(({ SplashScreen }) => SplashScreen.hide()).catch(() => {})
+export function hideNativeSplash(): Promise<void> {
+  if (!isNative()) return Promise.resolve()
+  return import('@capacitor/splash-screen').then(({ SplashScreen }) => SplashScreen.hide()).catch(() => {})
 }
 
 /** 상태바 글자색·배경을 테마에 맞춘다. 웹은 meta theme-color, 앱은 Capacitor StatusBar */

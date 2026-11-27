@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 시각 회귀 스크린샷 — 주요 화면을 폰 크기(390×844 @2x)로 찍고, 기준선과 비교하면 diff 이미지를 만든다.
+// 시각 회귀 스크린샷 — 주요 화면을 폰 크기(390×844 @2x)로, 큰 화면 몇 장(펼친 폴드 · 태블릿 세로 · 가로)을 더 찍고, 기준선과 비교하면 diff 이미지를 만든다.
 // 사용: node scripts/screenshots.mjs [--out test-assets/screens/current] [--compare test-assets/screens/baseline]
 // 전제: `npx vite build --base=/ && npx vite preview --base=/ --port 4173` 이 떠 있거나, --serve 로 이 스크립트가 직접 띄운다.
 import { chromium } from 'playwright'
@@ -46,12 +46,17 @@ const SCENES = {
 
 const results = []
 // 테마·언어는 OS 가 아니라 앱 설정을 따른다 — 저장값을 심어 일곱 벌 찍는다: 다크 · 라이트 · 영어 · 일본어 · 중국어 간체(zh)·번체(zht) · 스페인어 — 뒤 다섯은 다크
-for (const [scheme, lang, tag] of [['dark', 'ko', 'dark'], ['light', 'ko', 'light'], ['dark', 'en', 'en'], ['dark', 'ja', 'ja'], ['dark', 'zh-Hans', 'zh'], ['dark', 'zh-Hant', 'zht'], ['dark', 'es', 'es']]) {
-  for (const [name, prep] of Object.entries(SCENES)) {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: scheme, permissions: ['microphone'], ...(prep.ctx ?? {}) })
+const PHONE = { width: 390, height: 844 }, ALL = Object.keys(SCENES)
+// 큰 화면: 한 칸을 키운 화면(펼친 폴드 · 태블릿 세로)과 가로 두 칸 — 다크 · 한국어로만(글자 · 색은 위 일곱 벌이 본다)
+const RUNS = [['dark', 'ko', 'dark'], ['light', 'ko', 'light'], ['dark', 'en', 'en'], ['dark', 'ja', 'ja'], ['dark', 'zh-Hans', 'zh'], ['dark', 'zh-Hant', 'zht'], ['dark', 'es', 'es']].map(r => [...r, PHONE, ALL])
+RUNS.push(['dark', 'ko', 'fold', { width: 750, height: 832 }, ['main', 'metro_open', 'settings']], ['dark', 'ko', 'tablet', { width: 800, height: 1280 }, ['main', 'metro_open']], ['dark', 'ko', 'land', { width: 1280, height: 800 }, ['main', 'menu']])
+for (const [scheme, lang, tag, viewport, names] of RUNS) {
+  for (const name of names) {
+    const prep = SCENES[name]
+    const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: scheme, permissions: ['microphone'], ...(prep.ctx ?? {}) })
     await ctx.addInitScript(([theme, lang]) => { if (!localStorage.getItem('intonome_settings_v1')) localStorage.setItem('intonome_settings_v1', JSON.stringify({ v: 3, theme, lang })) }, [scheme, lang])
     const page = await ctx.newPage()
-    await page.goto(`http://localhost:${PORT}/`); await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(1000) // 첫 접힘 트랜지션(250 ms 뒤 시작, .55 s)이 끝난 뒤 — 그 전엔 카드가 반쯤 접힌 채 찍힌다
+    await page.goto(`http://localhost:${PORT}/`); await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(viewport === PHONE ? 1000 : 1800) // 첫 접힘 트랜지션(250 ms 뒤 시작, .55 s)이 끝난 뒤 — 그 전엔 카드가 반쯤 접힌 채 찍힌다. 큰 화면은 화면 맞춤 · 두 칸 전환까지
     await page.addStyleTag({ content: '*,*::before,*::after{animation-play-state:paused!important;caret-color:transparent!important}' })
     await prep(page)
     const file = join(OUT, `${tag}_${name}.png`)

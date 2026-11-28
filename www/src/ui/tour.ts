@@ -3,7 +3,7 @@
  * 세 장 + 끝 장: 화면을 봐서는 모르는 것만 — 쓸 기준음 맞추기, 메트로놈 카드 밀기(그 자리에서 해 보면 설명이 바뀐다), REC(바로 녹음 · 어디에 얼마나 남는지 · 계속 두는 설정).
  * 글자가 적힌 버튼(A 듣기 · DRONE · 메뉴 · 설정)과 소리를 내면 바로 보이는 것(음 이름 · 숫자 · 선)은 화면이 이미 말한다.
  * 맞춘 기준음은 남는다(안내가 '맞춰요' 라고 한다). 안내 중에 켠 것·끈 것(메트로놈 소리, 바꾼 빠르기·박자, 펼친 카드)은 그 단계를 떠날 때(앱이 뒤로 갈 때도) 되돌린다 — 안내가 사용자의 설정을 남기지 않는다.
- * 언제든 × · Esc · 안드로이드 뒤로 로 그만두고, 설정에서 다시 볼 수 있다. 레이어는 하나만 두고 자리만 옮긴다(밝은 구멍과 말풍선이 미끄러져 간다).
+ * 언제든 × · Esc · 안드로이드 뒤로 로 그만두고, 다시 뜨지 않는다(세 장이라 다시 보기는 두지 않는다 — 설정까지 찾아가 다시 볼 사람은 드물다). 레이어는 하나만 두고 자리만 옮긴다(밝은 구멍과 말풍선이 미끄러져 간다).
  * 메뉴·설정·드론 창·마이크 안내·편집기가 떠 있는 동안은 숨는다 — 닫히면 그 자리에서 이어진다.
  */
 import { settingsStore, tunerStore, metroStore, refToneStore, droneStore, type Settings } from '../state/index.ts'
@@ -13,7 +13,7 @@ import { onLangChange } from './lang.ts'
 import { isTwoPane, setStatusBarTheme, isNative } from '../platform/index.ts'
 import { stageOf, type Stage } from '../core/metro/card.ts'
 import { placeBubble } from '../core/tourPlace.ts'
-import { overlayOpen, closeSettings } from './menu.ts'
+import { overlayOpen } from './menu.ts'
 import { isEditorOpen } from './editor.ts'
 import { stopMetro, toggleMetro, setTimeSig, setSubDiv } from '../audio/metronome.ts'
 import { stopRefNote, stopDrone, startDrone } from '../audio/refTone.ts'
@@ -350,7 +350,6 @@ export function mountTour(o: { pending: boolean; onDone: () => void }): void {
   on(document, 'visibilitychange', () => { if (document.visibilityState === 'hidden') away() }, { capture: true })
   on(window, 'pagehide', away, { capture: true })
   // 설정 › 처음 안내 › 다시 보기: 설정이 닫히는 걸 보고 연다
-  on(q('tour-replay-btn'), 'click', () => { closeSettings(); setTimeout(() => startTour(o.onDone), 260) })
   if (!o.pending) return
   // 튜너가 처음 켜지면 — 화면이 자리 잡은 뒤(폰은 메트로놈이 250 ms 뒤 접힌다). 마이크가 켜질 때까지 기다린다(그 전에 다시 보기로 열었다 닫았으면 안 띄운다)
   autoArmed = true

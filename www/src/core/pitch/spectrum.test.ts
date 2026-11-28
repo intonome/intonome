@@ -270,10 +270,20 @@ describe('tuning in a room full of people playing', () => {
     return x
   }
   /** 시드 셋 중 가장 나쁜 값 — ok: 0.5 s 뒤(steady 면 무슨 음이든 처음 뜬 뒤) 프레임 중 화면 음이 note 인 비율, first: note 가 처음 뜬 시각(켠 뒤 첫 시작) */
+  // 같은 음 · 시드의 소리와 결과를 여러 테스트가 같이 쓴다 — 한 번만 만든다(값은 그대로, 시간만 준다)
+  const rooms = new Map<number, Float32Array>(), results = new Map<string, { ok: number; first: number }>()
   function worst(note: string, snrDb: number, steady = false): { ok: number; first: number } {
+    const k = `${note} ${snrDb} ${steady}`
+    if (!results.has(k)) results.set(k, measure(note, snrDb, steady))
+    return results.get(k)!
+  }
+  function measure(note: string, snrDb: number, steady: boolean): { ok: number; first: number } {
     let w = 1, first = 0
+    const me = mine(note, 3)
     for (const seed of [1, 2, 3]) {
-      const me = mine(note, 3), bg = room(3, 12, seed * 101 + mi(note)), g = rms(me) / rms(bg) / 10 ** (snrDb / 20) / 8
+      const rs = seed * 101 + mi(note)
+      if (!rooms.has(rs)) rooms.set(rs, room(3, 12, rs))
+      const bg = rooms.get(rs)!, g = rms(me) / rms(bg) / 10 ** (snrDb / 20) / 8
       const x = me.map((v, i) => v / 8 + bg[i]! * g)
       const an = createAnalyzer({ sampleRate: SR, windowSize: N, hzMin: 29, hzMax: 4200 }); an.setSettings({ rmsMin: .005, smoothing: .2, refHz: 440, tolCents: 10 })
       let F = 0, ok = 0, at = Infinity, any = Infinity

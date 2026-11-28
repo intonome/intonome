@@ -9,6 +9,10 @@ describe('changed files pick the checks to run', () => {
     const p = plan(['PRIVACY.md'])
     expect(p.unit).toEqual(['www/src/ui/about.test.ts']); expect(new RegExp(p.e2e).test('settings: the bottom links')).toBe(true); expect(new RegExp(p.e2e).test('i18n: es')).toBe(true); expect(p.shots).toBe(false)
   })
+  test('docs/STORE.md: only the store listing test, no e2e', () => {
+    const p = plan(['docs/STORE.md', 'docs/ARCHITECTURE.md'])
+    expect(p.unit).toEqual(['scripts/store.test.mjs']); expect(p.e2e).toBe('none'); expect(p.shots).toBe(false)
+  })
   test('a tuner algorithm file: related unit tests, tuner e2e and the benchmark', () => {
     const p = plan(['www/src/core/pitch/tracker.ts'])
     expect(p.unit).toEqual(['www/src/core/pitch/tracker.ts'])

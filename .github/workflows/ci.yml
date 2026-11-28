@@ -1,9 +1,12 @@
 name: CI
 
+# 문서만 바뀐 push 는 돌리지 않는다(앱 · 배포가 그대로다). 예외: PRIVACY.md 는 앱 안에 들어가고, docs/STORE.md 는 단위 테스트(store.test)가 읽는다
 on:
   push:
     branches: [main]
+    paths: ['**', '!**.md', '!docs/**', '!LICENSE', 'PRIVACY.md', 'docs/STORE.md']
   pull_request:
+    paths: ['**', '!**.md', '!docs/**', '!LICENSE', 'PRIVACY.md', 'docs/STORE.md']
 
 concurrency:
   group: ci-${{ github.ref }}

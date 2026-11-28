@@ -18,7 +18,9 @@ Large screens
 First-run guide
 - Three cards and the start card instead of ten: setting the A, sliding the metronome card, and REC. A tester found the guide long; the cards that went explained the note reading, the trace, Play A, DRONE, the menu and Settings, which the screen already shows once a note is played or the buttons are read
 - The first card now asks you to set the A you tune to, and the value you set stays. It used to say "set it to the A your group uses" and then put 442 back when you moved on
-- REC says in two short sentences that a tap records at once and that recordings are deleted after 30 days unless Settings › Keep recordings is changed
+- REC says in two short sentences that a tap records at once and that recordings are kept for 30 days, which Settings can change to forever
+- Settings › App guide (Show again) is gone: with three cards, the guide is seen once, on a new install
+- Settings › Keep recordings: the Korean option 계속 is now 영구, like the other languages' Forever
 - The metronome card drops the line about what the card opens and keeps the two things to know: ∧ works too, and sliding the number next to ♩ changes the tempo. In Korean it now says 메트로놈을 위로 올려 보세요, with the same verb as the next step
 - The ♩ in the guide's text is drawn like the one on the metronome bar; the font's own ♩ came out small and with a wide gap on some phones
 - The "Close anytime" label above × on the first card is gone: with three cards the × is enough

@@ -90,7 +90,7 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [A] Newest one open, the rest behind "Show N older recordings"
 - [A] Play/pause, seek, only one plays at a time
 - [D] iPhone with earphones: a recording sounds in both ears (list and editor)
-- [A] Delete removes it from the list and IndexedDB; undo within 5 s; a double tap deletes once without a failure notice
+- [A] Delete removes it from the list and IndexedDB; undo while its notice shows (3.5 to 6 s, by the length of its text); a double tap deletes once without a failure notice
 - [A] List survives a restart; items older than 30 days are deleted (can be turned off); last-7-days notice with "Keep"
 - [A] An unfinished recording (app killed) is recovered on the next launch
 - [A] Download: webm recordings (Android, Chromium) become a WAV up to 10 minutes (webm as is above that, except iPhone which only says so); iPhone recordings (mp4/AAC) are handed over as they are; browser download on the web, Filesystem + share sheet in the Android app. [D] Check the share sheet on a device

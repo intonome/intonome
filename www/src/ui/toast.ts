@@ -96,7 +96,7 @@ export function toast(msg: string, ms?: number, action?: () => void): void {
   }
   const host = q('toast-host')
   // 누를 수 있는 안내(실행 취소·녹음 목록 바로 가기)는 진짜 버튼 — 화면 읽기·키보드로 닿고, 키보드 포커스·마우스가 올라가 있는 동안은 사라지지 않는다.
-  // 시간은 toastMs(실행 취소 5 초 남짓). 2.9.3 의 '최소 7 초' 는 폰에서 너무 오래 떠 있었다
+  // 시간은 toastMs(실행 취소 3.5 ~ 6 초). 2.9.3 의 '최소 7 초' 는 폰에서 너무 오래 떠 있었다
   const el = document.createElement(action ? 'button' : 'div')
   el.className = 'toast'; el.textContent = msg
   if (action) el.classList.add('actionable')

@@ -52,7 +52,7 @@ The source is split into `core / state / audio / persist / platform / ui` layers
 npx cap add android   # once (android/ is generated, not in the repo)
 npm run cap:assets    # launcher icons and splash screens
 npm run cap:sync      # Capacitor build + sync + manifest fixes
-npx cap open android  # Android Studio → Build › Build APK(s) for a debug APK
+npx cap open android  # Android Studio → Build › Generate Bundles or APKs › Generate APKs for a debug APK
 npm run keygen        # once: the Play upload key (intonome-upload.jks + keystore.properties, kept out of git)
 npm run aab           # store build → android/app/build/outputs/bundle/release/app-release.aab
 npm run store:assets  # Play listing images → test-assets/store/

@@ -210,13 +210,13 @@ export const KO = {
   'set.contact': '문의',
 
   // 처음 안내 (ui/tour.ts)
-  'tour.ref': '기준음은 밀어서 바꿔요',
-  'tour.refBody': '합주에서 쓰는 A로 맞춰 두세요',
-  'tour.refDone': '이렇게 바꾸면 돼요',
-  'tour.refDoneBody': '다음으로 넘어가면 원래대로 돌아가요',
-  'tour.metro': '메트로놈은 위로 밀어 보세요',
+  'tour.ref': '먼저 기준음을 맞춰요',
+  'tour.refBody': '위아래로 밀어서 사용할 A의 Hz로 바꿔요',
+  'tour.refDone': 'A = {hz} Hz로 맞췄어요',
+  'tour.refDoneBody': '다른 값이 필요하면 언제든 여기서 밀면 돼요',
+  'tour.metro': '메트로놈을 위로 올려 보세요',
   // ∧·∨ 뒤의 \u2060(단어 잇기): 좁은 폰에서 '∨' 만 줄 끝에 남고 '를' 이 다음 줄로 가지 않게
-  'tour.metroBody': '박자와 빠르기를 고르는 화면이 열려요. ∧\u2060를 눌러도 돼요. ♩ 옆 숫자를 위아래로 밀면 빠르기가 바뀌어요',
+  'tour.metroBody': '∧\u2060를 눌러도 돼요. ♩ 옆 숫자를 위아래로 밀면 빠르기가 바뀌어요',
   'tour.metroPane': '다이얼을 돌려 보세요',
   'tour.metroPaneBody': '메트로놈의 빠르기가 바뀌어요. 박자는 그 아래에서 골라요',
   'tour.metroMore': '한 번 더 올려 보세요',
@@ -231,13 +231,14 @@ export const KO = {
   'tour.bpmDoneBody': '다음으로 넘어가면 원래대로 돌아가요',
   'tour.rec': 'REC',
   // \u00a0(줄 안 바꿈 공백): 한 글자 꾸밈말(그·이)이 줄 끝에 홀로 남지 않게
-  'tour.recBody': '누르면 바로 녹음을 시작해요. 이\u00a0기기에만 저장되고 30일 뒤 자동으로 지워져요',
-  'tour.recBodyNative': '누르면 바로 녹음을 시작해요. 이\u00a0기기에만 저장되고 30일 뒤 자동으로 지워져요. 앱을 나가면 녹음이 멈춰요',
+  'tour.recBody': '누르면 바로 녹음돼요. 30일 뒤 지워지고, 설정의 \'녹음 보관\'에서 계속 둘 수 있어요',
+  'tour.recBodyNative': '누르면 바로 녹음돼요. 앱을 나가면 멈춰요. 30일 뒤 지워지고, 설정의 \'녹음 보관\'에서 계속 둘 수 있어요',
+  'tour.end': '준비됐어요',
+  'tour.endBody': '이제 A현부터 맞춰 볼까요?',
   'tour.start': '시작하기',
   'tour.prev': '이전',
   'tour.next': '다음',
   'tour.skip': '안내 닫기',
-  'tour.skipHint': '언제든 그만두기',
   'tour.progressAria': '{total}단계 중 {n}단계',
 
   // 앱

@@ -1,8 +1,8 @@
 /**
  * 처음 안내 — 새로 설치한 기기에서 튜너가 켜진 뒤 한 번. 화면을 어둡게 하고 볼 곳만 밝힌다.
- * 세 장: 화면을 봐서는 모르는 것만 — 기준음 밀기, 메트로놈 카드 밀기(그 자리에서 해 보면 설명이 바뀐다), REC(녹음이 어디에 얼마나 남는지).
+ * 세 장 + 끝 장: 화면을 봐서는 모르는 것만 — 쓸 기준음 맞추기, 메트로놈 카드 밀기(그 자리에서 해 보면 설명이 바뀐다), REC(바로 녹음 · 어디에 얼마나 남는지 · 계속 두는 설정).
  * 글자가 적힌 버튼(A 듣기 · DRONE · 메뉴 · 설정)과 소리를 내면 바로 보이는 것(음 이름 · 숫자 · 선)은 화면이 이미 말한다.
- * 안내 중에 켠 것·끈 것(메트로놈 소리, 바꾼 기준음·빠르기·박자, 펼친 카드)은 그 단계를 떠날 때(앱이 뒤로 갈 때도) 되돌린다 — 안내가 사용자의 설정을 남기지 않는다.
+ * 맞춘 기준음은 남는다(안내가 '맞춰요' 라고 한다). 안내 중에 켠 것·끈 것(메트로놈 소리, 바꾼 빠르기·박자, 펼친 카드)은 그 단계를 떠날 때(앱이 뒤로 갈 때도) 되돌린다 — 안내가 사용자의 설정을 남기지 않는다.
  * 언제든 × · Esc · 안드로이드 뒤로 로 그만두고, 설정에서 다시 볼 수 있다. 레이어는 하나만 두고 자리만 옮긴다(밝은 구멍과 말풍선이 미끄러져 간다).
  * 메뉴·설정·드론 창·마이크 안내·편집기가 떠 있는 동안은 숨는다 — 닫히면 그 자리에서 이어진다.
  */
@@ -36,8 +36,9 @@ interface Step {
 const reduced = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches
 const metroState = (): Stage => { const { collapsed, full } = metroStore.get(); return stageOf(collapsed, full) }
 /** 안내가 건드릴 수 있는 설정 — 떠날 때 들어올 때 값으로 */
-const KEEP = ['refHz', 'bpm', 'timeSig', 'subDiv', 'metroVol'] as const
-type Kept = Pick<Settings, typeof KEEP[number]>
+/** 떠날 때 되돌리는 설정 — 기준음은 없다: 첫 장이 '쓸 기준음으로 맞춰요' 라고 하고, 맞춘 값이 남아야 그 말이 맞다 */
+const KEEP = ['bpm', 'timeSig', 'subDiv', 'metroVol'] as const
+type Kept = Pick<Settings, typeof KEEP[number] | 'refHz'>
 
 // ── 진행 상태 ──
 let active = false, i = 0, done = false, leaving = false
@@ -57,7 +58,7 @@ let onFinish: (() => void) | null = null
 
 const STEPS: Step[] = [
   { key: 'ref', target: () => [q('ref-row')], pad: 2, radius: 10, open: true, task: true,
-    view: () => done ? { title: 'tour.refDone', body: 'tour.refDoneBody', gesture: 'none', vars: { hz: snap?.set.refHz ?? settingsStore.get().refHz } }
+    view: () => done ? { title: 'tour.refDone', body: 'tour.refDoneBody', gesture: 'none', vars: { hz: settingsStore.get().refHz } }
       : { title: 'tour.ref', body: 'tour.refBody', gesture: 'drag', pulseAt: () => q('ref-drum-outer') } },
   // 카드를 끝까지 한 바퀴: 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 헤더 왼쪽 버튼으로도) → 아래로 → 한 번 더 아래로(접힘).
   // 가로 두 칸에는 카드의 단계가 없다 — 옆에 늘 크게 보이는 메트로놈(다이얼)을 알려 주기만 한다. 밀기 표시는 헤더 가운데(박 점들) — 왼쪽 ♩80 을 밀면 카드가 아니라 빠르기가 바뀐다
@@ -76,11 +77,14 @@ const STEPS: Step[] = [
     } },
   { key: 'rec', target: () => [q('rec-hdr-btn')], pad: 6, radius: 10,
     view: () => ({ title: 'tour.rec', body: isNative() ? 'tour.recBodyNative' : 'tour.recBody', gesture: 'none' }) }, // 안드로이드 앱만 숨기면 녹음이 끝난다(백그라운드 마이크가 무음이 된다)
+  // 끝 장: 첫 장에서 맞춘 기준음으로 이제 튜닝을 시작하게 — 따로 해 볼 것은 없다
+  { key: 'end',
+    view: () => ({ title: 'tour.end', body: 'tour.endBody', gesture: 'none' }) },
 ]
 const LAST = STEPS.length - 1
 
 // ── 레이어 ──
-interface Layer { box: HTMLElement; spot: HTMLElement; blocks: HTMLElement[]; cover: HTMLElement; pulse: HTMLElement; card: HTMLElement; caret: HTMLElement; title: HTMLElement; body: HTMLElement; dots: HTMLElement; prev: HTMLButtonElement; next: HTMLButtonElement; skip: HTMLButtonElement; hint: HTMLElement }
+interface Layer { box: HTMLElement; spot: HTMLElement; blocks: HTMLElement[]; cover: HTMLElement; pulse: HTMLElement; card: HTMLElement; caret: HTMLElement; title: HTMLElement; body: HTMLElement; icon: HTMLImageElement; dots: HTMLElement; prev: HTMLButtonElement; next: HTMLButtonElement; skip: HTMLButtonElement }
 let L: Layer | null = null
 const el = (tag: string, cls: string, parent?: HTMLElement): HTMLElement => { const e = document.createElement(tag); e.className = cls; parent?.appendChild(e); return e }
 const CLOSE_GLYPH = '<svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>'
@@ -93,9 +97,10 @@ function build(): Layer {
   const pulse = el('div', 'tour-pulse', box); el('i', '', pulse); el('i', '', pulse)
   const card = el('div', 'tour-card', box); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.tabIndex = -1 // aria-live 는 두지 않는다 — 단계마다 카드로 포커스가 오며 읽히는데 live 까지 있으면 두 번 읽혔다
   const caret = el('div', 'tour-caret', card)
+  const icon = el('img', 'tour-icon', card) as HTMLImageElement; icon.src = 'icons/icon-192.png'; icon.alt = ''
   const title = el('div', 'tour-title', card), body = el('div', 'tour-body', card)
   const foot = el('div', 'tour-foot', card), dots = el('div', 'tour-dots', foot), btns = el('div', 'tour-btns', foot)
-  for (let k = 0; k <= LAST; k++) el('i', '', dots)
+  for (let k = 0; k < LAST; k++) el('i', '', dots) // 끝 장(시작하기)은 점이 없다
   dots.setAttribute('role', 'img')
   const prev = el('button', 'tour-prev', btns) as HTMLButtonElement, next = el('button', 'tour-next', btns) as HTMLButtonElement
   const skip = el('button', 'tour-skip', card) as HTMLButtonElement; skip.innerHTML = CLOSE_GLYPH
@@ -105,8 +110,7 @@ function build(): Layer {
   // 막을 누르면: 뒤의 버튼에 닿지 않게 막고(포커스도), "다음"을 살짝 흔들어 어디를 누를지 알려 준다
   for (const b of [...blocks, cover]) on(b, 'pointerdown', (e: PointerEvent) => { e.preventDefault(); nudge() })
   document.body.appendChild(box)
-  const hint = el('span', 'tour-skip-hint', card) // 첫 장에서만: × 를 가리키는 말풍선(말풍선 위, 밝힌 곳과의 틈에 뜬다)
-  return { box, spot, blocks, cover, pulse, card, caret, title, body, dots, prev, next, skip, hint }
+  return { box, spot, blocks, cover, pulse, card, caret, title, body, icon, dots, prev, next, skip }
 }
 function nudge(): void {
   if (!L || reduced()) return
@@ -193,25 +197,37 @@ function check(): void {
     else if (sawFull && st === 'c') done = true // 크게 본 뒤 처음 모습으로 돌아왔다
   }
   const v = STEPS[i]!.view()
-  if (`${v.title}|${v.body}` !== shown) render(true) // 설명이 바뀔 때만 (폰의 펼침 → 펼침2 처럼 단계 안에서도)
+  if (sig(v) !== shown) render(true) // 설명이 바뀔 때만 (폰의 펼침 → 펼침2 처럼 단계 안에서도)
 }
 
 // ── 그리기 ──
+/** 지금 보이는 설명 — 글과 그 안의 값(기준음을 한 번 더 밀면 「A = 440 Hz로 맞췄어요」 의 숫자도 따라간다) */
+const sig = (v: View): string => `${v.title}|${v.body}|${JSON.stringify(v.vars ?? {})}`
 let shown = ''
+/** 글에 든 ♩ 는 메트로놈 띠와 같은 그림으로 — 글꼴의 ♩ 는 기기마다 크기 · 자리가 달라(대신 쓰는 글꼴) 작게 붙거나 사이가 벌어졌다 */
+function setText(el: HTMLElement, text: string): void {
+  const parts = text.split('♩'), glyph = parts.length > 1 ? document.querySelector('#metro-hdr-label svg.note-glyph') : null
+  if (!glyph) { el.textContent = text; return }
+  el.textContent = ''
+  parts.forEach((p, k) => {
+    if (k) { const g = glyph.cloneNode(true) as SVGElement; g.removeAttribute('aria-hidden'); g.setAttribute('role', 'img'); g.setAttribute('aria-label', '♩'); el.appendChild(g) } // 화면 읽기에는 글자 그대로
+    if (p) el.appendChild(document.createTextNode(p))
+  })
+}
 function render(swap = false): void {
   if (!L || !active) return
   const s = STEPS[i]!, v = s.view()
-  shown = `${v.title}|${v.body}`
-  L.title.textContent = t(v.title, v.vars); L.body.textContent = t(v.body, v.vars)
+  shown = sig(v)
+  L.title.textContent = t(v.title, v.vars); setText(L.body, t(v.body, v.vars))
   L.card.setAttribute('aria-label', L.title.textContent)
   if (swap && !reduced()) { for (const e of [L.title, L.body]) { e.classList.remove('swap'); void e.offsetWidth; e.classList.add('swap') } }
-  L.prev.textContent = t('tour.prev'); L.prev.hidden = i === 0
-  L.next.textContent = i === LAST ? t('tour.start') : t('tour.next') // 따로 된 끝 장 없이 마지막 장이 「시작하기」
+  L.prev.textContent = t('tour.prev'); L.prev.hidden = i === 0 || i === LAST
+  L.next.textContent = i === LAST ? t('tour.start') : t('tour.next')
   L.next.classList.toggle('soft', !!s.task && !done)
-  L.skip.setAttribute('aria-label', t('tour.skip'))
-  L.hint.textContent = t('tour.skipHint'); L.hint.hidden = i !== 0
+  L.skip.setAttribute('aria-label', t('tour.skip')); L.skip.hidden = i === LAST
+  L.card.classList.toggle('end', i === LAST); L.icon.hidden = i !== LAST
   Array.from(L.dots.children).forEach((d, k) => d.classList.toggle('on', k === i)) // 지금 점이 길어지며 옮겨 간다
-  L.dots.setAttribute('aria-label', t('tour.progressAria', { n: i + 1, total: STEPS.length })) // 「3 / 9」 는 「3 슬래시 9」 로 읽혔다
+  L.dots.setAttribute('aria-label', t('tour.progressAria', { n: Math.min(i + 1, LAST), total: LAST })) // 「3 / 9」 는 「3 슬래시 9」 로 읽혔다
   L.pulse.className = 'tour-pulse g-' + v.gesture
   layout(true)
   if (swap) focusCard()
@@ -273,8 +289,7 @@ function layout(force = false): void {
   }
   else L.pulse.style.display = 'none'
   // 말풍선 자리는 core/tourPlace.ts 가 정한다
-  const gap = L.hint.hidden ? 0 : L.hint.offsetHeight + 8 // 첫 장: × 말풍선이 밝힌 곳을 가리지 않게 그만큼 아래로
-  const { x, y, place, caret } = placeBubble({ hole: h, vw, vh, insetTop: insets.top, insetBottom: insets.bottom, cw, ch, hintGap: gap, hasPulse: !!pr })
+  const { x, y, place, caret } = placeBubble({ hole: h, vw, vh, insetTop: insets.top, insetBottom: insets.bottom, cw, ch, hasPulse: !!pr })
   Object.assign(L.card.style, { left: x + 'px', top: y + 'px' })
   L.card.classList.toggle('up', place === 'above')
   L.card.classList.toggle('side-l', place === 'left'); L.card.classList.toggle('side-r', place === 'right')
@@ -330,7 +345,8 @@ export function mountTour(o: { pending: boolean; onDone: () => void }): void {
   }, { capture: true })
   // 앱이 뒤로 가면(꺼질 수도 있다) 그 단계에서 바꾼 것을 먼저 되돌린다 — 설정 자동 저장(persist/settings)보다 먼저 돌도록 capture.
   // 돌아오면 같은 단계를 처음부터
-  const away = (): void => { if (!active || !snap) return; leave(false); enter(); render() }
+  // 기준음 장에서 맞춘 값은 남으니(KEEP 에 없다) 돌아와도 '맞췄어요' 그대로 — 다른 장은 되돌렸으니 처음부터
+  const away = (): void => { if (!active || !snap) return; const kept = STEPS[i]!.key === 'ref' && done; leave(false); enter(); if (kept) done = true; render() }
   on(document, 'visibilitychange', () => { if (document.visibilityState === 'hidden') away() }, { capture: true })
   on(window, 'pagehide', away, { capture: true })
   // 설정 › 처음 안내 › 다시 보기: 설정이 닫히는 걸 보고 연다

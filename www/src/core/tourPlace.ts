@@ -12,8 +12,6 @@ export interface PlaceIn {
   insetTop: number; insetBottom: number
   /** 말풍선 크기 */
   cw: number; ch: number
-  /** 아래로 더 띄울 거리 — 첫 장의 × 안내가 밝힌 곳을 가리지 않게 */
-  hintGap: number
   /** 해 볼 곳 표시(고리·점)가 떠 있는가 — 구멍 안에 둘 때 그것을 가리지 않게 아래쪽에 */
   hasPulse: boolean
 }
@@ -30,7 +28,7 @@ export function placeBubble(o: PlaceIn): PlaceOut {
   const clampY = (v: number): number => Math.max(top0, Math.min(bot0 - ch, v))
   const clampX = (v: number): number => Math.round(Math.max(G, Math.min(vw - G - cw, v)))
   if (!h) { y = vh * 0.5 - ch / 2; x = clampX(vw / 2 - cw / 2); place = 'none' }
-  else if (bot0 - (h.bottom + M + o.hintGap) >= ch) { y = h.bottom + M + o.hintGap; x = clampX(cx - cw / 2) }
+  else if (bot0 - (h.bottom + M) >= ch) { y = h.bottom + M; x = clampX(cx - cw / 2) }
   else if (h.top - M - top0 >= ch) { y = h.top - M - ch; x = clampX(cx - cw / 2); place = 'above' }
   else if (h.left - M - G >= cw) { y = clampY(h.top); x = Math.round(h.left - M - cw); place = 'left' }
   else if (vw - G - (h.right + M) >= cw) { y = clampY(h.top); x = Math.round(h.right + M); place = 'right' }

@@ -18,7 +18,7 @@ import { isEditorOpen } from './editor.ts'
 import { stopMetro, toggleMetro, setTimeSig, setSubDiv } from '../audio/metronome.ts'
 import { stopRefNote, stopDrone, startDrone } from '../audio/refTone.ts'
 
-type Gesture = 'none' | 'tap' | 'swipeUp' | 'swipeDown' | 'drag'
+type Gesture = 'none' | 'swipeUp' | 'swipeDown' | 'drag'
 interface View { title: TKey; body: TKey; gesture: Gesture; pulseAt?: () => HTMLElement | null; vars?: Record<string, string | number> }
 interface Step {
   key: string
@@ -94,7 +94,7 @@ function build(): Layer {
   const spot = el('div', 'tour-spot', box)
   const blocks = [0, 1, 2, 3].map(() => el('div', 'tour-block', box))
   const cover = el('div', 'tour-block', box) // 보여 주기만 하는 단계: 구멍 위에도 막(투명)
-  const pulse = el('div', 'tour-pulse', box); el('i', '', pulse); el('i', '', pulse)
+  const pulse = el('div', 'tour-pulse', box); el('i', '', pulse)
   const card = el('div', 'tour-card', box); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.tabIndex = -1 // aria-live 는 두지 않는다 — 단계마다 카드로 포커스가 오며 읽히는데 live 까지 있으면 두 번 읽혔다
   const caret = el('div', 'tour-caret', card)
   const icon = el('img', 'tour-icon', card) as HTMLImageElement; icon.src = 'icons/icon-192.png'; icon.alt = ''

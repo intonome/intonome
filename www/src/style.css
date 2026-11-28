@@ -569,17 +569,13 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
 .tour-spot.none{box-shadow:0 0 0 200vmax var(--scrim);}
 #tour.moving .tour-spot{transition:left .38s var(--ease),top .38s var(--ease),width .38s var(--ease),height .38s var(--ease),border-radius .38s var(--ease);}
 .tour-block{position:fixed;pointer-events:auto;touch-action:none;}
-/* 해 볼 곳: 탭 = 퍼지는 고리 둘, 밀기 = 위·아래로 가는 손끝 */
+/* 해 볼 곳: 밀기 = 위·아래로 가는 손끝 */
 .tour-pulse{position:fixed;width:0;height:0;pointer-events:none;}
 .tour-pulse i{position:absolute;left:0;top:0;border-radius:50%;}
-.tour-pulse.g-tap i{width:44px;height:44px;margin:-22px 0 0 -22px;border:2px solid rgba(var(--text-rgb),.9);opacity:0;animation:tour-ring 1.6s var(--ease) infinite;}
-.tour-pulse.g-tap i+i{animation-delay:.8s;}
 .tour-pulse.g-swipeUp i,.tour-pulse.g-swipeDown i,.tour-pulse.g-drag i{width:20px;height:20px;margin:-10px 0 0 -10px;background:rgba(var(--text-rgb),.8);box-shadow:0 0 0 6px rgba(var(--text-rgb),.2);}
-.tour-pulse.g-swipeUp i+i,.tour-pulse.g-swipeDown i+i,.tour-pulse.g-drag i+i{display:none;}
 .tour-pulse.g-swipeUp i{animation:tour-up 1.6s var(--ease) infinite;}
 .tour-pulse.g-swipeDown i{animation:tour-down 1.6s var(--ease) infinite;}
 .tour-pulse.g-drag i{animation:tour-drag 1.8s ease-in-out infinite;}
-@keyframes tour-ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
 @keyframes tour-up{0%{transform:translateY(16px);opacity:0}15%{opacity:1}70%{transform:translateY(-36px);opacity:1}100%{transform:translateY(-44px);opacity:0}}
 @keyframes tour-down{0%{transform:translateY(-16px);opacity:0}15%{opacity:1}70%{transform:translateY(36px);opacity:1}100%{transform:translateY(44px);opacity:0}}
 @keyframes tour-drag{0%,100%{transform:translateY(11px)}50%{transform:translateY(-11px)}}
@@ -619,7 +615,6 @@ button.toast{font-family:inherit;line-height:inherit;cursor:pointer;min-height:4
 @media (prefers-reduced-motion: reduce){
   #tour,#tour.in{transition:none;}
   .tour-pulse i{animation:none!important;opacity:.9!important;transform:none!important;}
-  .tour-pulse.g-tap i+i{display:none;}
   .tour-dots i{transition:none;}
   #rec-hdr-btn.rec-on #rec-hdr-dot{animation:none;}
   /* 동작 줄이기: 마디 첫 박의 카드 번쩍임과 박 점의 커짐은 끄고(색만 바뀐다), 카드 접기·창 열기·안내는 바로 */

@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 ## [Unreleased]
 
+CI and tools
+- `npm run check` runs the quick unit tests and takes about 20 s instead of over 2 minutes. The four files that put synthetic sound through the real analyzer, drone and metronome code run as `npm run test:audio`; CI runs them as before, and `npm run affected` picks them when that code changes
+- The crowded-room tuner tests build each room and result once instead of once per test: the same signals and the same limits, in less time
+- CI no longer runs for a push that only changes Markdown files, `docs/` or the licence; `PRIVACY.md` (the app shows it) and `docs/STORE.md` (a unit test checks the store listing) still run it, and `npm run affected` now runs that store test when `docs/STORE.md` changes
+- The first-run guide drops the tap pulse that no step uses since it became three cards
+- `npm run keygen` looks for Android Studio's JDK in the same places as `npm run aab`
+
 ## [2.11.0] - 2026-11-28
 Foldables and tablets show the app at their own size: the phone screen magnified to fit, and in landscape the tuner and the metronome side by side. Phones look as before. The first-run guide is three cards instead of ten, and the A you set in it stays. The Android launch screen shows the rings of the icon with the Intonome name on a near-black background, and no longer shows through the tuner as it goes away.
 

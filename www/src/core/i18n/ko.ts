@@ -198,7 +198,7 @@ export const KO = {
   'set.fsDesc': '브라우저 주소창을 숨기고 화면 전체를 써요',
   'set.fsUnsupported': '이 기기에서는 홈 화면에 추가하면 전체화면으로 사용할 수 있어요',
   'set.keep': '녹음 보관',
-  'set.keepDesc': '자동으로 지우지 않으려면 \'영구\'',
+  'set.keepDesc': '녹음을 30일 뒤 자동으로 지울지 정해요',
   'set.keep30': '30일',
   'set.keepForever': '영구',
   'set.saveFailed': '설정을 저장할 수 없어요. 저장 공간이 없거나 프라이빗 모드예요',

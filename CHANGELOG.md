@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 
 ## [Unreleased]
 
+Settings
+- Korean: the line under Keep recordings is a full sentence that holds whichever option is picked ("녹음을 30일 뒤 자동으로 지울지 정해요"). It used to end on the option name '영구' alone
+
 CI and tools
 - `npm run check` runs the quick unit tests and takes about 20 s instead of over 2 minutes. The four files that put synthetic sound through the real analyzer, drone and metronome code run as `npm run test:audio`; CI runs them as before, and `npm run affected` picks them when that code changes
 - The crowded-room tuner tests build each room and result once instead of once per test: the same signals and the same limits, in less time

@@ -103,14 +103,14 @@ Builds: `npm run build` (base `/intonome/`, Pages) · `npm run build:cap` (base 
 
 | Layer | Tool |
 |---|---|
-| Pure logic | Vitest `*.test.ts`, `scripts/*.test.mjs` |
+| Pure logic | Vitest `*.test.ts`, `scripts/*.test.mjs` in two groups (`vite.config.js`): `npm test` (part of `npm run check`) runs the quick ones; `npm run test:audio` runs the four files that put synthetic sound through the analyzer, the drone and the metronome with the tuner — about nine tenths of the time |
 | Tuner benchmark | `npm run bench`: synthetic signals: bias, p90, octave errors, lock latency, F1. Changes to the tuner or detector must not regress. `test-assets/bench/latest.md` changes only when a result changes (timing goes to the console), so `git diff` of it is the comparison |
 | Browser integration | `npm run e2e`: headless Chromium with WAV files as a fake mic. `--only <regex>` |
 | Visual regression | `npm run shots`: 42 phone screens (dark and light Korean + en, es, ja, zh, zht; 6 scenes each) and 7 large-screen ones (unfolded foldable, portrait and landscape tablet) compared with `test-assets/screens/baseline/` via pixelmatch |
 | Module boundaries | `scripts/check-deps.mjs` |
 | Which checks a change needs | `npm run affected` (table in `scripts/lib/affected.mjs`: changed files → unit tests via `vitest related`, e2e scenarios by name, benchmark, screenshots); `--run` runs them |
 
-CI (`ci.yml`): check and build run side by side; the three e2e shards start after build, inside the Playwright image (its tag must equal the locked `playwright` version — `scripts/ci-image.test.mjs`); a failing shard fails CI; CI takes no screenshots (its fonts differ from the development environment, so `npm run shots` compares them there). `deploy-pages.yml` deploys only when CI is green on main.
+CI (`ci.yml`): check (with `test:audio`) and build run side by side; the three e2e shards start after build, inside the Playwright image (its tag must equal the locked `playwright` version — `scripts/ci-image.test.mjs`); a failing shard fails CI; CI takes no screenshots (its fonts differ from the development environment, so `npm run shots` compares them there). `deploy-pages.yml` deploys only when CI is green on main.
 
 ## 7. Android release
 

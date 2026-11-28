@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs'
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 const privacy = readFileSync(new URL('./PRIVACY.md', import.meta.url), 'utf8') // 설정 › 개인정보처리방침 화면이 그대로 보여 준다(ui/about.ts) — 저장소의 문서 하나가 정본
 
+const AUDIO_TESTS = ['src/core/pitch/spectrum.test.ts', 'src/core/pitch/analyzer.test.ts', 'src/core/drone.test.ts', 'src/core/metro/metroTuner.test.ts']
+
 // base: GitHub Pages 는 /intonome/, Capacitor 빌드(build:cap)는 / (package.json scripts 참고)
 export default defineConfig(({ mode }) => ({
   root: 'www',
@@ -12,7 +14,13 @@ export default defineConfig(({ mode }) => ({
   build: { outDir: '../dist', emptyOutDir: true, target: 'es2022' },
   server: { port: 5173, open: false },
   worker: { format: 'es' },
-  test: { include: ['src/**/*.test.ts', '../scripts/**/*.test.mjs'] },
+  // unit: 빠른 단위 테스트(npm test · npm run check). audio: 합성한 소리를 실제 분석기에 넣는 테스트(npm run test:audio) — 시간의 9 할이라 따로 두고, CI 와 affected 가 돌린다
+  test: {
+    projects: [
+      { extends: true, test: { name: 'unit', include: ['src/**/*.test.ts', '../scripts/**/*.test.mjs'], exclude: AUDIO_TESTS } },
+      { extends: true, test: { name: 'audio', include: AUDIO_TESTS } },
+    ],
+  },
   plugins: [
     VitePWA({
       // 'prompt': 새 SW 는 앱이 유휴일 때 main.ts 가 updateSW() 를 불러야 활성화된다.

@@ -20,6 +20,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run check
+      - run: npm run test:audio
 
   build:
     # check 와 나란히 — 빌드는 타입 검사·단위 결과를 쓰지 않는다. e2e 가 check 끝을 기다리지 않고 바로 시작한다

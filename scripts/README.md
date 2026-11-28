@@ -4,7 +4,7 @@ Every script describes itself in its first lines (with its usage where it takes 
 
 ## Checks
 
-CI runs `check-deps`, the unit tests and `e2e.mjs`; the rest, screenshots included (CI's fonts differ), run in the development environment.
+CI runs `check-deps`, the unit tests (`npm test` and `npm run test:audio`) and `e2e.mjs`; the rest, screenshots included (CI's fonts differ), run in the development environment.
 
 | Script | What it does |
 |---|---|

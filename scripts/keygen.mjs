@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { Writable } from 'node:stream'
+import { studioJdkHomes } from './lib/jdk.mjs'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const JKS = 'intonome-upload.jks', ALIAS = 'intonome', PROPS = 'keystore.properties'
 
@@ -15,10 +16,8 @@ export function findKeytool(env = process.env, platform = process.platform, exis
   const exe = platform === 'win32' ? 'keytool.exe' : 'keytool'
   const cands = []
   if (env.JAVA_HOME) cands.push(join(env.JAVA_HOME, 'bin', exe))
-  if (platform === 'win32') {
-    for (const base of [env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'Programs', 'Android Studio'), 'C:\\Program Files\\Android\\Android Studio']) if (base) cands.push(join(base, 'jbr', 'bin', exe))
-  } else if (platform === 'darwin') cands.push('/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool')
-  else cands.push('/opt/android-studio/jbr/bin/keytool', '/usr/lib/jvm/default-java/bin/keytool')
+  for (const home of studioJdkHomes(env, platform)) cands.push(join(home, 'bin', exe))
+  if (platform !== 'win32' && platform !== 'darwin') cands.push('/usr/lib/jvm/default-java/bin/keytool')
   const onPath = spawnSync(exe, ['-help'], { stdio: 'ignore' }) // 셸 없이 — Windows 도 PATH 의 .exe 를 찾는다
   if (!onPath.error) return exe
   return cands.find(c => exists(c)) ?? null

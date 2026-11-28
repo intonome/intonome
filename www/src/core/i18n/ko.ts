@@ -210,21 +210,10 @@ export const KO = {
   'set.contact': '문의',
 
   // 처음 안내 (ui/tour.ts)
-  'tour.note': '아무 음이나 켜 보세요',
-  'tour.noteBody': '켜는 음의 이름이 크게 나와요',
-  'tour.noteDone': '이렇게 읽으면 돼요',
-  'tour.noteDoneBody': '오른쪽 숫자가 +면 높고 −면 낮아요. ±{tol}¢ 안에 들면 초록색이 돼요',
-  'tour.trace': '음정이 선으로 남아요',
-  'tour.traceBody': '맨 아래가 지금이에요. 초록 띠보다 왼쪽이면 낮고, 오른쪽이면 높아요',
   'tour.ref': '기준음은 밀어서 바꿔요',
   'tour.refBody': '합주에서 쓰는 A로 맞춰 두세요',
   'tour.refDone': '이렇게 바꾸면 돼요',
   'tour.refDoneBody': '다음으로 넘어가면 원래대로 돌아가요',
-  'tour.playA': 'A 듣기',
-  'tour.playABody': '누르면 A음이 나와요. 소리를 들으며 A현을 맞춰 보세요. 첼로·베이스는 설정에서 높이를 바꿀 수 있어요',
-  'tour.drone': 'DRONE',
-  // \u00a0(줄 안 바꿈 공백): 한 글자 꾸밈말(그·이)이 줄 끝에 홀로 남지 않게
-  'tour.droneBody': '누르고 음을 고르면 그 음이 계속 울려요. 그\u00a0위에서 음계를 켜면 음정이 잘 들려요',
   'tour.metro': '메트로놈은 위로 밀어 보세요',
   // ∧·∨ 뒤의 \u2060(단어 잇기): 좁은 폰에서 '∨' 만 줄 끝에 남고 '를' 이 다음 줄로 가지 않게
   'tour.metroBody': '박자와 빠르기를 고르는 화면이 열려요. ∧\u2060를 눌러도 돼요. ♩ 옆 숫자를 위아래로 밀면 빠르기가 바뀌어요',
@@ -241,14 +230,9 @@ export const KO = {
   'tour.bpmDone': '이렇게 바꾸면 돼요',
   'tour.bpmDoneBody': '다음으로 넘어가면 원래대로 돌아가요',
   'tour.rec': 'REC',
+  // \u00a0(줄 안 바꿈 공백): 한 글자 꾸밈말(그·이)이 줄 끝에 홀로 남지 않게
   'tour.recBody': '누르면 바로 녹음을 시작해요. 이\u00a0기기에만 저장되고 30일 뒤 자동으로 지워져요',
   'tour.recBodyNative': '누르면 바로 녹음을 시작해요. 이\u00a0기기에만 저장되고 30일 뒤 자동으로 지워져요. 앱을 나가면 녹음이 멈춰요',
-  'tour.menu': '메뉴',
-  'tour.menuBody': '녹음 목록과 연습 타이머가 있어요. 녹음을 다시 듣고 구간 반복도 할 수 있어요',
-  'tour.gear': '설정',
-  'tour.gearBody': '허용 오차, A 듣기 높이, 언어, 화면 색을 바꿀 수 있어요. 이 안내도 여기서 다시 볼 수 있어요',
-  'tour.end': '준비됐어요',
-  'tour.endBody': '이제 A현부터 맞춰 볼까요?',
   'tour.start': '시작하기',
   'tour.prev': '이전',
   'tour.next': '다음',

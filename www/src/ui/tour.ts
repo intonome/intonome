@@ -1,7 +1,8 @@
 /**
  * 처음 안내 — 새로 설치한 기기에서 튜너가 켜진 뒤 한 번. 화면을 어둡게 하고 볼 곳만 밝힌다.
- * 숨은 동작(소리 내기·기준음 밀기·메트로놈 카드 밀기)은 그 자리에서 해 보면 설명이 바뀌고, 버튼은 짧게 알려 주기만.
- * 안내 중에 켠 것·끈 것(A 듣기·드론·메트로놈 소리, 바꾼 기준음·빠르기·박자, 펼친 카드)은 그 단계를 떠날 때(앱이 뒤로 갈 때도) 되돌린다 — 안내가 사용자의 설정을 남기지 않는다.
+ * 세 장: 화면을 봐서는 모르는 것만 — 기준음 밀기, 메트로놈 카드 밀기(그 자리에서 해 보면 설명이 바뀐다), REC(녹음이 어디에 얼마나 남는지).
+ * 글자가 적힌 버튼(A 듣기 · DRONE · 메뉴 · 설정)과 소리를 내면 바로 보이는 것(음 이름 · 숫자 · 선)은 화면이 이미 말한다.
+ * 안내 중에 켠 것·끈 것(메트로놈 소리, 바꾼 기준음·빠르기·박자, 펼친 카드)은 그 단계를 떠날 때(앱이 뒤로 갈 때도) 되돌린다 — 안내가 사용자의 설정을 남기지 않는다.
  * 언제든 × · Esc · 안드로이드 뒤로 로 그만두고, 설정에서 다시 볼 수 있다. 레이어는 하나만 두고 자리만 옮긴다(밝은 구멍과 말풍선이 미끄러져 간다).
  * 메뉴·설정·드론 창·마이크 안내·편집기가 떠 있는 동안은 숨는다 — 닫히면 그 자리에서 이어진다.
  */
@@ -14,7 +15,6 @@ import { stageOf, type Stage } from '../core/metro/card.ts'
 import { placeBubble } from '../core/tourPlace.ts'
 import { overlayOpen, closeSettings } from './menu.ts'
 import { isEditorOpen } from './editor.ts'
-import { skipDroneHint } from './drone.ts'
 import { stopMetro, toggleMetro, setTimeSig, setSubDiv } from '../audio/metronome.ts'
 import { stopRefNote, stopDrone, startDrone } from '../audio/refTone.ts'
 
@@ -49,7 +49,6 @@ let snap: { set: Kept; refTone: boolean; drone: number | null; metroPlaying: boo
 let wasFull = false
 /** 처음 실행의 저절로 시작 — 한 번이라도 열리면(다시 보기 포함) 끈다 */
 let autoArmed = false
-let noteRun = 0
 /** 키보드로 쓰는 중인가 — 그때만 말풍선 버튼으로 포커스를 옮긴다(터치에서는 포커스 테두리가 남는다) */
 let kbd = false
 /** 말풍선으로 포커스 — 스크린 리더가 새 설명을 읽게. 키보드면 바로 "다음" 버튼으로 */
@@ -57,19 +56,9 @@ const focusCard = (): void => { if (!L) return; (kbd ? L.next : L.card).focus({ 
 let onFinish: (() => void) | null = null
 
 const STEPS: Step[] = [
-  // 마이크가 꺼져 있으면 음 자리에 시작 버튼이 뜬다 — 눌러서 켤 수 있게 열어 둔다
-  { key: 'note', target: () => [q('tuner-note-row')], pad: 6, radius: 14, open: true, task: true,
-    view: () => done ? { title: 'tour.noteDone', body: 'tour.noteDoneBody', gesture: 'none', vars: { tol: settingsStore.get().tolCents } }
-      : { title: 'tour.note', body: 'tour.noteBody', gesture: 'none', vars: { tol: settingsStore.get().tolCents } } }, // 소리를 안 내고 「다음」 만 눌러도 숫자·초록의 뜻을 본다
-  { key: 'trace', target: () => [q('tuner-history')], pad: 4, radius: 12,
-    view: () => ({ title: 'tour.trace', body: 'tour.traceBody', gesture: 'none' }) },
   { key: 'ref', target: () => [q('ref-row')], pad: 2, radius: 10, open: true, task: true,
     view: () => done ? { title: 'tour.refDone', body: 'tour.refDoneBody', gesture: 'none', vars: { hz: snap?.set.refHz ?? settingsStore.get().refHz } }
       : { title: 'tour.ref', body: 'tour.refBody', gesture: 'drag', pulseAt: () => q('ref-drum-outer') } },
-  { key: 'playA', target: () => [q('ref-a-btn')], pad: 6, radius: 10, open: true,
-    view: () => ({ title: 'tour.playA', body: 'tour.playABody', gesture: 'tap', pulseAt: () => q('ref-a-btn') }) },
-  { key: 'drone', target: () => [q('drone-btn')], pad: 6, radius: 10, open: true,
-    view: () => ({ title: 'tour.drone', body: 'tour.droneBody', gesture: 'tap', pulseAt: () => q('drone-btn') }) },
   // 카드를 끝까지 한 바퀴: 접힘 → 위로(펼침) → 한 번 더 위로(메트로놈만 크게 — 헤더 왼쪽 버튼으로도) → 아래로 → 한 번 더 아래로(접힘).
   // 가로 두 칸에는 카드의 단계가 없다 — 옆에 늘 크게 보이는 메트로놈(다이얼)을 알려 주기만 한다. 밀기 표시는 헤더 가운데(박 점들) — 왼쪽 ♩80 을 밀면 카드가 아니라 빠르기가 바뀐다
   // 다 돌고 접힌 뒤(done)에는 ♩ 숫자만 밝힌다 — 카드 전체가 열려 있으면 숫자 대신 카드를 밀어 다시 펼칠 수 있었고, 말풍선은 '숫자를 밀어 보세요' 그대로였다
@@ -87,17 +76,11 @@ const STEPS: Step[] = [
     } },
   { key: 'rec', target: () => [q('rec-hdr-btn')], pad: 6, radius: 10,
     view: () => ({ title: 'tour.rec', body: isNative() ? 'tour.recBodyNative' : 'tour.recBody', gesture: 'none' }) }, // 안드로이드 앱만 숨기면 녹음이 끝난다(백그라운드 마이크가 무음이 된다)
-  { key: 'menu', target: () => [q('menu-btn'), q('hdr-timer')], pad: 4, radius: 12, // 타이머가 돌고 있으면 헤더의 타이머 막대도 메뉴로 간다
-    view: () => ({ title: 'tour.menu', body: 'tour.menuBody', gesture: 'none' }) },
-  { key: 'gear', target: () => [q('settings-hdr-btn')], pad: 4, radius: 12,
-    view: () => ({ title: 'tour.gear', body: 'tour.gearBody', gesture: 'none' }) },
-  { key: 'end',
-    view: () => ({ title: 'tour.end', body: 'tour.endBody', gesture: 'none' }) },
 ]
 const LAST = STEPS.length - 1
 
 // ── 레이어 ──
-interface Layer { box: HTMLElement; spot: HTMLElement; blocks: HTMLElement[]; cover: HTMLElement; pulse: HTMLElement; card: HTMLElement; caret: HTMLElement; title: HTMLElement; body: HTMLElement; icon: HTMLImageElement; dots: HTMLElement; prev: HTMLButtonElement; next: HTMLButtonElement; skip: HTMLButtonElement; hint: HTMLElement }
+interface Layer { box: HTMLElement; spot: HTMLElement; blocks: HTMLElement[]; cover: HTMLElement; pulse: HTMLElement; card: HTMLElement; caret: HTMLElement; title: HTMLElement; body: HTMLElement; dots: HTMLElement; prev: HTMLButtonElement; next: HTMLButtonElement; skip: HTMLButtonElement; hint: HTMLElement }
 let L: Layer | null = null
 const el = (tag: string, cls: string, parent?: HTMLElement): HTMLElement => { const e = document.createElement(tag); e.className = cls; parent?.appendChild(e); return e }
 const CLOSE_GLYPH = '<svg class="nav-glyph" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>'
@@ -110,10 +93,9 @@ function build(): Layer {
   const pulse = el('div', 'tour-pulse', box); el('i', '', pulse); el('i', '', pulse)
   const card = el('div', 'tour-card', box); card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.tabIndex = -1 // aria-live 는 두지 않는다 — 단계마다 카드로 포커스가 오며 읽히는데 live 까지 있으면 두 번 읽혔다
   const caret = el('div', 'tour-caret', card)
-  const icon = el('img', 'tour-icon', card) as HTMLImageElement; icon.src = 'icons/icon-192.png'; icon.alt = ''
   const title = el('div', 'tour-title', card), body = el('div', 'tour-body', card)
   const foot = el('div', 'tour-foot', card), dots = el('div', 'tour-dots', foot), btns = el('div', 'tour-btns', foot)
-  for (let k = 0; k < LAST; k++) el('i', '', dots) // 마지막 장(시작하기)은 점이 없다
+  for (let k = 0; k <= LAST; k++) el('i', '', dots)
   dots.setAttribute('role', 'img')
   const prev = el('button', 'tour-prev', btns) as HTMLButtonElement, next = el('button', 'tour-next', btns) as HTMLButtonElement
   const skip = el('button', 'tour-skip', card) as HTMLButtonElement; skip.innerHTML = CLOSE_GLYPH
@@ -124,7 +106,7 @@ function build(): Layer {
   for (const b of [...blocks, cover]) on(b, 'pointerdown', (e: PointerEvent) => { e.preventDefault(); nudge() })
   document.body.appendChild(box)
   const hint = el('span', 'tour-skip-hint', card) // 첫 장에서만: × 를 가리키는 말풍선(말풍선 위, 밝힌 곳과의 틈에 뜬다)
-  return { box, spot, blocks, cover, pulse, card, caret, title, body, icon, dots, prev, next, skip, hint }
+  return { box, spot, blocks, cover, pulse, card, caret, title, body, dots, prev, next, skip, hint }
 }
 function nudge(): void {
   if (!L || reduced()) return
@@ -171,8 +153,7 @@ function go(n: number): void {
   render(true)
 }
 function enter(): void {
-  done = STEPS[i]!.key === 'metro' && isTwoPane(); sawFull = false; noteRun = 0 // 가로 두 칸의 메트로놈 단계는 해 볼 것이 없다
-  if (STEPS[i]!.key === 'drone') skipDroneHint() // 드론 창의 첫 안내 토스트와 같은 말 — 겹쳐 뜨지 않게
+  done = STEPS[i]!.key === 'metro' && isTwoPane(); sawFull = false // 가로 두 칸의 메트로놈 단계는 해 볼 것이 없다
   const s = settingsStore.get()
   const m = metroStore.get()
   snap = { set: { refHz: s.refHz, bpm: s.bpm, timeSig: s.timeSig, subDiv: s.subDiv, metroVol: s.metroVol }, refTone: refToneStore.get().active, drone: droneStore.get().pitchClass, metroPlaying: m.playing, collapsed: m.collapsed, full: m.full }
@@ -203,7 +184,6 @@ function leave(restart = true): void {
 function check(): void {
   if (!active || leaving) return
   const k = STEPS[i]!.key
-  if (k === 'note' && !done) { noteRun = tunerStore.get().hz > 0 ? noteRun + 1 : 0; if (noteRun >= 25) done = true } // 약 0.6 s 이어진 음
   if (k === 'ref' && !done && snap && settingsStore.get().refHz !== snap.set.refHz) done = true
   if (k === 'metro' && !done) {
     const st = metroState()
@@ -224,14 +204,13 @@ function render(swap = false): void {
   L.title.textContent = t(v.title, v.vars); L.body.textContent = t(v.body, v.vars)
   L.card.setAttribute('aria-label', L.title.textContent)
   if (swap && !reduced()) { for (const e of [L.title, L.body]) { e.classList.remove('swap'); void e.offsetWidth; e.classList.add('swap') } }
-  L.prev.textContent = t('tour.prev'); L.prev.hidden = i === 0 || i === LAST
-  L.next.textContent = i === LAST ? t('tour.start') : t('tour.next')
+  L.prev.textContent = t('tour.prev'); L.prev.hidden = i === 0
+  L.next.textContent = i === LAST ? t('tour.start') : t('tour.next') // 따로 된 끝 장 없이 마지막 장이 「시작하기」
   L.next.classList.toggle('soft', !!s.task && !done)
-  L.skip.setAttribute('aria-label', t('tour.skip')); L.skip.hidden = i === LAST
-  L.card.classList.toggle('end', i === LAST); L.icon.hidden = i !== LAST
+  L.skip.setAttribute('aria-label', t('tour.skip'))
   L.hint.textContent = t('tour.skipHint'); L.hint.hidden = i !== 0
   Array.from(L.dots.children).forEach((d, k) => d.classList.toggle('on', k === i)) // 지금 점이 길어지며 옮겨 간다
-  L.dots.setAttribute('aria-label', t('tour.progressAria', { n: Math.min(i + 1, LAST), total: LAST })) // 「3 / 9」 는 「3 슬래시 9」 로 읽혔다
+  L.dots.setAttribute('aria-label', t('tour.progressAria', { n: i + 1, total: STEPS.length })) // 「3 / 9」 는 「3 슬래시 9」 로 읽혔다
   L.pulse.className = 'tour-pulse g-' + v.gesture
   layout(true)
   if (swap) focusCard()

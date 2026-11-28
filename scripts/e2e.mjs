@@ -808,10 +808,17 @@ for (const [name, W, H] of [['a landscape tablet', 1280, 800], ['a large landsca
 }, { viewport: { width: W, height: H }, deviceScaleFactor: 2 })
 
 // 낮은 가로 창은 두 칸이 아니다 — 옆 칸의 메트로놈이 잘린다
-await scenario('layout: a landscape window too short for the metronome pane stays one column', 'silence_lowfloor.wav', async p => {
+for (const [W, H] of [[1000, 600], [1024, 600]]) await scenario(`layout: a slightly short landscape window (${W}x${H}, a small tablet) keeps two panes by shrinking a little, and nothing in the metronome pane is cut off`, 'silence_lowfloor.wav', async p => {
+  await p.goto(URL_); await sleep(p, 1300)
+  const r = await p.evaluate(() => { const m = document.getElementById('metro-card').getBoundingClientRect(), last = document.getElementById('sd-grid').getBoundingClientRect(), clip = document.getElementById('metro-body-clip')
+    return { two: document.getElementById('main-body').classList.contains('two'), full: document.getElementById('metro-card').classList.contains('full'), z: visualViewport.scale, sx: document.documentElement.scrollWidth - innerWidth, lastInside: last.bottom <= m.bottom + 0.5, over: clip.scrollHeight - clip.clientHeight, bottom: innerHeight - m.bottom, dial: document.getElementById('dial').getBoundingClientRect().width } })
+  assert.ok(r.two && r.full && Math.abs(r.z - H / 640) < 0.01, '두 칸 · 0.94 배 ' + JSON.stringify(r))
+  assert.ok(r.sx <= 0 && r.lastInside && r.over <= 0 && r.bottom >= 0 && r.dial > 100, '잘리거나 넘치는 것이 없다 ' + JSON.stringify(r))
+}, { viewport: { width: W, height: H }, deviceScaleFactor: 2 })
+await scenario('layout: a landscape window that would need shrinking below 0.85 stays one column, unmagnified', 'silence_lowfloor.wav', async p => {
   await p.goto(URL_); await sleep(p, 900)
   assert.deepEqual(await p.evaluate(() => [document.getElementById('main-body').classList.contains('two'), document.getElementById('metro-card').classList.contains('full'), visualViewport.scale]), [false, false, 1])
-}, { viewport: { width: 1000, height: 600 } })
+}, { viewport: { width: 960, height: 540 } })
 
 // 화면 크기 행렬 — 펼침2 는 어떤 화면에서도 스크롤·넘침이 없고 글자가 읽혀야 한다.
 // 기기별 땜빵이 아니라 규칙(다이얼이 남는 높이를 흡수, 글자는 렌더 크기 고정)으로 닫고, 이 행렬이 회귀를 잡는다.
@@ -1326,8 +1333,27 @@ await scenario('first-run guide (two panes): the metronome step points at the di
   assert.ok(apart, '말풍선이 메트로놈을 가리지 않는다: ' + JSON.stringify(r))
   assert.ok(r.c[0] >= 0 && r.c[1] >= 0 && r.c[2] <= r.vw && r.c[3] <= r.vh, '말풍선이 화면 안: ' + JSON.stringify(r))
   assert.equal(r.soft, false, '해 볼 것이 없어 다음이 바로 열려 있다')
+  const pane = () => p.evaluate(() => ({ two: document.getElementById('main-body').classList.contains('two'), full: document.getElementById('metro-card').classList.contains('full'), dial: document.getElementById('dial').getBoundingClientRect().width }))
+  const a = await pane(); assert.ok(a.two && a.full && a.dial > 100, '안내 중에도 옆 칸은 메트로놈만 크게 — 다이얼이 보인다 ' + JSON.stringify(a))
   await tourNext(p); assert.notEqual((await tour(p)).title, t.title, '다음 단계로')
+  await tourNext(p); assert.equal((await tour(p)).on, false)
+  const b = await pane(); assert.ok(b.two && b.full && b.dial > 100, '안내가 끝나도 그대로 ' + JSON.stringify(b))
+  // 설정의 다시 보기도 같다
+  await p.click('#settings-hdr-btn'); await sleep(p, 300); await p.click('#tour-replay-btn'); await waitTour(p, 2000); await sleep(p, 400)
+  const c = await pane(); assert.ok(c.two && c.full && c.dial > 100, '다시 보기: 다이얼이 보인다 ' + JSON.stringify(c))
 }, { fresh: true, locale: 'ko-KR', viewport: { width: 1280, height: 800 } })
+await scenario('first-run guide: turning a tablet to landscape during the metronome step gives the two panes with the dial, and turning back gives the phone card again', 'violin_A4.wav', async p => {
+  await p.goto(URL_); await waitTour(p); await tourNext(p)
+  assert.equal((await tour(p)).title, '메트로놈은 위로 밀어 보세요')
+  await p.setViewportSize({ width: 1280, height: 800 }); await sleep(p, 1000)
+  const pane = () => p.evaluate(() => ({ two: document.getElementById('main-body').classList.contains('two'), full: document.getElementById('metro-card').classList.contains('full'), collapsed: document.getElementById('metro-body-wrap').classList.contains('collapsed'), dial: document.getElementById('dial').getBoundingClientRect().width }))
+  assert.equal((await tour(p)).title, '다이얼을 돌려 보세요')
+  await tourNext(p) // 단계를 떠나도 두 칸의 카드는 그대로(세로일 때 잰 모양으로 되돌리지 않는다)
+  const a = await pane(); assert.ok(a.two && a.full && !a.collapsed && a.dial > 100, JSON.stringify(a))
+  await tourNext(p); assert.equal((await tour(p)).on, false)
+  await p.setViewportSize({ width: 800, height: 1280 }); await sleep(p, 1000)
+  const b = await pane(); assert.ok(!b.two && !b.full, '세로: 폰 카드로 ' + JSON.stringify(b))
+}, { fresh: true, locale: 'ko-KR', viewport: { width: 800, height: 1280 } })
 await scenario('first-run guide (magnified tablet): the same steps as on a phone, bubble inside the screen', 'violin_A4.wav', async p => {
   await p.goto(URL_); await waitTour(p)
   await tourNext(p)

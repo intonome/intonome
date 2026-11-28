@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { fitScale, fitWidth, isPaneWindow, FIT_MIN_W, FIT_MIN_H, FIT_MAX, PANE_FIT_W, PANE_FIT_H, PANE_MIN_W } from './fit.ts'
+import { fitScale, fitWidth, isPaneWindow, FIT_MIN_W, FIT_MIN_H, FIT_MAX, PANE_FIT_W, PANE_FIT_H, PANE_MIN_W, PANE_MIN_SCALE } from './fit.ts'
 
 describe('fitScale — how much a large window is magnified', () => {
   test('phones are left alone, in either dimension', () => {
@@ -14,7 +14,13 @@ describe('fitScale — how much a large window is magnified', () => {
   test('a landscape tablet grows until the two panes are as small as they may get', () => {
     expect(fitScale(1280, 800)).toBeCloseTo(800 / PANE_FIT_H, 5); expect(fitScale(1366, 1024)).toBeCloseTo(1366 / PANE_FIT_W, 5); expect(fitScale(900, 700)).toBe(1)
   })
-  test('never more than the maximum, never less than 1, and a short split-screen window is not magnified', () => {
+  test('a slightly short landscape window keeps two panes by shrinking a little, never below the floor', () => {
+    expect(isPaneWindow(1000, 600)).toBe(true); expect(fitScale(1000, 600)).toBeCloseTo(600 / PANE_FIT_H, 5); expect(fitWidth(1000, 600)).toBe(1067)
+    expect(isPaneWindow(1024, 600)).toBe(true); expect(isPaneWindow(960, 540)).toBe(false) // 0.84 배가 필요하다
+    for (let w = 400; w < 2600; w += 9) for (let h = 300; h < 1700; h += 11) if (isPaneWindow(w, h)) expect(fitScale(w, h)).toBeGreaterThanOrEqual(PANE_MIN_SCALE - 1e-9)
+  })
+  test('never more than the maximum, phones and one-column windows never below 1, and a short split-screen window is not magnified', () => {
+    for (let w = 300; w < 1500; w += 7) for (let h = 300; h < 1500; h += 11) if (!isPaneWindow(w, h)) expect(fitScale(w, h)).toBeGreaterThanOrEqual(1)
     expect(fitScale(2000, 3000)).toBe(FIT_MAX); expect(fitScale(1280, 380)).toBe(1); expect(fitScale(420, 400)).toBe(1); expect(fitScale(0, 0)).toBe(1); expect(fitScale(NaN, 800)).toBe(1)
   })
   test('continuous: one more dp of width or height never jumps the scale', () => {
@@ -32,8 +38,8 @@ describe('fitScale — how much a large window is magnified', () => {
   test('two panes: wide and tall enough for the metronome pane; the window keeps being one after it is magnified', () => {
     expect(isPaneWindow(1280, 800)).toBe(true); expect(isPaneWindow(1024, 768)).toBe(true)
     expect(isPaneWindow(750, 832)).toBe(false); expect(isPaneWindow(800, 1280)).toBe(false) // 펼친 폴드 · 세로 태블릿
-    expect(isPaneWindow(844, 390)).toBe(false); expect(isPaneWindow(1280, 380)).toBe(false); expect(isPaneWindow(1000, 600)).toBe(false) // 가로로 돌린 폰 · 낮은 분할 창 · 낮은 가로 창
-    for (let w = PANE_MIN_W; w < 2600; w += 13) for (let h = PANE_FIT_H; h < 1700; h += 17) {
+    expect(isPaneWindow(844, 390)).toBe(false); expect(isPaneWindow(1280, 380)).toBe(false); expect(isPaneWindow(760, 640)).toBe(false) // 가로로 돌린 폰 · 낮은 분할 창 · 거의 정사각
+    for (let w = 400; w < 2600; w += 13) for (let h = 300; h < 1700; h += 17) {
       if (!isPaneWindow(w, h)) continue
       const z = fitScale(w, h); expect(w / z).toBeGreaterThanOrEqual(PANE_MIN_W - 1e-6); expect(h / z).toBeGreaterThanOrEqual(PANE_FIT_H - 1e-6)
     }

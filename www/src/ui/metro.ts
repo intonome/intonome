@@ -228,6 +228,8 @@ export function mountMetro(): void {
   // 가로로 넓은 창: 튜너 옆에 메트로놈만 크게 보는 화면(다이얼)을 둔다 — 그동안은 크기 단계가 없다. 창이 좁아지면 전의 단계로 돌아간다
   let paneWas: { collapsed: boolean; full: boolean } | null = null, paneT: ReturnType<typeof setTimeout> | null = null
   const syncPane = (): void => {
+    const el = document.activeElement
+    if (paneWas && el instanceof HTMLInputElement && el.type === 'text') return // 글자를 치는 동안 키보드가 창을 낮춘 것 — 두 칸을 풀었다 다시 세우지 않는다(fitViewport 와 같은 규칙)
     const two = isTwoPane(); q('main-body').classList.toggle('two', two)
     if (two && !paneWas) { const { collapsed, full } = metroStore.get(); paneWas = { collapsed, full }; metroStore.set({ full: true, collapsed: false }) }
     else if (!two && paneWas) { metroStore.set(paneWas); paneWas = null }

@@ -220,7 +220,7 @@ export function fitViewport(): void {
     // 같은 창을 다시 잰 값은 반올림만큼(1 dp 안팎) 다르다 — 그 차이로 선언을 바꾸면 바꾼 선언이 다시 재는 값을 바꿔 끝없이 오간다
     if (Math.abs(w - lastW) < FIT_SLACK && Math.abs(h - lastH) < FIT_SLACK) return
     lastW = w; lastH = h
-    const want = fitScale(w, h) > 1.001 ? fitWidth(w, h) : 0
+    const want = Math.abs(fitScale(w, h) - 1) > 0.001 ? fitWidth(w, h) : 0
     if (want === declared) return
     declared = want
     // 폭과 배율을 함께 적는다 — 폭만 적으면 안드로이드 WebView 는 배율을 1 로 되돌린다(배율을 적지 않은 페이지에만 있는 호환 규칙). 배율은 내림: 올리면 보이는 폭이 배치 폭보다 좁아져 옆으로 밀린다.

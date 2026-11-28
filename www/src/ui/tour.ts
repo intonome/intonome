@@ -44,7 +44,7 @@ let active = false, i = 0, done = false, leaving = false
 /** 메트로놈 단계: 메트로놈만 보는 화면(펼침2)까지 가 봤는가 — 그다음은 내려서 처음처럼 접으면 끝 */
 let sawFull = false
 /** 단계에 들어올 때의 모습 — 떠날 때 되돌린다 */
-let snap: { set: Kept; refTone: boolean; drone: number | null; metroPlaying: boolean; collapsed: boolean; full: boolean } | null = null
+let snap: { set: Kept; refTone: boolean; drone: number | null; metroPlaying: boolean; card: { collapsed: boolean; full: boolean } | null } | null = null
 /** 메트로놈만 보는 화면에서 다시 보기를 열면 튜너가 숨어 있다 — 안내 동안 펼침으로 두고, 끝나면 돌려놓는다 */
 let wasFull = false
 /** 처음 실행의 저절로 시작 — 한 번이라도 열리면(다시 보기 포함) 끈다 */
@@ -119,7 +119,7 @@ function startTour(onDone?: () => void): void {
   if (active) return
   autoArmed = false
   onFinish = onDone ?? null
-  wasFull = metroStore.get().full
+  wasFull = !isTwoPane() && metroStore.get().full // 가로 두 칸의 '메트로놈만 크게' 는 배치가 정한 것(ui/metro syncPane) — 안내가 접으면 옆 칸의 다이얼이 사라진다
   if (wasFull) metroStore.set({ full: false })
   active = true; i = 0; enter()
   if (!L) L = build()
@@ -156,7 +156,7 @@ function enter(): void {
   done = STEPS[i]!.key === 'metro' && isTwoPane(); sawFull = false // 가로 두 칸의 메트로놈 단계는 해 볼 것이 없다
   const s = settingsStore.get()
   const m = metroStore.get()
-  snap = { set: { refHz: s.refHz, bpm: s.bpm, timeSig: s.timeSig, subDiv: s.subDiv, metroVol: s.metroVol }, refTone: refToneStore.get().active, drone: droneStore.get().pitchClass, metroPlaying: m.playing, collapsed: m.collapsed, full: m.full }
+  snap = { set: { refHz: s.refHz, bpm: s.bpm, timeSig: s.timeSig, subDiv: s.subDiv, metroVol: s.metroVol }, refTone: refToneStore.get().active, drone: droneStore.get().pitchClass, metroPlaying: m.playing, card: isTwoPane() ? null : { collapsed: m.collapsed, full: m.full } }
 }
 /** restart: 그 단계에서 꺼진 드론·메트로놈을 다시 켠다(버튼을 누른 뒤에만 — 앱이 뒤로 갈 때는 앱이 어차피 다 끈다) */
 function leave(restart = true): void {
@@ -175,8 +175,9 @@ function leave(restart = true): void {
     const playing = metroStore.get().playing
     if (playing && !s.metroPlaying) stopMetro()
     else if (!playing && s.metroPlaying && restart) toggleMetro()
-    const m = metroStore.get()
-    if (m.collapsed !== s.collapsed || m.full !== s.full) metroStore.set({ collapsed: s.collapsed, full: s.full })
+    // 카드 모양은 한 칸일 때 잰 것을 한 칸일 때만 되돌린다 — 두 칸의 카드는 배치가 정하고(돌리면 syncPane 이 전 모양으로 되돌린다), 단계 도중 회전했으면 그쪽이 맞다
+    const m = metroStore.get(), c = s.card
+    if (c && !isTwoPane() && (m.collapsed !== c.collapsed || m.full !== c.full)) metroStore.set(c)
   } finally { leaving = false; snap = null }
 }
 

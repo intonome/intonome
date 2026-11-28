@@ -125,9 +125,10 @@ export function main(log = console.log) {
   const activity = join(ROOT, 'android', 'app', 'src', 'main', 'java', ...appId.split('.'), 'MainActivity.java')
   if (existsSync(activity)) {
     const j = readFileSync(activity, 'utf8'), j2 = setWideViewport(j)
-    if (j2 === null) console.error('\x1b[31mMainActivity.java 가 템플릿과 달라 WebView 설정을 넣지 못했습니다 — 큰 화면에서 화면이 커지지 않습니다. onCreate 에 ' + WIDE_VIEWPORT_CALL + ' 를 넣어 주세요.\x1b[0m')
+    // 설정이 빠진 채 빌드되면 안 된다: WebView 는 선언한 폭은 무시하고 배율만 따라, 큰 화면이 커지는 대신 오른쪽이 잘린다
+    if (j2 === null) { console.error('\x1b[31mMainActivity.java 가 템플릿과 달라 WebView 설정을 넣지 못했습니다. onCreate 에 ' + WIDE_VIEWPORT_CALL + ' 를 넣고 다시 실행하세요.\x1b[0m'); process.exit(1) }
     else if (j2 !== j) { writeFileSync(activity, j2); log('MainActivity.java: WebView 가 viewport 선언을 따른다 (큰 화면 맞춤)') } else log('MainActivity.java WebView 설정 OK')
-  } else log('없음: ' + activity + ' — 큰 화면 맞춤이 앱에서 꺼진 채다')
+  } else if (existsSync(join(ROOT, 'android'))) { console.error('\x1b[31m없음: ' + activity + ' — WebView 설정을 넣을 곳이 없습니다(큰 화면이 잘린다). MainActivity 위치를 확인하세요.\x1b[0m'); process.exit(1) }
 
   // 버전 동기화 — android/ 는 생성물이라 build.gradle 의 versionName/versionCode 가 매번 1.0/1 로 돌아온다
   const gradle = join(ROOT, 'android', 'app', 'build.gradle')

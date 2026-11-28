@@ -11,8 +11,8 @@ User-facing scenarios. `[A]` items are automated (CI checks them every time); `[
 - [D] Android app: tries the mic on launch; a toast explains how to allow it if denied
 
 ## First-run guide
-- [A] New install: once the tuner is on, a guide lights three parts in turn (A =, the metronome card, REC); the last card's button is Start, with × and Previous still there. Sliding A = and swiping the metronome card (up, up to the metronome-only view, down, down) change the note; × / Esc close it; it never shows again
-- [A] Anything changed or started during a step is put back when the step is left (A =, tempo, metronome, card size); lit buttons that are only pointed out (REC) do nothing; Space doesn't start the metronome under it
+- [A] New install: once the tuner is on, a guide lights three parts in turn (A =, the metronome card, REC), then a start card. The A = card asks to set the A you tune to; sliding it says "A = 440 Hz is set" and the number follows further slides; the value stays. REC says it records at once, keeps recordings on this device for 30 days, and that Settings › Keep recordings keeps them. Sliding A = and swiping the metronome card (up, up to the metronome-only view, down, down) change the note; × / Esc close it; it never shows again
+- [A] Anything changed or started during a step is put back when the step is left (tempo, metronome, card size), except the A that was set; going to the background on the A card keeps it and does not ask again; lit buttons that are only pointed out (REC) do nothing; Space doesn't start the metronome under it
 - [A] An install with saved settings never sees it; Settings › App guide › Show again replays it from the first card
 - [A] Large screens: on a magnified tablet the steps are the same as on a phone and the bubble stays on screen; with two panes the metronome step points at the dial pane, asks for nothing to be tried, and the bubble does not cover the pane
 - [D] Android: the back button closes the guide; the status bar dims with it and comes back

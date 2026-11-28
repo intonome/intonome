@@ -5,7 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follo
 ## [Unreleased]
 
 ## [2.11.0] - 2026-11-28
-Foldables and tablets show the app at their own size: the phone screen magnified to fit, and in landscape the tuner and the metronome side by side. Phones look as before. The first-run guide is three cards instead of ten. The Android launch screen shows the rings of the icon with the Intonome name on a near-black background, and no longer shows through the tuner as it goes away.
+Foldables and tablets show the app at their own size: the phone screen magnified to fit, and in landscape the tuner and the metronome side by side. Phones look as before. The first-run guide is three cards instead of ten, and the A you set in it stays. The Android launch screen shows the rings of the icon with the Intonome name on a near-black background, and no longer shows through the tuner as it goes away.
 
 Large screens
 - An unfolded foldable or a tablet shows the same single column as a phone, magnified as far as the window allows (up to 2×). It used to switch to a two-column layout from 700 px of width, with the phone-sized metronome card in the right column and the space under it empty. Popups, notices and touch positions are magnified with the rest, and the tuner trace is drawn at the magnified resolution, so it stays sharp
@@ -16,7 +16,12 @@ Large screens
 - On tablets running Android 15 or earlier the app stays in portrait, as before; Android 16 and later let large screens rotate, and the two panes appear there
 
 First-run guide
-- Three cards instead of ten: sliding the A, sliding the metronome card, and REC (recordings stay on this device and are deleted after 30 days). A tester found the guide long; the cards that went explained the note reading, the trace, Play A, DRONE, the menu and Settings, which the screen already shows once a note is played or the buttons are read, and a closing card that said nothing new. REC is the last card and its button is Start. Everything else about the guide is as before
+- Three cards and the start card instead of ten: setting the A, sliding the metronome card, and REC. A tester found the guide long; the cards that went explained the note reading, the trace, Play A, DRONE, the menu and Settings, which the screen already shows once a note is played or the buttons are read
+- The first card now asks you to set the A you tune to, and the value you set stays. It used to say "set it to the A your group uses" and then put 442 back when you moved on
+- REC says in two short sentences that a tap records at once and that recordings are deleted after 30 days unless Settings › Keep recordings is changed
+- The metronome card drops the line about what the card opens and keeps the two things to know: ∧ works too, and sliding the number next to ♩ changes the tempo. In Korean it now says 메트로놈을 위로 올려 보세요, with the same verb as the next step
+- The ♩ in the guide's text is drawn like the one on the metronome bar; the font's own ♩ came out small and with a wide gap on some phones
+- The "Close anytime" label above × on the first card is gone: with three cards the × is enough
 - The drone picker's own first-open hint now shows to everyone; the guide used to skip it because its DRONE card said the same
 
 Android launch screen
@@ -28,7 +33,7 @@ Fixes
 
 Docs and code
 - The layout no longer has a wide-screen variant: the 700 px rules, the tempo pad they showed and the width parameter of the card's stage functions are gone
-- The guide's texts for the removed cards are gone from all six languages, along with the closing card's layout; the guide scenarios follow the three cards
+- The guide's texts for the removed cards are gone from all six languages; the guide scenarios follow the new cards
 - New e2e: four large portrait sizes (magnification, no overflow, canvas resolution, card stages, drone picker position), four phone sizes (no magnification, declaration untouched), two landscape tablets (two panes, turning to portrait and back, the fit settling), a short landscape window, and the guide on a magnified tablet and with two panes. They replace the five wide-screen scenarios. Seven large-screen screenshots join the baselines
 
 ## [2.10.8] - 2026-11-22
